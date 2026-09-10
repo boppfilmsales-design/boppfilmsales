@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+body {
+  font-family: Arial, Helvetica, "Microsoft YaHei", sans-serif;
+}
+
+/* Article body styling, mirroring the legacy `show.php` content area. */
+.news-body img {
+  max-width: 100%;
+  height: auto;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.news-body p {
+  margin: 0 0 14px;
+}
+
+.news-body table {
+  border-collapse: collapse;
+  margin: 12px 0;
+  max-width: 100%;
+}
+
+.news-body td,
+.news-body th {
+  border: 1px solid #e2e2e2;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.news-body a {
+  color: #e61d39;
+  text-decoration: underline;
+}
+
+.admin-body p {
+  margin: 0 0 12px;
+}
