@@ -60,3 +60,67 @@ npm run dev          # start the app
 npx drizzle-kit push # create/refresh the PostgreSQL tables
 python3 scripts/scrape-news.py   # re-scrape the legacy news columns (optional)
 ```
+
+---
+
+## Deployment (no more paid shared hosting)
+
+The whole website is plain Next.js + PostgreSQL and runs on free tiers.
+
+### 1. Cloudflare Pages or Vercel (recommended)
+
+| Setting | Value |
+| --- | --- |
+| Repository | `boppfilmsales-design/boppfilmsales` |
+| Branch | `main` |
+| Framework preset | Next.js |
+| Build command | `npm run build` |
+| Install command | `npm install` |
+| Node version | 20 or 22 |
+
+Then add these environment variables in the dashboard
+(**Settings → Environment variables**):
+
+| Key | Value |
+| --- | --- |
+| `DATABASE_URL` | a free Postgres connection string (Neon / Supabase / Vercel Postgres) |
+| `ADMIN_USERNAME` | `xgxadmin` |
+| `ADMIN_PASSWORD` | your own strong password |
+| `SESSION_SECRET` | any long random string |
+
+On the first request the app creates the `news_categories`, `news_posts` and
+`admin_users` tables automatically and loads the 92 mirrored articles from
+`src/data/news-seed.json`, so there is nothing to import by hand.
+
+After deploying, remember to add both of your domains
+(`www.apigcl.com` and `www.boppfilmsales.com`) under
+**Custom domains** and point the DNS records to Cloudflare.
+
+### 2. Legacy URL protection
+
+Old links that Google and customers already have will keep working, because
+these routes are served by the new site:
+
+| Legacy URL | Now redirects to |
+| --- | --- |
+| `/index.php` | `/` |
+| `/news.php?c_id=41&p=2` | `/news?category=industry-news&p=2` |
+| `/show.php?c_id=52&i_id=503` | `/news/employees-literary/<id>` |
+| `/about.php`, `/product.php`, `/contact.php`, `/search.php` | `/about`, `/products`, `/contact`, `/search` |
+
+### 3. Migrating later / static export
+
+The read-only JSON feed is ideal for a future static export or a move to
+another CMS:
+
+- `GET /api/news?category=industry-news&p=1`
+- `GET /api/news?category=employees-literary&p=1&includeBody=1` (adds full `bodyHtml` / `bodyText`)
+
+### 4. Re-scraping the legacy site
+
+```bash
+python3 scripts/scrape-news.py
+```
+
+This refreshes `src/data/news-seed.json` and `public/uploads/news/*` straight
+from the old `www.apigcl.com` server while it is still online.
