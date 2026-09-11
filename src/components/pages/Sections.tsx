@@ -1,4 +1,6 @@
 import Link from "next/link";
+import ProductCardImage from "@/components/ProductCardImage";
+import ProductGallery from "@/components/ProductGallery";
 import {
   allDownloads,
   contentBody,
@@ -53,8 +55,8 @@ export function ProductsIndex({ lang = "en" }: { lang?: "en" | "zh" }) {
         lang={lang}
         subtitle={
           lang === "zh"
-            ? "BOPET、BOPP、POF、BOPS、CPP、胶带母卷、预涂膜、铝箔、标签碳带及薄膜生产线设备等 18 大类、200 余种产品，附完整技术参数表 PDF 下载。"
-            : "18 product families and 200+ items — BOPET, BOPP, POF, BOPS, CPP films, tape jumbo rolls, thermal laminating film, aluminium foil, labels & ribbons and film machine lines. Every technical data sheet (PDF) is available for download."
+            ? `BOPET、BOPP、POF、BOPS、CPP、胶带母卷、预涂膜、铝箔、标签碳带及薄膜生产线设备等 ${categories.length} 大类、${productCount()} 个独立产品详情，附已收录的技术参数 PDF 下载。`
+            : `${categories.length} product families and ${productCount()} detailed items — BOPET, BOPP, POF, BOPS, CPP films, tape jumbo rolls, thermal laminating film, aluminium foil, labels, ribbons and film machine lines, with the mirrored PDF technical documents available for download.`
         }
         title={lang === "zh" ? "产品中心" : "Product Center"}
       />
@@ -128,18 +130,10 @@ export function ProductCategoryPage({
                 key={`${sub.sourceId}-${product.sourceId}`}
               >
                 <div className="h-[210px] overflow-hidden bg-[#f7f7f7]">
-                  {product.gallery?.[0] ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      alt={product.title}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.08]"
-                      src={product.gallery[0]}
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-[12px] font-bold tracking-[2px] text-[#ccc]">
-                      NO IMAGE
-                    </div>
-                  )}
+                  <ProductCardImage
+                    image={product.gallery?.[0]}
+                    title={lang === "zh" && product.titleZh ? product.titleZh : product.title}
+                  />
                 </div>
                 <div className="flex flex-1 flex-col p-4">
                   <h3 className="text-[14px] font-bold leading-snug text-[#22262e] group-hover:text-[#c8102e]">
@@ -191,28 +185,13 @@ export function ProductDetail({
         <div className="mx-auto grid w-full max-w-[1400px] gap-10 px-4 lg:grid-cols-[minmax(0,1fr)_420px]">
           {/* gallery */}
           <div>
-            <div className="border border-[#e8e8e8] bg-white p-3">
-              <div className="h-[420px] overflow-hidden bg-[#f7f7f7]">
-                {product.gallery?.[0] ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img alt={title} className="h-full w-full object-contain" src={product.gallery[0]} />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-[13px] text-[#bbb]">NO IMAGE</div>
-                )}
-              </div>
-              {product.gallery && product.gallery.length > 1 && (
-                <div className="mt-3 flex gap-2 overflow-x-auto">
-                  {product.gallery.map((img, index) => (
-                    <div className="h-[74px] w-[74px] shrink-0 border border-[#e5e5e5] p-[3px]" key={img + index}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img alt="" className="h-full w-full object-cover" src={img} />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <ProductGallery
+              images={product.gallery}
+              noImageLabel={lang === "zh" ? "暂无图片" : "Image unavailable"}
+              title={title}
+            />
 
-            <div className="mt-8 border border-[#e8e8e8] bg-white p-6">
+            <div className="mt-8 rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_18px_55px_rgba(15,23,42,0.05)] md:p-8">
               <h2 className="text-[18px] font-bold text-[#22262e]">
                 {lang === "zh" ? "产品详细介绍" : "Product Description"}
               </h2>

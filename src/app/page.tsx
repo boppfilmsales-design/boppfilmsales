@@ -23,54 +23,62 @@ export default async function HomePage() {
       <SiteHeader active="Home" />
 
       {/* hero */}
-      <section className="relative overflow-hidden bg-[linear-gradient(120deg,#1b1f2a_0%,#2b3140_45%,#c8102e_130%)] py-24 text-white">
-        <div className="mx-auto w-full max-w-[1400px] px-4">
-          <p className="text-[12px] font-bold uppercase tracking-[5px] text-white/55">
-            Hefei · Anhui · China — since 1998
-          </p>
-          <h1 className="mt-5 max-w-[900px] text-[32px] font-black leading-[1.15] md:text-[48px]">
-            {SITE.name}
-          </h1>
-          <p className="mt-5 max-w-[780px] text-[15px] leading-[30px] text-white/85">
-            Professional manufacturer and exporter of {productCount()}+ film &amp; tape products: 4.5Mic BOPET
-            thermal transfer base film, BOPP printing / heat-sealable / pearlized / matte film, BOPP tape jumbo
-            rolls, EVA thermal laminating film, POF shrink film, BOPS window film, capacitor film and complete
-            film machine lines — exported to Europe, the Americas, the Middle East and South-East Asia.
-          </p>
-          <div className="mt-9 flex flex-wrap gap-3">
-            <Link
-              className="bg-[#c8102e] px-7 py-[14px] text-[13px] font-bold uppercase tracking-[1px] text-white transition-colors hover:bg-white hover:text-[#c8102e]"
-              href="/products"
-            >
-              Product center
-            </Link>
-            <Link
-              className="border border-white/70 px-7 py-[14px] text-[13px] font-bold uppercase tracking-[1px] text-white transition-colors hover:bg-white hover:text-[#1b1f2a]"
-              href="/downloads"
-            >
-              Download TDS / MSDS
-            </Link>
-            <a
-              className="border border-white/70 px-7 py-[14px] text-[13px] font-bold uppercase tracking-[1px] text-white transition-colors hover:bg-white hover:text-[#1b1f2a]"
-              href={`mailto:${SITE.email}`}
-            >
-              Email us
-            </a>
+      <section className="relative isolate overflow-hidden bg-[#101722] text-white">
+        <div className="pointer-events-none absolute -left-40 top-0 h-[520px] w-[520px] rounded-full bg-[#c8102e]/20 blur-[130px]" />
+        <div className="pointer-events-none absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(255,255,255,.07)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.07)_1px,transparent_1px)] [background-size:54px_54px]" />
+        <div className="relative mx-auto grid min-h-[680px] w-full max-w-[1400px] items-center gap-14 px-4 py-20 lg:grid-cols-[1.08fr_.92fr] lg:py-24">
+          <div>
+            <div className="inline-flex items-center gap-3 rounded-full border border-white/15 bg-white/[0.06] px-4 py-2 text-[11px] font-bold uppercase tracking-[0.24em] text-white/70 backdrop-blur">
+              <span className="h-2 w-2 rounded-full bg-[#e31b3d] shadow-[0_0_16px_#e31b3d]" />
+              Hefei · China · Global film supply
+            </div>
+            <h1 className="mt-7 max-w-[760px] text-[42px] font-black leading-[1.03] tracking-[-0.04em] sm:text-[58px] xl:text-[72px]">
+              Advanced films.
+              <span className="block bg-gradient-to-r from-white via-white to-white/45 bg-clip-text text-transparent">Built for industry.</span>
+            </h1>
+            <p className="mt-7 max-w-[720px] text-[15px] leading-[29px] text-slate-300 sm:text-[17px]">
+              {SITE.name} supplies precision BOPET, BOPP, POF, BOPS and CPP films, tape jumbo rolls,
+              thermal lamination materials and complete production lines to converters and manufacturers worldwide.
+            </p>
+            <div className="mt-9 flex flex-wrap gap-3">
+              <Link className="rounded-full bg-[#c8102e] px-7 py-4 text-[12px] font-black uppercase tracking-[0.16em] text-white shadow-[0_16px_40px_rgba(200,16,46,.3)] transition hover:-translate-y-0.5 hover:bg-[#e31b3d]" href="/products">
+                Explore products →
+              </Link>
+              <Link className="rounded-full border border-white/25 bg-white/[0.04] px-7 py-4 text-[12px] font-black uppercase tracking-[0.16em] text-white backdrop-blur transition hover:border-white hover:bg-white hover:text-slate-950" href="/downloads">
+                TDS / MSDS library
+              </Link>
+            </div>
+            <dl className="mt-12 grid max-w-[760px] grid-cols-2 gap-x-6 gap-y-7 border-t border-white/10 pt-8 sm:grid-cols-4">
+              {[
+                { k: "Product families", v: categories.length },
+                { k: "Detailed products", v: productCount() },
+                { k: "Document links", v: pdfs.length },
+                { k: "Export markets", v: "30+" },
+              ].map((stat) => (
+                <div key={stat.k}>
+                  <dd className="text-[29px] font-black tracking-[-0.04em] text-white">{stat.v}</dd>
+                  <dt className="mt-1 text-[9px] font-bold uppercase tracking-[0.18em] text-white/45">{stat.k}</dt>
+                </div>
+              ))}
+            </dl>
           </div>
-
-          <dl className="mt-14 grid max-w-[900px] grid-cols-2 gap-6 border-t border-white/15 pt-8 md:grid-cols-4">
-            {[
-              { k: "Product families", v: categories.length },
-              { k: "Products", v: `${productCount()}+` },
-              { k: "PDF data sheets", v: pdfs.length },
-              { k: "Export markets", v: "30+" },
-            ].map((stat) => (
-              <div key={stat.k}>
-                <dd className="text-[28px] font-black text-white">{stat.v}</dd>
-                <dt className="mt-1 text-[11px] uppercase tracking-[2px] text-white/55">{stat.k}</dt>
+          <div className="relative hidden lg:block">
+            <div className="absolute -inset-5 rounded-[36px] border border-white/10" />
+            <div className="relative overflow-hidden rounded-[30px] border border-white/10 bg-white/10 p-2 shadow-2xl backdrop-blur">
+              {/* Original shipment photograph mirrored from the owned legacy website. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img alt="Asia Pacific Industry Group film rolls prepared for export" className="aspect-[4/5] w-full rounded-[24px] object-cover" src="/uploads/products/9220b185d6079bc5.jpg" />
+              <div className="absolute inset-x-7 bottom-7 rounded-2xl border border-white/15 bg-slate-950/75 p-5 backdrop-blur-xl">
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#ff6b82]">Global delivery</p>
+                <p className="mt-2 text-[15px] font-bold text-white">Industrial film rolls prepared for export</p>
+                <p className="mt-1 text-[11px] text-white/55">Technical selection · Slitting · Export packing</p>
               </div>
-            ))}
-          </dl>
+            </div>
+            <div className="absolute -left-12 top-16 rounded-2xl border border-white/15 bg-white/95 p-4 text-slate-950 shadow-2xl">
+              <span className="block text-2xl font-black text-[#c8102e]">4.5μm</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">BOPET expertise</span>
+            </div>
+          </div>
         </div>
       </section>
 

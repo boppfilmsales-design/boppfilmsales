@@ -61,6 +61,14 @@ export const SITE = {
   whatsapp: ["18919654871", "18919659471", "18955113807"],
 };
 
+export function productImageUrl(value: string): string {
+  const source = (value ?? "").trim();
+  if (!source) return "";
+  if (source.startsWith("/")) return source;
+  if (/^https?:\/\//i.test(source)) return source;
+  return `/uploads/products/${source}`;
+}
+
 export function getCategories(): SiteCategory[] {
   return products;
 }

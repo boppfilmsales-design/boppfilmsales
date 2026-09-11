@@ -9,7 +9,7 @@ export const dynamic = "force-static";
 export const metadata: Metadata = {
   title: "Products - BOPET / BOPP / POF Film, Tape & Machine Lines",
   description:
-    "18 product families and 200+ items: 4.5Mic BOPET film, BOPP film, BOPP tape jumbo rolls, thermal laminating film, POF shrink film, BOPS, CPP, aluminium foil, labels, ribbons and film machine lines.",
+    "18 product families and 110 detailed items: 4.5Mic BOPET film, BOPP film, BOPP tape jumbo rolls, thermal laminating film, POF shrink film, BOPS, CPP, aluminium foil, labels, ribbons and film machine lines.",
 };
 
 export default function ProductsPage() {

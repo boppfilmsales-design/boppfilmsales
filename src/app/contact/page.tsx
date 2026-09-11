@@ -1,12 +1,18 @@
 import type { Metadata } from "next";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
+import { submitInquiry } from "@/app/contact/actions";
 
 export const metadata: Metadata = {
   title: "Contact - Asia Pacific Industry Group Co., Limited",
 };
 
-export default function ContactPage() {
+export default async function ContactPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
+  const { status } = await searchParams;
   return (
     <div className="min-h-screen bg-white">
       <SiteHeader active="Contact" />
@@ -42,15 +48,25 @@ export default function ContactPage() {
               <p>Skype: asiapacificsale / boppfilmsales / boppfilmsale</p>
               <p>QQ: 840715367 / 2538474128 / 156641365 / 2500526557</p>
             </div>
-            <form action="/contact" className="border border-[#eee] bg-[#fafafa] p-6" method="post">
+            <form action={submitInquiry} className="rounded-2xl border border-[#eee] bg-[#fafafa] p-6 shadow-sm">
               <h2 className="text-[16px] font-bold text-[#333]">Send Inquiry</h2>
+              {status === "sent" && (
+                <p className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-[13px] font-bold text-emerald-700" role="status">
+                  Thank you. Your inquiry has been saved and our sales team will contact you shortly.
+                </p>
+              )}
+              {status === "invalid" && (
+                <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800" role="alert">
+                  Please provide your name, a valid email and at least 10 characters describing your requirement.
+                </p>
+              )}
               <div className="mt-4 space-y-3 text-[13px]">
-                <input className="w-full border border-[#ddd] bg-white px-3 py-[10px]" name="company" placeholder="Company name" />
-                <input className="w-full border border-[#ddd] bg-white px-3 py-[10px]" name="contact" placeholder="Your name" />
-                <input className="w-full border border-[#ddd] bg-white px-3 py-[10px]" name="email" placeholder="E-mail address" type="email" />
-                <textarea className="h-[110px] w-full border border-[#ddd] bg-white px-3 py-[10px]" name="message" placeholder="Product, width, thickness, quantity..." />
-                <button className="w-full bg-[#e61d39] py-[11px] text-[13px] font-bold uppercase text-white" type="submit">
-                  Submit
+                <input autoComplete="organization" className="w-full rounded-lg border border-[#ddd] bg-white px-3 py-[11px]" maxLength={200} name="company" placeholder="Company name" />
+                <input autoComplete="name" className="w-full rounded-lg border border-[#ddd] bg-white px-3 py-[11px]" maxLength={120} name="contact" placeholder="Your name *" required />
+                <input autoComplete="email" className="w-full rounded-lg border border-[#ddd] bg-white px-3 py-[11px]" maxLength={254} name="email" placeholder="E-mail address *" required type="email" />
+                <textarea className="h-[120px] w-full rounded-lg border border-[#ddd] bg-white px-3 py-[11px]" minLength={10} maxLength={5000} name="message" placeholder="Product, width, thickness, quantity... *" required />
+                <button className="w-full rounded-full bg-[#c8102e] py-[13px] text-[13px] font-bold uppercase tracking-[0.12em] text-white transition hover:bg-[#a30d25]" type="submit">
+                  Submit inquiry
                 </button>
                 <p className="text-[12px] text-[#999]">
                   Or simply write to sales@boppfilmsales.com — we reply within 12 working hours.

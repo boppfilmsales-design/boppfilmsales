@@ -67,5 +67,21 @@ export const adminUsers = pgTable(
   (table) => [uniqueIndex("admin_users_username_key").on(table.username)],
 );
 
+export const inquiries = pgTable(
+  "inquiries",
+  {
+    id: serial("id").primaryKey(),
+    company: text("company").notNull().default(""),
+    contact: text("contact").notNull(),
+    email: text("email").notNull(),
+    message: text("message").notNull(),
+    language: text("language").notNull().default("en"),
+    status: text("status").notNull().default("new"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("inquiries_created_at_idx").on(table.createdAt)],
+);
+
 export type NewsCategory = typeof newsCategories.$inferSelect;
 export type NewsPost = typeof newsPosts.$inferSelect;
+export type Inquiry = typeof inquiries.$inferSelect;

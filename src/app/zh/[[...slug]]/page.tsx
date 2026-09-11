@@ -33,8 +33,15 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return { title: TITLES[slug[0] ?? ""] ?? TITLES[""], description: SITE.nameZh };
 }
 
-export default async function ZhPage({ params }: { params: Params }) {
+export default async function ZhPage({
+  params,
+  searchParams,
+}: {
+  params: Params;
+  searchParams: Promise<{ id?: string }>;
+}) {
   const { slug = [] } = await params;
+  const query = await searchParams;
   const [first, second, third] = slug;
   let content: React.ReactNode;
 
@@ -52,7 +59,7 @@ export default async function ZhPage({ params }: { params: Params }) {
     content = <DownloadsPage lang="zh" />;
   } else if (["about", "honor", "service", "cases", "product-lines"].includes(first)) {
     const kind = first === "product-lines" ? "lines" : (first as "about" | "honor" | "service" | "cases");
-    const id = Number(second);
+    const id = Number(query.id ?? second);
     content = (
       <ContentColumnPage kind={kind} lang="zh" sourceId={Number.isFinite(id) && id > 0 ? id : undefined} />
     );

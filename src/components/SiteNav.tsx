@@ -68,6 +68,9 @@ export default function SiteNav({ lang = "en" }: Props) {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<string>("");
   const categories = getCategories();
+  const normalizedPath = pathname.replace(/^\/zh(?=\/|$)/, "") || "/";
+  const englishPath = normalizedPath;
+  const chinesePath = normalizedPath === "/" ? "/zh" : `/zh${normalizedPath}`;
 
   useEffect(() => {
     setOpen(false);
@@ -75,7 +78,7 @@ export default function SiteNav({ lang = "en" }: Props) {
   }, [pathname]);
 
   const isActive = (href: string) =>
-    href === "/" ? pathname === "/" || pathname === "/zh" : pathname.startsWith(href);
+    href === "/" ? normalizedPath === "/" : normalizedPath.startsWith(href);
 
   const simple = (label: string, href: string, subs?: { id: number; name: string }[]) => (
     <li className="relative group" key={label}>
@@ -93,7 +96,7 @@ export default function SiteNav({ lang = "en" }: Props) {
             <li key={sub.id}>
               <Link
                 className="block border-b border-[#f1f1f1] px-4 py-[10px] text-[13px] text-[#555] hover:bg-[#f8f8f8] hover:text-[#c8102e]"
-                href={`${lang === "zh" ? "/zh" : ""}/${navHref(label)}?id=${sub.id}`}
+                href={`${lang === "zh" ? "/zh" : ""}${href}?id=${sub.id}`}
               >
                 {sub.name}
               </Link>
@@ -173,14 +176,14 @@ export default function SiteNav({ lang = "en" }: Props) {
           <div className="hidden items-center gap-3 lg:flex">
             <Link
               className={`px-2 text-[12px] font-bold ${lang === "en" ? "text-white" : "text-white/60"}`}
-              href={pathname.replace(/^\/zh/, "") || "/"}
+               href={englishPath}
             >
               EN
             </Link>
             <span className="text-white/40">|</span>
             <Link
               className={`px-2 text-[12px] font-bold ${lang === "zh" ? "text-white" : "text-white/60"}`}
-              href={`/zh${pathname === "/" ? "" : pathname}`}
+               href={chinesePath}
             >
               中文
             </Link>
@@ -219,59 +222,56 @@ export default function SiteNav({ lang = "en" }: Props) {
               { label: lang === "zh" ? "服务中心" : "Service", href: `${lang === "zh" ? "/zh" : ""}/service` },
               { label: lang === "zh" ? "经典案例" : "Cases", href: `${lang === "zh" ? "/zh" : ""}/cases` },
               { label: lang === "zh" ? "联系我们" : "Contact", href: `${lang === "zh" ? "/zh" : ""}/contact` },
-            ].map((item) => (
-              <li key={item.label}>
-                <Link
-                  className="block border-b border-white/10 py-[11px] text-[14px] font-bold text-white"
-                  href={item.href}
-                  onClick={() => setExpanded(item.label)}
-                >
-                  {item.label}
-                </Link>
-                {item.label === (lang === "zh" ? "产品中心" : "Products") && expanded === item.label && (
-                  <ul className="pb-2 pl-3">
-                    {categories.map((c) => (
-                      <li key={c.sourceId}>
-                        <Link
-                          className="block py-[7px] text-[12px] text-white/85"
-                          href={`${lang === "zh" ? "/zh" : ""}/products/${c.sourceId}`}
-                        >
-                          · {c.name}
+            ].map((item) => {
+              const isProducts = item.label === (lang === "zh" ? "产品中心" : "Products");
+              return (
+                <li key={item.label}>
+                  {isProducts ? (
+                    <button
+                      aria-expanded={expanded === item.label}
+                      className="flex w-full items-center justify-between border-b border-white/10 py-[11px] text-left text-[14px] font-bold text-white"
+                      onClick={() => setExpanded((value) => (value === item.label ? "" : item.label))}
+                      type="button"
+                    >
+                      {item.label}
+                      <span className={`text-[10px] transition-transform ${expanded === item.label ? "rotate-180" : ""}`}>▼</span>
+                    </button>
+                  ) : (
+                    <Link className="block border-b border-white/10 py-[11px] text-[14px] font-bold text-white" href={item.href}>
+                      {item.label}
+                    </Link>
+                  )}
+                  {isProducts && expanded === item.label && (
+                    <ul className="border-b border-white/10 bg-black/10 px-3 py-2">
+                      <li>
+                        <Link className="block py-2 text-[12px] font-bold text-white" href={item.href}>
+                          {lang === "zh" ? "查看全部产品" : "View all products"} →
                         </Link>
                       </li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            ))}
+                      {categories.map((c) => (
+                        <li key={c.sourceId}>
+                          <Link
+                            className="block border-t border-white/5 py-[8px] text-[12px] text-white/85"
+                            href={`${lang === "zh" ? "/zh" : ""}/products/${c.sourceId}`}
+                          >
+                            · {c.name} <span className="text-white/50">({productCount(c)})</span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
             <li className="flex items-center gap-4 py-3 text-[13px] font-bold text-white">
-              <Link href={pathname.replace(/^\/zh/, "") || "/"}>EN</Link>
-              <Link href={`/zh${pathname === "/" ? "" : pathname}`}>中文</Link>
+              <Link href={englishPath}>EN</Link>
+              <Link href={chinesePath}>中文</Link>
             </li>
           </ul>
         </div>
       )}
     </nav>
   );
-}
-
-function navHref(label: string): string {
-  switch (label) {
-    case "About Us":
-      return "about";
-    case "Download":
-      return "downloads";
-    case "Products Lines":
-      return "product-lines";
-    case "Honor":
-      return "honor";
-    case "Service Center":
-      return "service";
-    case "Classic Cases":
-      return "cases";
-    default:
-      return "about";
-  }
 }
 
 export { NEWS_TABS };
