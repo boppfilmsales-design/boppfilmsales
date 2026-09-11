@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+﻿import { sql } from "drizzle-orm";
 import seedRaw from "@/data/news-seed.json";
 import { db } from "@/db";
 import { adminUsers, newsCategories, newsPosts } from "@/db/schema";
@@ -137,8 +137,6 @@ async function seedAdmin() {
   });
 }
 
-let ready: Promise<void> | null = null;
-
 async function init() {
   await ensureSchema();
   await seedCategories();
@@ -146,16 +144,19 @@ async function init() {
   await seedAdmin();
 }
 
-/**
- * Makes sure the mirrored news tables exist and hold the content scraped from
- * the legacy www.apigcl.com/news.php site. Idempotent and cached per process.
- */
+let readyPromise: Promise<void> | null = null;
+let readyStartedAt = 0;
+const STALE_MS = 8000;
+
 export function ensureSeedData(): Promise<void> {
-  if (!ready) {
-    ready = init().catch((error) => {
-      ready = null;
+  const now = Date.now();
+  if (!readyPromise || now - readyStartedAt > STALE_MS) {
+    readyStartedAt = now;
+    readyPromise = init().catch((error) => {
+      readyPromise = null;
       console.error("[seed] failed", error);
+      throw error;
     });
   }
-  return ready;
+  return readyPromise;
 }

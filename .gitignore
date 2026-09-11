@@ -35,3 +35,4 @@ yarn-error.log*
 
 # drizzle local artefacts
 /drizzle/meta
+.open-next/

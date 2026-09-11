@@ -13,7 +13,8 @@ export async function GET(request: Request) {
   const perPage = Math.min(50, Math.max(1, Number.parseInt(url.searchParams.get("perPage") ?? "12", 10) || 12));
   const keyword = (url.searchParams.get("q") ?? "").trim();
 
-  const [category, categories] = await Promise.all([resolveCategory(categoryParam), getCategories()]);
+    const category = await resolveCategory(categoryParam);
+  const categories = await getCategories();
   const result = await listPosts({
     categoryId: keyword ? undefined : category?.id,
     page,

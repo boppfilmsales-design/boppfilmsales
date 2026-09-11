@@ -31,10 +31,8 @@ export default async function NewsPage({ searchParams }: { searchParams: SearchP
   const active = await resolveCategory(requested);
   const page = Number.parseInt(sp.p ?? sp.page ?? "1", 10) || 1;
 
-  const [result, counts] = await Promise.all([
-    listPosts({ categoryId: active?.id, page, perPage: PER_PAGE }),
-    getCategoryCounts(),
-  ]);
+  const result = await listPosts({ categoryId: active?.id, page, perPage: PER_PAGE });
+  const counts = await getCategoryCounts();
 
   const current = Math.min(Math.max(1, page), result.pages);
 
