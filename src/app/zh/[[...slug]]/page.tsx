@@ -9,6 +9,7 @@ import {
   ProductDetail,
   ProductsIndex,
 } from "@/components/pages/Sections";
+import HomeContent from "@/components/pages/HomeContent";
 import { findProduct, getCategory, SITE } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
@@ -46,7 +47,7 @@ export default async function ZhPage({
   let content: React.ReactNode;
 
   if (!first) {
-    content = <ProductsIndex lang="zh" />;
+    content = <HomeContent lang="zh" />;
   } else if (first === "products" && second && third) {
     const found = findProduct(second, third);
     if (!found) notFound();

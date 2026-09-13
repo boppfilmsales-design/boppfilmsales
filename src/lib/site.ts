@@ -268,6 +268,38 @@ export function contentImages(content: SiteContent | undefined): string[] {
   return items.images ?? [];
 }
 
+/** Chinese display names for the 18 product families (mirrors apigcl.com/ch). */
+export const CATEGORY_ZH: Record<number, string> = {
+  34: "BOPET薄膜（聚酯薄膜）",
+  48: "BOPP薄膜（聚丙烯薄膜）",
+  57: "BOPP封箱胶带母卷",
+  58: "BOPP/BOPET预涂膜",
+  59: "POF收缩膜（聚烯烃）",
+  60: "BOPS窗口信封膜",
+  61: "CPP薄膜",
+  62: "PE、PVC薄膜",
+  64: "复印纸、相纸",
+  65: "铝箔及钢材",
+  67: "不干胶标签及条码碳带",
+  68: "自粘撕裂带",
+  69: "撕裂扣及捆扎带",
+  70: "BOPS片材",
+  152: "BOPA薄膜",
+  178: "薄膜设备生产线",
+  184: "安装与维护工程师",
+  200: "电流互感器",
+};
+
+export function categoryNameZh(sourceId: number | string): string | undefined {
+  return CATEGORY_ZH[Number(sourceId)];
+}
+
+/** Chinese company-profile intro used on the Chinese homepage (source sid=13). */
+export function homeAboutZhHtml(): string {
+  const content = getContent("about", 13);
+  return contentBody(content, "zh") || "";
+}
+
 export function stripHtml(value: string, max = 220): string {
   const text = value
     .replace(/<br\s*\/?>/gi, " ")

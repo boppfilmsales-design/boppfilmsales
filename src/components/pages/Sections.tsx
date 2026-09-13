@@ -577,14 +577,15 @@ export function ContentColumnPage({
   );
 }
 
-export function AllPdfsSection() {
+export function AllPdfsSection({ lang = "en" }: { lang?: "en" | "zh" }) {
   const pdfs = allPdfs();
   if (pdfs.length === 0) return null;
+  const headingBase = lang === "zh" ? "技术资料库" : "Technical Library";
   return (
     <section className="bg-[#fafafa] py-14">
       <div className="mx-auto w-full max-w-[1560px] px-4">
         <h2 className="text-center text-[26px] font-black text-[#22262e]">
-          Technical Library <span className="text-[#c8102e]">({pdfs.length} PDF)</span>
+          {headingBase} <span className="text-[#c8102e]">({pdfs.length} PDF)</span>
         </h2>
         <i className="mx-auto mt-3 block h-[5px] w-[90px] bg-[#c8102e]" />
         <div className="mt-8 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
