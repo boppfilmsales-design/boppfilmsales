@@ -11,7 +11,7 @@ import {
 } from "@/components/pages/Sections";
 import { findProduct, getCategory, SITE } from "@/lib/site";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 type Params = Promise<{ slug?: string[] }>;
 
@@ -59,7 +59,7 @@ export default async function ZhPage({
     content = <DownloadsPage lang="zh" />;
   } else if (["about", "honor", "service", "cases", "product-lines"].includes(first)) {
     const kind = first === "product-lines" ? "lines" : (first as "about" | "honor" | "service" | "cases");
-    const id = Number(query.id ?? second);
+    const id = Number(query.id ?? query.c_id ?? second);
     content = (
       <ContentColumnPage kind={kind} lang="zh" sourceId={Number.isFinite(id) && id > 0 ? id : undefined} />
     );

@@ -9,7 +9,10 @@ const nextConfig: NextConfig = {
   },
 };
 
-if (process.env.NEXT_PHASE !== "phase-production-build") {
+// Initialise OpenNext Cloudflare bindings for local development only.
+// This must never run during `next build`, otherwise the dev-binding
+// initialisation can hang the production build.
+if (process.env.NODE_ENV === "development") {
   import("@opennextjs/cloudflare").then(({ initOpenNextCloudflareForDev }) => {
     initOpenNextCloudflareForDev();
   });

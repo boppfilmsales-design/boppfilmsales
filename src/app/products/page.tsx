@@ -18,7 +18,7 @@ export default function ProductsPage() {
       <SiteHeader active="Products" />
       <ProductsIndex />
       <section className="py-14">
-        <div className="mx-auto w-full max-w-[1400px] px-4 text-center">
+        <div className="mx-auto w-full max-w-[1560px] px-4 text-center">
           <h2 className="text-[26px] font-black text-[#22262e]">
             {productCount()} products · {allPdfs().length} PDF data sheets
           </h2>

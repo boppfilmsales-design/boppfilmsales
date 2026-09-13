@@ -1,7 +1,7 @@
-import { getCategories, allPdfs, productCount, SITE } from "@/lib/site";
+import { getCategories, allPdfs, productCount, SITE, categoryProductNames, featuredProducts, catalogueImages, productImageUrl } from "@/lib/site";
 import { getLatestPosts } from "@/lib/news";
 
-export { SITE, getCategories, allPdfs, productCount };
+export { SITE, getCategories, allPdfs, productCount, categoryProductNames, featuredProducts, catalogueImages, productImageUrl };
 
 /** Home page news list that never throws when the DB is still initialising. */
 export async function getLatestPostsSafe(limit = 6) {

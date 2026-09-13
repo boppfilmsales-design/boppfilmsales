@@ -44,7 +44,7 @@ export type DownloadRow = {
   file?: string;
 };
 
-export type HonorItem = { image: string; title: string };
+export type HonorItem = { image: string; title: string; titleZh?: string };
 
 export type ContentEntry = {
   kind: string;
@@ -122,6 +122,51 @@ export function productCount(category?: SiteCategory): number {
   return products.reduce((sum, c) => sum + productCount(c), 0);
 }
 
+/** Real product titles belonging to a category (used for family cards). */
+export function categoryProductNames(category: SiteCategory, limit = 3): string[] {
+  const names: string[] = [];
+  for (const sub of category.subs) {
+    for (const item of sub.items) {
+      const title = (item.title || "").trim();
+      if (title) names.push(title);
+      if (names.length >= limit) return names;
+    }
+  }
+  return names;
+}
+
+/** One representative product per family that actually has a photo. */
+export function featuredProducts(limit = 10): { category: SiteCategory; product: SiteProduct }[] {
+  const out: { category: SiteCategory; product: SiteProduct }[] = [];
+  for (const category of products) {
+    for (const sub of category.subs) {
+      const withImage = sub.items.find((p) => (p.gallery ?? []).length > 0);
+      if (withImage) {
+        out.push({ category, product: withImage });
+        break;
+      }
+    }
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+/** All product photos across the catalogue (used for the factory gallery). */
+export function catalogueImages(limit = 12): { src: string; title: string }[] {
+  const out: { src: string; title: string }[] = [];
+  for (const category of products) {
+    for (const sub of category.subs) {
+      for (const item of sub.items) {
+        for (const img of item.gallery ?? []) {
+          out.push({ src: productImageUrl(img), title: item.title || category.name });
+          if (out.length >= limit) return out;
+        }
+      }
+    }
+  }
+  return out;
+}
+
 export function getContents(kind: SiteContent["kind"]): SiteContent[] {
   return contents.filter((c) => c.kind === kind);
 }
@@ -172,7 +217,13 @@ export function allPdfs(): { label: string; file: string; product: string }[] {
 export function honorItems(): HonorItem[] {
   const out: HonorItem[] = [];
   for (const c of getContents("honor")) {
-    if (Array.isArray(c.items)) out.push(...(c.items as HonorItem[]).filter((i) => i && i.image));
+    if (Array.isArray(c.items)) {
+      out.push(
+        ...(c.items as Array<{ image?: string; title?: string; titleZh?: string }>)
+          .filter((i) => i && i.image)
+          .map((i) => ({ image: i.image as string, title: i.title ?? "", titleZh: i.titleZh })),
+      );
+    }
   }
   return out;
 }
@@ -180,7 +231,9 @@ export function honorItems(): HonorItem[] {
 export function honorItemsByColumn(sourceId: number): HonorItem[] {
   const c = getContent("honor", sourceId);
   if (!c || !Array.isArray(c.items)) return [];
-  return (c.items as HonorItem[]).filter((i) => i && i.image);
+  return (c.items as Array<{ image?: string; title?: string; titleZh?: string }>)
+    .filter((i) => i && i.image)
+    .map((i) => ({ image: i.image as string, title: i.title ?? "", titleZh: i.titleZh }));
 }
 
 export function contentEntries(

@@ -4,19 +4,20 @@ import SiteHeader from "@/components/SiteHeader";
 import { ContentColumnPage } from "@/components/pages/Sections";
 import { getContents } from "@/lib/site";
 
-export const dynamic = "auto";
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Classic Cases - To Buyers, To Markets, To Ourselves",
   description: "Development cases of Asia Pacific Industry Group: to buyers, to markets and to ourselves.",
 };
 
-export default async function Page({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
-  const { id } = await searchParams;
+export default async function Page({ searchParams }: { searchParams: Promise<{ id?: string; c_id?: string }> }) {
+  const { id, c_id } = await searchParams;
+  const sid = id ?? c_id;
   return (
     <div className="min-h-screen bg-white">
       <SiteHeader active="Classic Cases" />
-      <ContentColumnPage kind="cases" sourceId={id ? Number(id) : undefined} />
+      <ContentColumnPage kind="cases" sourceId={sid ? Number(sid) : undefined} />
       <SiteFooter />
     </div>
   );

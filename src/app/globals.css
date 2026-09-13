@@ -1,4 +1,10 @@
-@import "tailwindcss";
+@import "tailwindcss" source(none);
+
+/* Only scan application source files. The project's public/ folder contains
+   large binary assets (PDF datasheets, images) which Tailwind would otherwise
+   scan and mis-interpret as utility class names, producing invalid CSS that
+   breaks the production build. */
+@source "../**/*.{ts,tsx,js,jsx,mdx}";
 
 :root {
   --brand: #c8102e;
@@ -30,14 +36,25 @@ body {
   box-sizing: border-box;
 }
 
+/* Section entrance animation. Modern browsers get a scroll-driven reveal
+   (no JavaScript required); older browsers fall back to a simple load-in. */
 @media (prefers-reduced-motion: no-preference) {
-  main, section {
-    animation: section-in 0.55s ease-out both;
+  @supports (animation-timeline: view()) {
+    main > section {
+      animation: section-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 32%;
+    }
+  }
+  @supports not (animation-timeline: view()) {
+    main > section {
+      animation: section-in 0.55s ease-out both;
+    }
   }
 }
 
 @keyframes section-in {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(26px); }
   to { opacity: 1; transform: translateY(0); }
 }
 

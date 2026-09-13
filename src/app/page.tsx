@@ -3,7 +3,7 @@ import Link from "next/link";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { AllPdfsSection } from "@/components/pages/Sections";
-import { SITE, allPdfs, getCategories, getLatestPostsSafe, productCount } from "@/lib/home-data";
+import { SITE, allPdfs, getCategories, getLatestPostsSafe, productCount, categoryProductNames, featuredProducts, catalogueImages, productImageUrl } from "@/lib/home-data";
 
 export const metadata: Metadata = {
   title: `${SITE.name} - 4.5Mic BOPET film, BOPP film, BOPP tape, thermal laminating film`,
@@ -17,6 +17,8 @@ export default async function HomePage() {
   const categories = getCategories();
   const pdfs = allPdfs();
   const news = await getLatestPostsSafe(6);
+  const featured = featuredProducts(10);
+  const gallery = catalogueImages(8);
 
   return (
     <div className="min-h-screen bg-white">
@@ -26,7 +28,7 @@ export default async function HomePage() {
       <section className="relative isolate overflow-hidden bg-[#101722] text-white">
         <div className="pointer-events-none absolute -left-40 top-0 h-[520px] w-[520px] rounded-full bg-[#c8102e]/20 blur-[130px]" />
         <div className="pointer-events-none absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(255,255,255,.07)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.07)_1px,transparent_1px)] [background-size:54px_54px]" />
-        <div className="relative mx-auto grid min-h-[680px] w-full max-w-[1400px] items-center gap-14 px-4 py-20 lg:grid-cols-[1.08fr_.92fr] lg:py-24">
+        <div className="relative mx-auto grid min-h-[680px] w-full max-w-[1560px] items-center gap-14 px-4 py-20 lg:grid-cols-[1.08fr_.92fr] lg:py-24">
           <div>
             <div className="inline-flex items-center gap-3 rounded-full border border-white/15 bg-white/[0.06] px-4 py-2 text-[11px] font-bold uppercase tracking-[0.24em] text-white/70 backdrop-blur">
               <span className="h-2 w-2 rounded-full bg-[#e31b3d] shadow-[0_0_16px_#e31b3d]" />
@@ -82,9 +84,48 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* about us intro — mirrors the legacy "ABOUT US" block */}
+      <section className="border-y border-[#ececec] bg-[#f7f8fa] py-20">
+        <div className="mx-auto grid w-full max-w-[1560px] items-center gap-14 px-4 lg:grid-cols-[1.05fr_.95fr]">
+          <div>
+            <p className="text-[11px] font-black uppercase tracking-[0.3em] text-[#c8102e]">About us</p>
+            <h2 className="mt-4 text-[30px] font-black leading-[1.12] tracking-[-0.02em] text-[#101722] sm:text-[40px]">
+              Asia Pacific&apos;s wrapping film packs the world.
+            </h2>
+            <p className="mt-6 text-[15px] leading-[30px] text-[#5b6472]">
+              {SITE.name} is a large multinational group integrating production, research &amp; development and sales.
+              In today&apos;s global market economy the group competes fully on product quality, price and service,
+              takes the market as its guide, and commits to export-oriented growth.
+            </p>
+            <p className="mt-4 text-[15px] leading-[30px] text-[#5b6472]">
+              Relying on mainland China&apos;s land and labour resources and the advantages of the government&apos;s
+              opening-up policy, the group vigorously introduces modern production lines, pursues economies of scale,
+              increases investment in research projects and encourages technical innovation — so it can promptly adapt
+              to global customers&apos; increasingly specialised, diversified and personalised requirements.
+            </p>
+            <div className="mt-9 flex flex-wrap gap-3">
+              <Link className="rounded-full bg-[#c8102e] px-6 py-3 text-[12px] font-black uppercase tracking-[0.16em] text-white shadow-[0_14px_34px_rgba(200,16,46,.28)] transition hover:-translate-y-0.5 hover:bg-[#e31b3d]" href="/about">
+                Company profile →
+              </Link>
+              <Link className="rounded-full border border-[#d6dae0] bg-white px-6 py-3 text-[12px] font-black uppercase tracking-[0.16em] text-[#101722] transition hover:border-[#c8102e] hover:text-[#c8102e]" href="/honor">
+                Honours &amp; certificates
+              </Link>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {gallery.slice(0, 4).map((g) => (
+              <figure className="group relative overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm" key={g.src}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img alt={g.title} className="aspect-[4/3] w-full object-cover transition duration-700 group-hover:scale-105" src={g.src} />
+              </figure>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* product families */}
       <section className="py-16">
-        <div className="mx-auto w-full max-w-[1400px] px-4">
+        <div className="mx-auto w-full max-w-[1560px] px-4">
           <div className="text-center">
             <h2 className="text-[28px] font-black text-[#22262e]">Main Product Families</h2>
             <i className="mx-auto mt-3 block h-[5px] w-[90px] bg-[#c8102e]" />
@@ -105,11 +146,50 @@ export default async function HomePage() {
                   </span>
                 </div>
                 <p className="mt-3 line-clamp-3 text-[13px] leading-[22px] text-[#777]">
-                  {category.subs
-                    .slice(0, 3)
-                    .map((s) => s.name)
-                    .join(" · ")}
+                  {categoryProductNames(category, 3).join(" · ")}
                 </p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* product & classification — featured highlights (mirrors the source section) */}
+      <section className="bg-[#101722] py-20 text-white">
+        <div className="mx-auto w-full max-w-[1560px] px-4">
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.3em] text-[#ff6b82]">Product &amp; classification</p>
+              <h2 className="mt-3 text-[28px] font-black tracking-[-0.02em] sm:text-[34px]">Featured products</h2>
+            </div>
+            <Link
+              className="rounded-full border border-white/25 px-6 py-3 text-[12px] font-black uppercase tracking-[0.16em] text-white transition hover:bg-white hover:text-slate-950"
+              href="/products"
+            >
+              All {productCount()} products →
+            </Link>
+          </div>
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
+            {featured.map(({ category, product }) => (
+              <Link
+                className="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] transition hover:-translate-y-1 hover:border-white/30"
+                href={`/products/${category.sourceId}/${product.sourceId}`}
+                key={`${category.sourceId}-${product.sourceId}`}
+              >
+                <div className="overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    alt={product.title}
+                    className="aspect-[4/3] w-full object-cover transition duration-700 group-hover:scale-110"
+                    src={productImageUrl(product.gallery[0])}
+                  />
+                </div>
+                <div className="p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/45">{category.name}</p>
+                  <p className="mt-2 line-clamp-2 text-[13px] font-bold leading-snug text-white group-hover:text-[#ff8fa1]">
+                    {product.title}
+                  </p>
+                </div>
               </Link>
             ))}
           </div>
@@ -120,7 +200,7 @@ export default async function HomePage() {
 
       {/* news */}
       <section className="py-16">
-        <div className="mx-auto w-full max-w-[1400px] px-4">
+        <div className="mx-auto w-full max-w-[1560px] px-4">
           <div className="text-center">
             <h2 className="text-[28px] font-black text-[#22262e]">News Center</h2>
             <i className="mx-auto mt-3 block h-[5px] w-[90px] bg-[#c8102e]" />
@@ -156,7 +236,7 @@ export default async function HomePage() {
 
       {/* contact blocks */}
       <section className="bg-[#f7f8fa] py-16">
-        <div className="mx-auto grid w-full max-w-[1400px] gap-6 px-4 md:grid-cols-3">
+        <div className="mx-auto grid w-full max-w-[1560px] gap-6 px-4 md:grid-cols-3">
           {[
             { t: "Company", l: [SITE.name, SITE.address] },
             { t: "Sales", l: [`Tel: ${SITE.tel}`, `Mobile: ${SITE.mobile}`, SITE.email] },

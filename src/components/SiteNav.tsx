@@ -109,7 +109,7 @@ export default function SiteNav({ lang = "en" }: Props) {
 
   return (
     <nav className="sticky top-0 z-50 bg-[#c8102e] shadow-md">
-      <div className="mx-auto w-full max-w-[1400px] px-3">
+      <div className="mx-auto w-full max-w-[1560px] px-3">
         <div className="flex items-center justify-between">
           {/* desktop menu */}
           <ul className="hidden flex-1 items-center lg:flex">

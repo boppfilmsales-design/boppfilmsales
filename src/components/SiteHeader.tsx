@@ -7,7 +7,7 @@ export default function SiteHeader({ active, lang = "en" }: { active?: string; l
     <header className="bg-white">
       {/* utility strip */}
       <div className="hidden border-b border-[#efefef] bg-[#fafafa] text-[12px] text-[#666] lg:block">
-        <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between px-4 py-[7px]">
+        <div className="mx-auto flex w-full max-w-[1560px] items-center justify-between px-4 py-[7px]">
           <div className="flex items-center gap-4">
             <span className="font-bold text-[#c8102e]">
               {lang === "zh" ? "欢迎光临" : "Welcome to our website"}
@@ -32,7 +32,7 @@ export default function SiteHeader({ active, lang = "en" }: { active?: string; l
       </div>
 
       {/* brand bar */}
-      <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between gap-6 px-4 py-5">
+      <div className="mx-auto flex w-full max-w-[1560px] items-center justify-between gap-6 px-4 py-5">
         <Link className="flex items-center gap-3" href={lang === "zh" ? "/zh" : "/"}>
           <span className="flex h-[52px] w-[52px] items-center justify-center bg-[#c8102e] text-[17px] font-black text-white">
             AP

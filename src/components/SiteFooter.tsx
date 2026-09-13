@@ -4,7 +4,7 @@ export default function SiteFooter() {
   return (
     <>
       <footer className="mt-16 bg-[#c8102e] py-10 text-white">
-        <div className="mx-auto grid w-full max-w-[1400px] gap-8 px-3 md:grid-cols-4">
+        <div className="mx-auto grid w-full max-w-[1560px] gap-8 px-3 md:grid-cols-4">
           <dl>
             <dt className="mb-[10px] text-[18px] font-bold">Link</dt>
             {[
@@ -65,7 +65,7 @@ export default function SiteFooter() {
         </div>
       </footer>
       <div className="bg-[#a30d25] text-[12px] leading-[55px] text-white">
-        <div className="mx-auto flex w-full max-w-[1400px] flex-wrap items-center justify-between gap-4 px-3">
+        <div className="mx-auto flex w-full max-w-[1560px] flex-wrap items-center justify-between gap-4 px-3">
           <ul className="flex flex-wrap items-center gap-1">
             {[
               { label: "Home", href: "/" },

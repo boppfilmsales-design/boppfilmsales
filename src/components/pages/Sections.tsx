@@ -10,10 +10,10 @@ import {
   getCategories,
   getContent,
   getContents,
-  honorItems,
   honorItemsByColumn,
   isValidFile,
   productCount,
+  productImageUrl,
   stripHtml,
   validProductPdfs,
   type SiteCategory,
@@ -34,7 +34,7 @@ export function PageHero({
   const home = lang === "zh" ? "/zh" : "/";
   return (
     <section className="relative overflow-hidden bg-[linear-gradient(115deg,#1b1f2a_0%,#2c3342_55%,#c8102e_140%)] py-16 text-white">
-      <div className="mx-auto w-full max-w-[1400px] px-4">
+      <div className="mx-auto w-full max-w-[1560px] px-4">
         <nav className="text-[12px] uppercase tracking-[2px] text-white/60">
           <Link className="hover:text-white" href={home}>
             {lang === "zh" ? "首页" : "Home"}
@@ -66,34 +66,49 @@ export function ProductsIndex({ lang = "en" }: { lang?: "en" | "zh" }) {
         title={lang === "zh" ? "产品中心" : "Product Center"}
       />
       <section className="py-14">
-        <div className="mx-auto w-full max-w-[1400px] px-4">
+        <div className="mx-auto w-full max-w-[1560px] px-4">
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {categories.map((category) => (
+            {categories.map((category) => {
+              const lead = category.subs.flatMap((sub) => sub.items).find((p) => (p.gallery ?? []).length > 0);
+              return (
               <Link
-                className="group border border-[#e8e8e8] bg-white p-6 transition-all hover:-translate-y-[3px] hover:border-[#c8102e] hover:shadow-xl"
+                className="group flex flex-col overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white transition-all hover:-translate-y-1 hover:border-[#c8102e] hover:shadow-2xl"
                 href={`${base}/products/${category.sourceId}`}
                 key={category.sourceId}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <h2 className="text-[16px] font-bold leading-snug text-[#22262e] group-hover:text-[#c8102e]">
-                    {category.name}
-                  </h2>
-                  <span className="shrink-0 bg-[#f4f4f4] px-2 py-[2px] text-[11px] font-bold text-[#888]">
-                    {productCount(category)}
+                {lead ? (
+                  <div className="overflow-hidden bg-[#f4f5f7]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      alt={category.name}
+                      className="aspect-[16/9] w-full object-cover transition duration-700 group-hover:scale-105"
+                      src={productImageUrl(lead.gallery[0])}
+                    />
+                  </div>
+                ) : null}
+                <div className="flex flex-1 flex-col p-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <h2 className="text-[16px] font-bold leading-snug text-[#22262e] group-hover:text-[#c8102e]">
+                      {category.name}
+                    </h2>
+                    <span className="shrink-0 rounded-full bg-[#f4f4f4] px-2 py-[2px] text-[11px] font-bold text-[#888]">
+                      {productCount(category)}
+                    </span>
+                  </div>
+                  <ul className="mt-4 space-y-[6px]">
+                    {category.subs.flatMap((sub) => sub.items).slice(0, 4).map((product) => (
+                      <li className="truncate text-[13px] text-[#666]" key={product.sourceId}>
+                        · {product.title}
+                      </li>
+                    ))}
+                  </ul>
+                  <span className="mt-auto pt-5 inline-block text-[12px] font-bold uppercase tracking-[1px] text-[#c8102e]">
+                    {lang === "zh" ? "查看系列" : "Explore range"} →
                   </span>
                 </div>
-                <ul className="mt-4 space-y-[6px]">
-                  {category.subs.flatMap((sub) => sub.items).slice(0, 4).map((product) => (
-                    <li className="truncate text-[13px] text-[#666]" key={product.sourceId}>
-                      · {product.title}
-                    </li>
-                  ))}
-                </ul>
-                <span className="mt-5 inline-block text-[12px] font-bold uppercase tracking-[1px] text-[#c8102e]">
-                  {lang === "zh" ? "查看系列" : "Explore range"} →
-                </span>
               </Link>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -119,7 +134,7 @@ export function ProductCategoryPage({
         title={category.name}
       />
       <section className="py-12">
-        <div className="mx-auto w-full max-w-[1400px] px-4">
+        <div className="mx-auto w-full max-w-[1560px] px-4">
           <div className="flex flex-wrap gap-2">
             {category.subs.map((sub) => (
               <span className="bg-[#f4f4f4] px-3 py-[7px] text-[12px] font-bold text-[#666]" key={sub.sourceId}>
@@ -190,7 +205,7 @@ export function ProductDetail({
         title={title}
       />
       <section className="py-12">
-        <div className="mx-auto grid w-full max-w-[1400px] gap-10 px-4 lg:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="mx-auto grid w-full max-w-[1560px] gap-10 px-4 lg:grid-cols-[minmax(0,1fr)_420px]">
           {/* gallery */}
           <div>
             <ProductGallery
@@ -331,7 +346,7 @@ export function DownloadsPage({ lang = "en" }: { lang?: "en" | "zh" }) {
         title={lang === "zh" ? "下载中心" : "Download Center"}
       />
       <section className="py-12">
-        <div className="mx-auto w-full max-w-[1400px] px-4 space-y-10">
+        <div className="mx-auto w-full max-w-[1560px] px-4 space-y-10">
           {/* Product technical PDFs */}
           {productPdfs.length > 0 && (
             <div className="border border-[#e8e8e8] bg-white">
@@ -438,9 +453,9 @@ export function ContentColumnPage({
         title={active ? active.name : titles[kind][lang]}
       />
       <section className="py-12">
-        <div className="mx-auto grid w-full max-w-[1400px] gap-8 px-4 lg:grid-cols-[250px_minmax(0,1fr)]">
-          <aside>
-            <ul className="border border-[#e8e8e8] bg-white">
+        <div className="mx-auto grid w-full max-w-[1560px] gap-8 px-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+          <aside className="lg:sticky lg:top-24 lg:self-start">
+            <ul className="overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white shadow-sm">
               {columns.map((column) => (
                 <li key={column.sourceId}>
                   <Link
@@ -458,23 +473,42 @@ export function ContentColumnPage({
             </ul>
           </aside>
 
-          <div className="border border-[#e8e8e8] bg-white p-6 md:p-8">
+          <div className="rounded-2xl border border-[#e8e8e8] bg-white p-6 shadow-sm md:p-10">
             {kind === "honor" ? (
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {(active ? honorItemsByColumn(active.sourceId) : honorItems()).map((item, index) => (
-                  <figure className="border border-[#eee] p-3" key={`${item.image}-${index}`}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img alt={item.title} className="h-[220px] w-full object-contain" src={item.image} />
-                    {item.title ? (
-                      <figcaption className="mt-3 text-center text-[12px] font-bold text-[#555]">
-                        {item.title}
-                      </figcaption>
-                    ) : null}
-                  </figure>
-                ))}
-                {(active ? honorItemsByColumn(active.sourceId) : honorItems()).length === 0 && (
-                  <p className="text-[13px] text-[#888]">No certificate images found in this column.</p>
-                )}
+              <div className="space-y-12">
+                {columns.map((col) => {
+                  const items = honorItemsByColumn(col.sourceId);
+                  if (!items.length) return null;
+                  const colTitle = lang === "zh" && col.titleZh ? String(col.titleZh) : col.name;
+                  return (
+                    <div key={col.sourceId}>
+                      <h3 className="mb-5 flex items-center gap-3 text-[18px] font-bold text-[#22262e]">
+                        <i className="block h-[18px] w-[5px] bg-[#c8102e]" />
+                        {colTitle}
+                      </h3>
+                      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                        {items.map((item, index) => (
+                          <figure
+                            className="border border-[#eee] bg-white p-3 transition hover:shadow-md"
+                            key={`${item.image}-${index}`}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              alt={item.title}
+                              className="h-[220px] w-full object-contain"
+                              src={item.image}
+                            />
+                            {item.title ? (
+                              <figcaption className="mt-3 text-center text-[12px] font-bold text-[#555]">
+                                {lang === "zh" && item.titleZh ? item.titleZh : item.title}
+                              </figcaption>
+                            ) : null}
+                          </figure>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ) : (active && (contentEntries(kind, active.sourceId).length > 0)) ? (
               <div className="space-y-8">
@@ -548,7 +582,7 @@ export function AllPdfsSection() {
   if (pdfs.length === 0) return null;
   return (
     <section className="bg-[#fafafa] py-14">
-      <div className="mx-auto w-full max-w-[1400px] px-4">
+      <div className="mx-auto w-full max-w-[1560px] px-4">
         <h2 className="text-center text-[26px] font-black text-[#22262e]">
           Technical Library <span className="text-[#c8102e]">({pdfs.length} PDF)</span>
         </h2>
