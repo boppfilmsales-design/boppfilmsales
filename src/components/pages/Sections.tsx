@@ -3,14 +3,19 @@ import ProductCardImage from "@/components/ProductCardImage";
 import ProductGallery from "@/components/ProductGallery";
 import {
   allDownloads,
+  allPdfs,
   contentBody,
+  contentEntries,
   contentImages,
   getCategories,
   getContent,
   getContents,
   honorItems,
+  honorItemsByColumn,
+  isValidFile,
   productCount,
   stripHtml,
+  validProductPdfs,
   type SiteCategory,
   type SiteProduct,
 } from "@/lib/site";
@@ -78,9 +83,9 @@ export function ProductsIndex({ lang = "en" }: { lang?: "en" | "zh" }) {
                   </span>
                 </div>
                 <ul className="mt-4 space-y-[6px]">
-                  {category.subs.slice(0, 4).map((sub) => (
-                    <li className="truncate text-[13px] text-[#666]" key={sub.sourceId}>
-                      · {sub.name}
+                  {category.subs.flatMap((sub) => sub.items).slice(0, 4).map((product) => (
+                    <li className="truncate text-[13px] text-[#666]" key={product.sourceId}>
+                      · {product.title}
                     </li>
                   ))}
                 </ul>
@@ -144,9 +149,12 @@ export function ProductCategoryPage({
                   </p>
                   <div className="mt-3 flex items-center justify-between border-t border-[#f0f0f0] pt-3 text-[11px] text-[#999]">
                     <span>{product.code || sub.name}</span>
-                    {product.pdfs?.length ? (
-                      <span className="font-bold text-[#c8102e]">PDF ×{product.pdfs.length}</span>
-                    ) : null}
+                    {(() => {
+                      const validPdfs = validProductPdfs(product);
+                      return validPdfs.length ? (
+                        <span className="font-bold text-[#c8102e]">PDF x{validPdfs.length}</span>
+                      ) : null;
+                    })()}
                   </div>
                 </div>
               </Link>
@@ -240,41 +248,44 @@ export function ProductDetail({
             </div>
 
             {/* prominent PDF download card */}
-            {product.pdfs && product.pdfs.length > 0 && (
-              <div className="border-2 border-[#c8102e] bg-[#fff7f8] p-6">
-                <h3 className="text-[15px] font-bold uppercase tracking-[1px] text-[#c8102e]">
-                  {lang === "zh" ? "技术参数下载" : "Technical Data Sheet"}
-                </h3>
-                <p className="mt-2 text-[12px] leading-[20px] text-[#777]">
-                  {lang === "zh"
-                    ? "点击即可下载 PDF 版技术参数 / 检测报告。"
-                    : "Click to download the PDF technical data sheet / test report."}
-                </p>
-                <div className="mt-4 space-y-3">
-                  {product.pdfs.map((pdf) => (
-                    <a
-                      className="flex items-center gap-3 border border-[#f0c9cf] bg-white px-4 py-3 transition-colors hover:border-[#c8102e] hover:bg-[#c8102e] hover:text-white"
-                      download
-                      href={pdf.file}
-                      key={pdf.file}
-                    >
-                      <span className="flex h-[38px] w-[34px] shrink-0 items-center justify-center bg-[#c8102e] text-[10px] font-black text-white">
-                        PDF
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[13px] font-bold">
-                          {pdf.label || pdf.file.split("/").pop()}
+            {(() => {
+              const validPdfs = validProductPdfs(product);
+              return validPdfs.length > 0 ? (
+                <div className="border-2 border-[#c8102e] bg-[#fff7f8] p-6">
+                  <h3 className="text-[15px] font-bold uppercase tracking-[1px] text-[#c8102e]">
+                    {lang === "zh" ? "技术参数下载" : "Technical Data Sheet"}
+                  </h3>
+                  <p className="mt-2 text-[12px] leading-[20px] text-[#777]">
+                    {lang === "zh"
+                      ? "点击即可下载 PDF 版技术参数 / 检测报告。"
+                      : "Click to download the PDF technical data sheet / test report."}
+                  </p>
+                  <div className="mt-4 space-y-3">
+                    {validPdfs.map((pdf) => (
+                      <a
+                        className="flex items-center gap-3 border border-[#f0c9cf] bg-white px-4 py-3 transition-colors hover:border-[#c8102e] hover:bg-[#c8102e] hover:text-white"
+                        download
+                        href={pdf.file}
+                        key={pdf.file}
+                      >
+                        <span className="flex h-[38px] w-[34px] shrink-0 items-center justify-center bg-[#c8102e] text-[10px] font-black text-white">
+                          PDF
                         </span>
-                        <span className="block text-[11px] opacity-70">
-                          {lang === "zh" ? "点击下载" : "Click to download"}
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[13px] font-bold">
+                            {pdf.label || pdf.file.split("/").pop()}
+                          </span>
+                          <span className="block text-[11px] opacity-70">
+                            {lang === "zh" ? "点击下载" : "Click to download"}
+                          </span>
                         </span>
-                      </span>
-                      <span className="text-[16px]">↓</span>
-                    </a>
-                  ))}
+                        <span className="text-[16px]">↓</span>
+                      </a>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              ) : null;
+            })()}
 
             <div className="border border-[#e8e8e8] bg-white p-6">
               <h3 className="text-[14px] font-bold text-[#22262e]">
@@ -306,6 +317,7 @@ export function ProductDetail({
 
 export function DownloadsPage({ lang = "en" }: { lang?: "en" | "zh" }) {
   const groups = allDownloads();
+  const productPdfs = allPdfs();
   return (
     <>
       <PageHero
@@ -320,6 +332,35 @@ export function DownloadsPage({ lang = "en" }: { lang?: "en" | "zh" }) {
       />
       <section className="py-12">
         <div className="mx-auto w-full max-w-[1400px] px-4 space-y-10">
+          {/* Product technical PDFs */}
+          {productPdfs.length > 0 && (
+            <div className="border border-[#e8e8e8] bg-white">
+              <h2 className="border-b border-[#eee] bg-[#fafafa] px-6 py-4 text-[16px] font-bold text-[#22262e]">
+                {lang === "zh" ? "产品技术资料" : "Product Technical Data"}
+                <span className="ml-2 text-[12px] font-normal text-[#999]">{productPdfs.length} files</span>
+              </h2>
+              <ul className="divide-y divide-[#f2f2f2]">
+                {productPdfs.map((pdf, index) => (
+                  <li className="flex flex-wrap items-center gap-3 px-6 py-4" key={`${pdf.file}-${index}`}>
+                    <span className="flex h-[34px] w-[30px] items-center justify-center bg-[#c8102e] text-[9px] font-black text-white">
+                      PDF
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[13px] font-bold text-[#333]">{pdf.product}</span>
+                      <span className="block truncate text-[11px] text-[#999]">{pdf.label || "data sheet"}</span>
+                    </span>
+                    <a
+                      className="border border-[#c8102e] px-4 py-[7px] text-[12px] font-bold text-[#c8102e] hover:bg-[#c8102e] hover:text-white"
+                      download
+                      href={pdf.file}
+                    >
+                      {lang === "zh" ? "下载" : "Download"}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {groups.map((group) => (
             <div className="border border-[#e8e8e8] bg-white" key={group.column}>
               <h2 className="border-b border-[#eee] bg-[#fafafa] px-6 py-4 text-[16px] font-bold text-[#22262e]">
@@ -345,7 +386,7 @@ export function DownloadsPage({ lang = "en" }: { lang?: "en" | "zh" }) {
                           {[row.serial, row.date].filter(Boolean).join(" · ")}
                         </span>
                       </span>
-                      {row.file ? (
+                      {row.file && isValidFile(row.file) ? (
                         <a
                           className="border border-[#c8102e] px-4 py-[7px] text-[12px] font-bold text-[#c8102e] hover:bg-[#c8102e] hover:text-white"
                           download
@@ -420,7 +461,7 @@ export function ContentColumnPage({
           <div className="border border-[#e8e8e8] bg-white p-6 md:p-8">
             {kind === "honor" ? (
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {honorItems().map((item, index) => (
+                {(active ? honorItemsByColumn(active.sourceId) : honorItems()).map((item, index) => (
                   <figure className="border border-[#eee] p-3" key={`${item.image}-${index}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img alt={item.title} className="h-[220px] w-full object-contain" src={item.image} />
@@ -431,9 +472,48 @@ export function ContentColumnPage({
                     ) : null}
                   </figure>
                 ))}
-                {honorItems().length === 0 && (
+                {(active ? honorItemsByColumn(active.sourceId) : honorItems()).length === 0 && (
                   <p className="text-[13px] text-[#888]">No certificate images found in this column.</p>
                 )}
+              </div>
+            ) : (active && (contentEntries(kind, active.sourceId).length > 0)) ? (
+              <div className="space-y-8">
+                {contentEntries(kind, active.sourceId).map((entry, idx) => (
+                  <div key={`${entry.sourceId || entry.title}-${idx}`} className="border-b border-[#f0f0f0] pb-8 last:border-0">
+                    <h3 className="text-[18px] font-bold text-[#22262e]">{entry.title}</h3>
+                    {entry.date ? <p className="mt-1 text-[12px] text-[#999]">{entry.date}</p> : null}
+                    {entry.isLink && entry.externalUrl ? (
+                      <a
+                        className="mt-3 inline-block border border-[#c8102e] px-4 py-2 text-[13px] font-bold text-[#c8102e] hover:bg-[#c8102e] hover:text-white"
+                        href={entry.externalUrl}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        {entry.title} →
+                      </a>
+                    ) : (
+                      <>
+                        {entry.images && entry.images.length > 0 && (
+                          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            {entry.images.slice(0, 12).map((img, i) => (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                alt=""
+                                className="h-[200px] w-full border border-[#eee] object-cover"
+                                key={`${img}-${i}`}
+                                src={img.startsWith("/uploads/content/") ? img : `/uploads/content/${img}`}
+                              />
+                            ))}
+                          </div>
+                        )}
+                        <div
+                          className="news-body mt-4 text-[14px] leading-[190%] text-[#3d3d3d]"
+                          dangerouslySetInnerHTML={{ __html: entry.bodyHtml || "<p>Content is being prepared.</p>" }}
+                        />
+                      </>
+                    )}
+                  </div>
+                ))}
               </div>
             ) : (
               <>
@@ -464,9 +544,7 @@ export function ContentColumnPage({
 }
 
 export function AllPdfsSection() {
-  const pdfs = getCategories().flatMap((c) =>
-    c.subs.flatMap((s) => s.items.flatMap((p) => p.pdfs.map((pdf) => ({ ...pdf, product: p.title })))),
-  );
+  const pdfs = allPdfs();
   if (pdfs.length === 0) return null;
   return (
     <section className="bg-[#fafafa] py-14">

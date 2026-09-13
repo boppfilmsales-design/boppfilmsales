@@ -1,4 +1,5 @@
 import siteSeed from "@/data/site-seed.json";
+import validFilesList from "@/data/valid-files.json";
 
 export type PdfRef = { file: string; label: string };
 
@@ -44,6 +45,21 @@ export type DownloadRow = {
 };
 
 export type HonorItem = { image: string; title: string };
+
+export type ContentEntry = {
+  kind: string;
+  columnId: number;
+  sourceId: number;
+  title: string;
+  date: string;
+  bodyHtml: string;
+  images: string[];
+  externalUrl?: string;
+  isLink?: boolean;
+  name?: string;
+  bodyHtmlZh?: string;
+  titleZh?: string;
+};
 
 const products = (siteSeed as { products: SiteCategory[] }).products ?? [];
 const contents = ((siteSeed as { contents: SiteContent[] }).contents ?? []) as SiteContent[];
@@ -121,16 +137,33 @@ export function allDownloads(): { column: string; rows: DownloadRow[] }[] {
   }));
 }
 
+// ---- Valid PDF / file validation ----
+const VALID_FILES = new Set<string>(validFilesList as string[]);
+
+export function isValidFile(file: string): boolean {
+  if (!file) return false;
+  const name = file.split("/").pop() || file;
+  return VALID_FILES.has(name);
+}
+
+export function validProductPdfs(
+  product: SiteProduct,
+): { label: string; file: string }[] {
+  return (product.pdfs ?? []).filter((p) => isValidFile(p.file));
+}
+
 export function allPdfs(): { label: string; file: string; product: string }[] {
   const out: { label: string; file: string; product: string }[] = [];
   for (const { category, product } of allProducts()) {
-    for (const pdf of product.pdfs ?? []) {
-      if (pdf.file) out.push({ label: pdf.label, file: pdf.file, product: product.title || category.name });
+    for (const pdf of validProductPdfs(product)) {
+      out.push({ label: pdf.label, file: pdf.file, product: product.title || category.name });
     }
   }
   for (const group of allDownloads()) {
     for (const row of group.rows) {
-      if (row.file) out.push({ label: row.name, file: row.file, product: group.column });
+      if (row.file && isValidFile(row.file)) {
+        out.push({ label: row.name, file: row.file, product: group.column });
+      }
     }
   }
   return out;
@@ -142,6 +175,25 @@ export function honorItems(): HonorItem[] {
     if (Array.isArray(c.items)) out.push(...(c.items as HonorItem[]).filter((i) => i && i.image));
   }
   return out;
+}
+
+export function honorItemsByColumn(sourceId: number): HonorItem[] {
+  const c = getContent("honor", sourceId);
+  if (!c || !Array.isArray(c.items)) return [];
+  return (c.items as HonorItem[]).filter((i) => i && i.image);
+}
+
+export function contentEntries(
+  kind: SiteContent["kind"],
+  sourceId?: number,
+): ContentEntry[] {
+  const sections = getContents(kind);
+  const target = sourceId
+    ? sections.find((c) => c.sourceId === sourceId)
+    : sections[0];
+  if (!target) return [];
+  const entries = (target as Record<string, unknown>).entries;
+  return Array.isArray(entries) ? (entries as ContentEntry[]) : [];
 }
 
 export function contentBody(

@@ -143,13 +143,13 @@ export default function SiteNav({ lang = "en" }: Props) {
                         </span>
                       </Link>
                       <ul className="mt-[6px] max-h-[150px] overflow-hidden">
-                        {category.subs.slice(0, 4).map((sub) => (
-                          <li className="truncate" key={sub.sourceId}>
+                        {category.subs.flatMap((sub) => sub.items).slice(0, 4).map((product) => (
+                          <li className="truncate" key={product.sourceId}>
                             <Link
                               className="block py-[3px] text-[12px] text-[#666] hover:text-[#c8102e]"
-                              href={`${lang === "zh" ? "/zh" : ""}/products/${category.sourceId}`}
+                              href={`${lang === "zh" ? "/zh" : ""}/products/${category.sourceId}/${product.sourceId}`}
                             >
-                              {sub.name}
+                              {product.title}
                             </Link>
                           </li>
                         ))}

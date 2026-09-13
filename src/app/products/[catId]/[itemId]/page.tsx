@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { ProductDetail } from "@/components/pages/Sections";
-import { allProducts, findProduct, productImageUrl, stripHtml } from "@/lib/site";
+import { allProducts, findProduct, productImageUrl, stripHtml, validProductPdfs } from "@/lib/site";
 
 export const dynamic = "force-static";
 
@@ -57,7 +57,7 @@ export default async function Page({
     image: found.product.gallery.map((image) => `https://www.boppfilmsales.com${productImageUrl(image)}`),
     brand: { "@type": "Brand", name: "Asia Pacific Industry Group" },
     manufacturer: { "@type": "Organization", name: "Asia Pacific Industry Group Co., Limited" },
-    subjectOf: found.product.pdfs.map((pdf) => ({
+    subjectOf: validProductPdfs(found.product).map((pdf) => ({
       "@type": "DigitalDocument",
       name: pdf.label,
       encodingFormat: "application/pdf",
