@@ -11,6 +11,7 @@ import {
 } from "@/components/pages/Sections";
 import HomeContent from "@/components/pages/HomeContent";
 import { findProduct, getCategory, SITE } from "@/lib/site";
+import { getLatestPostsSafe } from "@/lib/home-data";
 
 export const dynamic = "force-dynamic";
 
@@ -65,10 +66,29 @@ export default async function ZhPage({
       <ContentColumnPage kind={kind} lang="zh" sourceId={Number.isFinite(id) && id > 0 ? id : undefined} />
     );
   } else if (first === "news") {
+    const posts = await getLatestPostsSafe(30);
     content = (
-      <div className="py-16 text-center text-[14px] text-[#666]">
-        中文新闻中心建设中，请先浏览
-        <a className="ml-1 text-[#c8102e] underline" href="/news">英文新闻中心</a>。
+      <div className="mx-auto w-full max-w-[1560px] px-4 py-14">
+        <h1 className="text-center text-[28px] font-black text-[#22262e]">新闻中心</h1>
+        <i className="mx-auto mt-3 block h-[5px] w-[90px] bg-[#c8102e]" />
+        <ul className="mx-auto mt-9 max-w-[980px] divide-y divide-[#eee] border border-[#eee]">
+          {posts.map((post) => (
+            <li className="flex flex-wrap items-start justify-between gap-3 p-5" key={post.id}>
+              <a
+                className="max-w-[700px] text-[14px] font-bold text-[#333] hover:text-[#c8102e]"
+                href={`/news/${post.slug}/${post.id}`}
+              >
+                {post.title}
+              </a>
+              <span className="text-[12px] text-[#999]">
+                {post.category} · {post.listDate}
+              </span>
+            </li>
+          ))}
+          {posts.length === 0 && (
+            <li className="p-6 text-center text-[13px] text-[#888]">新闻加载中…</li>
+          )}
+        </ul>
       </div>
     );
   } else if (first === "contact") {

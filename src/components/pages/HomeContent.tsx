@@ -9,6 +9,7 @@ import {
   catalogueImages,
   productImageUrl,
   categoryNameZh,
+  categoryProductNamesZh,
   homeAboutZhHtml,
 } from "@/lib/site";
 import { getLatestPostsSafe } from "@/lib/home-data";
@@ -236,7 +237,9 @@ export default async function HomeContent({ lang = "en" }: { lang?: "en" | "zh" 
                     </span>
                   </div>
                   <p className="mt-3 line-clamp-3 text-[13px] leading-[22px] text-[#777]">
-                    {categoryProductNames(category, 3).join(" · ")}
+                    {lang === "zh"
+                      ? categoryProductNamesZh(category, 3).join(" · ")
+                      : categoryProductNames(category, 3).join(" · ")}
                   </p>
                 </Link>
               );

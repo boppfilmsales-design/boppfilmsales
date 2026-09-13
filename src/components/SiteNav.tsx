@@ -12,53 +12,53 @@ const NEWS_TABS = [
 ];
 
 const ABOUT_SUBS = [
-  { id: 13, name: "About Us" },
-  { id: 55, name: "Main Products" },
-  { id: 16, name: "Honor" },
-  { id: 56, name: "Culture" },
-  { id: 169, name: "Branch Companies" },
-  { id: 171, name: "Factory & Warehouse" },
-  { id: 172, name: "Course" },
+  { id: 13, name: "About Us", nameZh: "企业简介" },
+  { id: 55, name: "Main Products", nameZh: "主营产品" },
+  { id: 16, name: "Honor", nameZh: "荣誉资质" },
+  { id: 56, name: "Culture", nameZh: "企业文化" },
+  { id: 169, name: "Branch Companies", nameZh: "子公司" },
+  { id: 171, name: "Factory & Warehouse", nameZh: "工厂和车间" },
+  { id: 172, name: "Course", nameZh: "奋斗历程" },
 ];
 
 const DOWNLOAD_SUBS = [
-  { id: 43, name: "Company's Notice" },
-  { id: 76, name: "Technology Data" },
-  { id: 157, name: "Certificate Download" },
-  { id: 158, name: "MSDS Download" },
+  { id: 43, name: "Company's Notice", nameZh: "公司公告" },
+  { id: 76, name: "Technology Data", nameZh: "技术资料下载" },
+  { id: 157, name: "Certificate Download", nameZh: "证书下载" },
+  { id: 158, name: "MSDS Download", nameZh: "MSDS下载" },
 ];
 
 const LINES_SUBS = [
-  { id: 45, name: "Packing Film Lines" },
-  { id: 142, name: "BOPP Film Lines" },
-  { id: 143, name: "BOPET Film Lines" },
-  { id: 144, name: "Tape Lines" },
-  { id: 149, name: "Thermal Lamination Lines" },
-  { id: 164, name: "Bruckner Lines (Germany)" },
-  { id: 165, name: "Mitsubishi Lines (Japan)" },
-  { id: 167, name: "Copy Paper Lines" },
-  { id: 173, name: "Silver Metallized Lines" },
-  { id: 174, name: "POF Film Lines" },
+  { id: 45, name: "Packing Film Lines", nameZh: "包装薄膜生产线" },
+  { id: 142, name: "BOPP Film Lines", nameZh: "BOPP薄膜生产线" },
+  { id: 143, name: "BOPET Film Lines", nameZh: "BOPET薄膜生产线" },
+  { id: 144, name: "Tape Lines", nameZh: "胶带生产线" },
+  { id: 149, name: "Thermal Lamination Lines", nameZh: "预涂膜生产线" },
+  { id: 164, name: "Bruckner Lines (Germany)", nameZh: "布鲁克纳生产线（德国）" },
+  { id: 165, name: "Mitsubishi Lines (Japan)", nameZh: "三菱生产线（日本）" },
+  { id: 167, name: "Copy Paper Lines", nameZh: "复印纸生产线" },
+  { id: 173, name: "Silver Metallized Lines", nameZh: "镀铝膜生产线" },
+  { id: 174, name: "POF Film Lines", nameZh: "POF薄膜生产线" },
 ];
 
 const HONOR_SUBS = [
-  { id: 17, name: "Certificate" },
-  { id: 50, name: "To Customer" },
-  { id: 51, name: "Certification Report" },
+  { id: 17, name: "Certificate", nameZh: "证书" },
+  { id: 50, name: "To Customer", nameZh: "致客户" },
+  { id: 51, name: "Certification Report", nameZh: "认证报告" },
 ];
 
 const SERVICE_SUBS = [
-  { id: 79, name: "Useful Links" },
-  { id: 141, name: "Company Announcement" },
-  { id: 148, name: "Useful Knowledge" },
-  { id: 199, name: "Vessel Shipping Lines" },
+  { id: 79, name: "Useful Links", nameZh: "常用链接" },
+  { id: 141, name: "Company Announcement", nameZh: "公司公告" },
+  { id: 148, name: "Useful Knowledge", nameZh: "实用知识" },
+  { id: 199, name: "Vessel Shipping Lines", nameZh: "船运航线" },
 ];
 
 const CASES_SUBS = [
-  { id: 54, name: "Development Cases" },
-  { id: 145, name: "To Buyers" },
-  { id: 146, name: "To Markets" },
-  { id: 147, name: "To Ourselves" },
+  { id: 54, name: "Development Cases", nameZh: "发展历程" },
+  { id: 145, name: "To Buyers", nameZh: "致客户" },
+  { id: 146, name: "To Markets", nameZh: "致市场" },
+  { id: 147, name: "To Ourselves", nameZh: "致自己" },
 ];
 
 type Props = { lang?: "en" | "zh" };
@@ -80,7 +80,7 @@ export default function SiteNav({ lang = "en" }: Props) {
   const isActive = (href: string) =>
     href === "/" ? normalizedPath === "/" : normalizedPath.startsWith(href);
 
-  const simple = (label: string, href: string, subs?: { id: number; name: string }[]) => (
+  const simple = (label: string, href: string, subs?: { id: number; name: string; nameZh?: string }[]) => (
     <li className="relative group" key={label}>
       <Link
         className={`flex items-center gap-1 px-4 text-[13px] font-bold leading-[46px] transition-colors xl:px-5 ${
@@ -98,7 +98,7 @@ export default function SiteNav({ lang = "en" }: Props) {
                 className="block border-b border-[#f1f1f1] px-4 py-[10px] text-[13px] text-[#555] hover:bg-[#f8f8f8] hover:text-[#c8102e]"
                 href={`${lang === "zh" ? "/zh" : ""}${href}?id=${sub.id}`}
               >
-                {sub.name}
+                {lang === "zh" && sub.nameZh ? sub.nameZh : sub.name}
               </Link>
             </li>
           ))}

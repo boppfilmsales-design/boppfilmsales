@@ -135,6 +135,19 @@ export function categoryProductNames(category: SiteCategory, limit = 3): string[
   return names;
 }
 
+/** Chinese counterpart of categoryProductNames (falls back to the English title). */
+export function categoryProductNamesZh(category: SiteCategory, limit = 3): string[] {
+  const names: string[] = [];
+  for (const sub of category.subs) {
+    for (const item of sub.items) {
+      const title = (item.titleZh || item.title || "").trim();
+      if (title) names.push(title);
+      if (names.length >= limit) return names;
+    }
+  }
+  return names;
+}
+
 /** One representative product per family that actually has a photo. */
 export function featuredProducts(limit = 10): { category: SiteCategory; product: SiteProduct }[] {
   const out: { category: SiteCategory; product: SiteProduct }[] = [];
