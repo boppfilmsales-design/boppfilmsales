@@ -4,7 +4,7 @@ import SiteHeader from "@/components/SiteHeader";
 import { ContentColumnPage } from "@/components/pages/Sections";
 import { getContents } from "@/lib/site";
 
-export const dynamic = "force-static";
+export const dynamic = "auto";
 
 export const metadata: Metadata = {
   title: "Honor & Certificates - Asia Pacific Industry Group",

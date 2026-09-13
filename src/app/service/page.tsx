@@ -4,7 +4,7 @@ import SiteHeader from "@/components/SiteHeader";
 import { ContentColumnPage } from "@/components/pages/Sections";
 import { getContents } from "@/lib/site";
 
-export const dynamic = "force-static";
+export const dynamic = "auto";
 
 export const metadata: Metadata = {
   title: "Service Center - Useful Links, Announcements, Shipping Lines",
