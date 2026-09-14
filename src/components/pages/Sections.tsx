@@ -141,44 +141,70 @@ export function ProductCategoryPage({
       />
       <section className="py-12">
         <div className="mx-auto w-full max-w-[1560px] px-4">
+          {/* Clickable sub-category chips */}
           <div className="flex flex-wrap gap-2">
             {category.subs.map((sub) => (
-              <span className="bg-[#f4f4f4] px-3 py-[7px] text-[12px] font-bold text-[#666]" key={sub.sourceId}>
+              <a
+                className="rounded-full bg-[#f4f4f4] px-4 py-[7px] text-[12px] font-bold text-[#666] transition-all hover:bg-[#c8102e] hover:text-white"
+                href={`#sub-${sub.sourceId}`}
+                key={sub.sourceId}
+              >
                 {sub.name} ({sub.items.length})
-              </span>
+              </a>
             ))}
           </div>
-          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {items.map(({ sub, product }) => (
-              <Link
-                className="group flex flex-col border border-[#e8e8e8] bg-white transition-all hover:-translate-y-[3px] hover:border-[#c8102e] hover:shadow-xl"
-                href={`${base}/products/${category.sourceId}/${product.sourceId}`}
-                key={`${sub.sourceId}-${product.sourceId}`}
-              >
-                <div className="h-[210px] overflow-hidden bg-[#f7f7f7]">
-                  <ProductCardImage
-                    image={product.gallery?.[0]}
-                    title={lang === "zh" && product.titleZh ? product.titleZh : product.title}
-                  />
+
+          {/* Products grouped by sub-category with anchored sections */}
+          <div className="mt-10 space-y-12">
+            {category.subs.map((sub) => (
+              <div id={`sub-${sub.sourceId}`} key={sub.sourceId} className="scroll-mt-32">
+                {/* Sub-category section header */}
+                <div className="mb-6 flex items-center gap-3 border-b border-[#e8e8e8] pb-4">
+                  <h2 className="text-[18px] font-bold text-[#22262e]">{sub.name}</h2>
+                  <span className="rounded-full bg-[#c8102e] px-2.5 py-[3px] text-[11px] font-bold text-white">
+                    {sub.items.length}
+                  </span>
                 </div>
-                <div className="flex flex-1 flex-col p-4">
-                  <h3 className="text-[14px] font-bold leading-snug text-[#22262e] group-hover:text-[#c8102e]">
-                    {lang === "zh" && product.titleZh ? product.titleZh : product.title}
-                  </h3>
-                  <p className="mt-2 line-clamp-2 text-[12px] leading-[20px] text-[#777]">
-                    {stripHtml(lang === "zh" && product.bodyHtmlZh ? product.bodyHtmlZh : product.bodyHtml, 90)}
-                  </p>
-                  <div className="mt-3 flex items-center justify-between border-t border-[#f0f0f0] pt-3 text-[11px] text-[#999]">
-                    <span>{product.code || sub.name}</span>
-                    {(() => {
-                      const validPdfs = validProductPdfs(product);
-                      return validPdfs.length ? (
-                        <span className="font-bold text-[#c8102e]">PDF x{validPdfs.length}</span>
-                      ) : null;
-                    })()}
-                  </div>
+                {/* Product cards in this sub-category */}
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {sub.items.map((product) => (
+                    <Link
+                      className="group flex flex-col border border-[#e8e8e8] bg-white transition-all hover:-translate-y-[3px] hover:border-[#c8102e] hover:shadow-xl"
+                      href={`${base}/products/${category.sourceId}/${product.sourceId}`}
+                      key={`${sub.sourceId}-${product.sourceId}`}
+                    >
+                      <div className="h-[210px] overflow-hidden bg-[#f7f7f7]">
+                        <ProductCardImage
+                          image={product.gallery?.[0]}
+                          title={lang === "zh" && product.titleZh ? product.titleZh : product.title}
+                        />
+                      </div>
+                      <div className="flex flex-1 flex-col p-4">
+                        <h3 className="text-[14px] font-bold leading-snug text-[#22262e] group-hover:text-[#c8102e]">
+                          {lang === "zh" && product.titleZh ? product.titleZh : product.title}
+                        </h3>
+                        <p className="mt-2 line-clamp-2 text-[12px] leading-[20px] text-[#777]">
+                          {stripHtml(lang === "zh" && product.bodyHtmlZh ? product.bodyHtmlZh : product.bodyHtml, 90)}
+                        </p>
+                        <div className="mt-3 flex items-center justify-between border-t border-[#f0f0f0] pt-3 text-[11px] text-[#999]">
+                          <a
+                            className="font-bold text-[#666] transition-colors hover:text-[#c8102e]"
+                            href={`#sub-${sub.sourceId}`}
+                          >
+                            {sub.name}
+                          </a>
+                          {(() => {
+                            const validPdfs = validProductPdfs(product);
+                            return validPdfs.length ? (
+                              <span className="font-bold text-[#c8102e]">PDF x{validPdfs.length}</span>
+                            ) : null;
+                          })()}
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         </div>
