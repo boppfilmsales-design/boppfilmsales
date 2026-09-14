@@ -17,6 +17,12 @@ export const dynamic = "force-dynamic";
 
 type Params = Promise<{ slug?: string[] }>;
 
+const NEWS_CAT_ZH: Record<string, string> = {
+  "Industry News": "行业新闻",
+  "Company News": "公司新闻",
+  "Employees Literary": "员工文苑",
+};
+
 const TITLES: Record<string, string> = {
   "": `${SITE.nameZh} - BOPP/BOPET 薄膜、胶带母卷、预涂膜生产厂家`,
   products: "产品中心 - 亚太工业集团有限公司",
@@ -81,7 +87,7 @@ export default async function ZhPage({
                 {post.title}
               </a>
               <span className="text-[12px] text-[#999]">
-                {post.category} · {post.listDate}
+                {NEWS_CAT_ZH[post.category] ?? post.category} · {post.listDate}
               </span>
             </li>
           ))}

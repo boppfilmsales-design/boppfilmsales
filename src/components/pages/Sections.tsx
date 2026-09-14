@@ -16,6 +16,9 @@ import {
   productImageUrl,
   stripHtml,
   validProductPdfs,
+  categoryNameZh,
+  categoryProductNamesZh,
+  contentNameZh,
   type SiteCategory,
   type SiteProduct,
 } from "@/lib/site";
@@ -70,6 +73,8 @@ export function ProductsIndex({ lang = "en" }: { lang?: "en" | "zh" }) {
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {categories.map((category) => {
               const lead = category.subs.flatMap((sub) => sub.items).find((p) => (p.gallery ?? []).length > 0);
+              const catName = lang === "zh" ? (categoryNameZh(category.sourceId) ?? category.name) : category.name;
+              const prodNames = lang === "zh" ? categoryProductNamesZh(category, 4) : category.subs.flatMap((sub) => sub.items).slice(0, 4).map((p) => p.title);
               return (
               <Link
                 className="group flex flex-col overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white transition-all hover:-translate-y-1 hover:border-[#c8102e] hover:shadow-2xl"
@@ -80,7 +85,7 @@ export function ProductsIndex({ lang = "en" }: { lang?: "en" | "zh" }) {
                   <div className="overflow-hidden bg-[#f4f5f7]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      alt={category.name}
+                      alt={catName}
                       className="aspect-[16/9] w-full object-cover transition duration-700 group-hover:scale-105"
                       src={productImageUrl(lead.gallery[0])}
                     />
@@ -89,16 +94,16 @@ export function ProductsIndex({ lang = "en" }: { lang?: "en" | "zh" }) {
                 <div className="flex flex-1 flex-col p-6">
                   <div className="flex items-start justify-between gap-3">
                     <h2 className="text-[16px] font-bold leading-snug text-[#22262e] group-hover:text-[#c8102e]">
-                      {category.name}
+                      {catName}
                     </h2>
                     <span className="shrink-0 rounded-full bg-[#f4f4f4] px-2 py-[2px] text-[11px] font-bold text-[#888]">
                       {productCount(category)}
                     </span>
                   </div>
                   <ul className="mt-4 space-y-[6px]">
-                    {category.subs.flatMap((sub) => sub.items).slice(0, 4).map((product) => (
-                      <li className="truncate text-[13px] text-[#666]" key={product.sourceId}>
-                        · {product.title}
+                    {prodNames.map((pname, i) => (
+                      <li className="truncate text-[13px] text-[#666]" key={i}>
+                        · {pname}
                       </li>
                     ))}
                   </ul>
@@ -125,13 +130,14 @@ export function ProductCategoryPage({
 }) {
   const base = lang === "zh" ? "/zh" : "";
   const items = category.subs.flatMap((sub) => sub.items.map((product) => ({ sub, product })));
+  const catName = lang === "zh" ? (categoryNameZh(category.sourceId) ?? category.name) : category.name;
   return (
     <>
       <PageHero
-        breadcrumb={[lang === "zh" ? "产品中心" : "Products", category.name]}
+        breadcrumb={[lang === "zh" ? "产品中心" : "Products", catName]}
         lang={lang}
         subtitle={`${items.length} ${lang === "zh" ? "款产品" : "products in this family"}`}
-        title={category.name}
+        title={catName}
       />
       <section className="py-12">
         <div className="mx-auto w-full max-w-[1560px] px-4">
@@ -193,12 +199,13 @@ export function ProductDetail({
   const base = lang === "zh" ? "/zh" : "";
   const title = lang === "zh" && product.titleZh ? product.titleZh : product.title;
   const body = lang === "zh" && product.bodyHtmlZh ? product.bodyHtmlZh : product.bodyHtml;
+  const catName = lang === "zh" ? (categoryNameZh(category.sourceId) ?? category.name) : category.name;
   return (
     <>
       <PageHero
         breadcrumb={[
           lang === "zh" ? "产品中心" : "Products",
-          category.name,
+          catName,
           title,
         ]}
         lang={lang}
@@ -237,7 +244,7 @@ export function ProductDetail({
                 </div>
                 <div className="flex justify-between border-b border-[#f2f2f2] pb-2">
                   <dt className="text-[#888]">{lang === "zh" ? "产品系列" : "Family"}</dt>
-                  <dd className="font-bold text-[#333]">{category.name}</dd>
+                  <dd className="font-bold text-[#333]">{catName}</dd>
                 </div>
                 {product.price ? (
                   <div className="flex justify-between">
@@ -437,6 +444,11 @@ export function ContentColumnPage({
   const active = (sourceId ? columns.find((c) => c.sourceId === sourceId) : columns[0]) ?? columns[0];
   const body = contentBody(active, lang);
   const images = contentImages(active);
+  const entries = active ? contentEntries(kind, active.sourceId) : [];
+  // Entries that are pure external links (e.g. Vessel Shipping Lines) render as a
+  // logo-card grid; everything else keeps the article-style list.
+  const linkCards = entries.filter((e) => e.isLink && e.externalUrl);
+  const otherEntries = entries.filter((e) => !(e.isLink && e.externalUrl));
   const titles: Record<string, { en: string; zh: string }> = {
     about: { en: "About Us", zh: "关于我们" },
     lines: { en: "Production Lines", zh: "生产线" },
@@ -450,7 +462,7 @@ export function ContentColumnPage({
       <PageHero
         breadcrumb={[titles[kind][lang]]}
         lang={lang}
-        title={active ? active.name : titles[kind][lang]}
+        title={active ? (lang === "zh" ? (contentNameZh(active.sourceId) ?? active.name) : active.name) : titles[kind][lang]}
       />
       <section className="py-12">
         <div className="mx-auto grid w-full max-w-[1560px] gap-8 px-4 lg:grid-cols-[280px_minmax(0,1fr)]">
@@ -466,7 +478,7 @@ export function ContentColumnPage({
                     }`}
                     href={`${base}${href}?id=${column.sourceId}`}
                   >
-                    {column.name}
+                    {lang === "zh" ? (contentNameZh(column.sourceId) ?? column.name) : column.name}
                   </Link>
                 </li>
               ))}
@@ -510,9 +522,41 @@ export function ContentColumnPage({
                   );
                 })}
               </div>
-            ) : (active && (contentEntries(kind, active.sourceId).length > 0)) ? (
+            ) : (active && entries.length > 0) ? (
               <div className="space-y-8">
-                {contentEntries(kind, active.sourceId).map((entry, idx) => (
+                {/* Logo-card grid, mirroring the legacy `.service-all` layout. */}
+                {linkCards.length > 0 && (
+                  <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                    {linkCards.map((entry, idx) => {
+                      const logo = (entry.images && entry.images[0]) || "";
+                      const src = logo.startsWith("/uploads/") ? logo : logo ? `/uploads/content/${logo}` : "";
+                      return (
+                        <a
+                          className="group block overflow-hidden rounded-xl border border-[#e8e8e8] bg-white transition hover:-translate-y-1 hover:border-[#c8102e] hover:shadow-lg"
+                          href={entry.externalUrl ?? "#"}
+                          key={`${entry.title}-${idx}`}
+                          rel="noopener noreferrer"
+                          target="_blank"
+                        >
+                          <div className="flex h-[110px] items-center justify-center bg-[#fafafa] p-3">
+                            {src ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img alt={entry.title} className="max-h-full max-w-full object-contain" src={src} />
+                            ) : (
+                              <span className="text-[11px] font-bold text-[#b9bfc7]">
+                                {lang === "zh" ? "暂无图片" : "No image"}
+                              </span>
+                            )}
+                          </div>
+                          <div className="border-t border-[#f0f0f0] px-3 py-3 text-center text-[12px] font-bold leading-snug text-[#333] group-hover:text-[#c8102e]">
+                            {entry.title}
+                          </div>
+                        </a>
+                      );
+                    })}
+                  </div>
+                )}
+                {otherEntries.map((entry, idx) => (
                   <div key={`${entry.sourceId || entry.title}-${idx}`} className="border-b border-[#f0f0f0] pb-8 last:border-0">
                     <h3 className="text-[18px] font-bold text-[#22262e]">{entry.title}</h3>
                     {entry.date ? <p className="mt-1 text-[12px] text-[#999]">{entry.date}</p> : null}

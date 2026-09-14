@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getCategories, productCount, SITE } from "@/lib/site";
+import { getCategories, productCount, SITE, categoryNameZh, categoryProductNamesZh } from "@/lib/site";
 
 const NEWS_TABS = [
-  { slug: "industry-news", name: "Industry News" },
-  { slug: "company-news", name: "Company News" },
-  { slug: "employees-literary", name: "Employees Literary" },
+  { slug: "industry-news", name: "Industry News", nameZh: "行业新闻" },
+  { slug: "company-news", name: "Company News", nameZh: "公司新闻" },
+  { slug: "employees-literary", name: "Employees Literary", nameZh: "员工文苑" },
 ];
 
 const ABOUT_SUBS = [
@@ -131,31 +131,35 @@ export default function SiteNav({ lang = "en" }: Props) {
               </Link>
               <div className="invisible absolute left-0 top-full z-40 w-[980px] border-t-[3px] border-[#c8102e] bg-white p-6 opacity-0 shadow-2xl transition-all duration-200 group-hover:visible group-hover:opacity-100">
                 <div className="grid grid-cols-4 gap-x-6 gap-y-5">
-                  {categories.map((category) => (
+                  {categories.map((category) => {
+                    const catName = lang === "zh" ? (categoryNameZh(category.sourceId) ?? category.name) : category.name;
+                    const prodItems = category.subs.flatMap((sub) => sub.items).slice(0, 4);
+                    return (
                     <div key={category.sourceId}>
                       <Link
                         className="block border-b border-[#eee] pb-[6px] text-[13px] font-bold text-[#c8102e]"
                         href={`${lang === "zh" ? "/zh" : ""}/products/${category.sourceId}`}
                       >
-                        {category.name}
+                        {catName}
                         <span className="ml-1 text-[10px] font-normal text-[#aaa]">
                           ({productCount(category)})
                         </span>
                       </Link>
                       <ul className="mt-[6px] max-h-[150px] overflow-hidden">
-                        {category.subs.flatMap((sub) => sub.items).slice(0, 4).map((product) => (
+                        {prodItems.map((product) => (
                           <li className="truncate" key={product.sourceId}>
                             <Link
                               className="block py-[3px] text-[12px] text-[#666] hover:text-[#c8102e]"
                               href={`${lang === "zh" ? "/zh" : ""}/products/${category.sourceId}/${product.sourceId}`}
                             >
-                              {product.title}
+                              {lang === "zh" && product.titleZh ? product.titleZh : product.title}
                             </Link>
                           </li>
                         ))}
                       </ul>
                     </div>
-                  ))}
+                  );
+                })}
                 </div>
                 <Link
                   className="mt-5 inline-block bg-[#c8102e] px-5 py-[9px] text-[12px] font-bold uppercase tracking-[1px] text-white hover:bg-[#a30d25]"

@@ -307,6 +307,47 @@ export function categoryNameZh(sourceId: number | string): string | undefined {
   return CATEGORY_ZH[Number(sourceId)];
 }
 
+/** Chinese names for content columns (about/service/lines/honor/cases sidebars). */
+export const CONTENT_NAME_ZH: Record<number, string> = {
+  // about
+  13: "关于我们",
+  55: "主营产品",
+  16: "荣誉",
+  56: "企业文化",
+  169: "分公司",
+  171: "工厂与仓储",
+  172: "发展历程",
+  // service
+  79: "实用链接服务",
+  141: "公司公告",
+  148: "实用知识",
+  199: "船公司航线",
+  // lines
+  45: "包装薄膜生产线",
+  142: "BOPP薄膜生产线",
+  143: "BOPET薄膜生产线",
+  144: "胶带生产线",
+  149: "预涂膜生产线",
+  164: "布鲁克纳生产线（德国）",
+  165: "三菱生产线（日本）",
+  167: "复印纸生产线",
+  173: "镀铝膜生产线",
+  174: "POF薄膜生产线",
+  // honor
+  17: "证书",
+  50: "致客户",
+  51: "认证报告",
+  // cases
+  54: "发展案例",
+  145: "致买家",
+  146: "致市场",
+  147: "致自己",
+};
+
+export function contentNameZh(sourceId: number | string): string | undefined {
+  return CONTENT_NAME_ZH[Number(sourceId)];
+}
+
 /** Chinese company-profile intro used on the Chinese homepage (source sid=13). */
 export function homeAboutZhHtml(): string {
   const content = getContent("about", 13);
