@@ -241,10 +241,12 @@ export function honorItems(): HonorItem[] {
   return out;
 }
 
-export function honorItemsByColumn(sourceId: number): HonorItem[] {
+export function honorItemsByColumn(sourceId: number, lang?: "en" | "zh"): HonorItem[] {
   const c = getContent("honor", sourceId);
-  if (!c || !Array.isArray(c.items)) return [];
-  return (c.items as Array<{ image?: string; title?: string; titleZh?: string }>)
+  if (!c) return [];
+  const raw = lang === "zh" && Array.isArray(c.itemsZh) ? c.itemsZh : c.items;
+  if (!Array.isArray(raw)) return [];
+  return (raw as Array<{ image?: string; title?: string; titleZh?: string }>)
     .filter((i) => i && i.image)
     .map((i) => ({ image: i.image as string, title: i.title ?? "", titleZh: i.titleZh }));
 }

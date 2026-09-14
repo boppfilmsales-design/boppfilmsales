@@ -489,9 +489,9 @@ export function ContentColumnPage({
             {kind === "honor" ? (
               <div className="space-y-12">
                 {columns.map((col) => {
-                  const items = honorItemsByColumn(col.sourceId);
+                  const items = honorItemsByColumn(col.sourceId, lang);
                   if (!items.length) return null;
-                  const colTitle = lang === "zh" && col.titleZh ? String(col.titleZh) : col.name;
+                  const colTitle = lang === "zh" ? (contentNameZh(col.sourceId) ?? col.name) : col.name;
                   return (
                     <div key={col.sourceId}>
                       <h3 className="mb-5 flex items-center gap-3 text-[18px] font-bold text-[#22262e]">
@@ -500,22 +500,25 @@ export function ContentColumnPage({
                       </h3>
                       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                         {items.map((item, index) => (
-                          <figure
-                            className="border border-[#eee] bg-white p-3 transition hover:shadow-md"
+                          <a
+                            className="group block overflow-hidden rounded-lg border border-[#eee] bg-white transition hover:-translate-y-1 hover:border-[#c8102e] hover:shadow-lg"
+                            href={item.image}
                             key={`${item.image}-${index}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
                           >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              alt={item.title}
-                              className="h-[220px] w-full object-contain"
-                              src={item.image}
-                            />
-                            {item.title ? (
-                              <figcaption className="mt-3 text-center text-[12px] font-bold text-[#555]">
-                                {lang === "zh" && item.titleZh ? item.titleZh : item.title}
-                              </figcaption>
-                            ) : null}
-                          </figure>
+                            <div className="flex h-[260px] items-center justify-center bg-[#fafafa] p-4 transition group-hover:bg-[#f5f5f5]">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                alt={lang === "zh" && item.titleZh ? item.titleZh : item.title}
+                                className="max-h-full max-w-full object-contain transition duration-300 group-hover:scale-105"
+                                src={item.image}
+                              />
+                            </div>
+                            <div className="border-t border-[#f0f0f0] px-3 py-3 text-center text-[12px] font-bold leading-snug text-[#555] group-hover:text-[#c8102e]">
+                              {lang === "zh" && item.titleZh ? item.titleZh : item.title}
+                            </div>
+                          </a>
                         ))}
                       </div>
                     </div>
