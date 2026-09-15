@@ -76,7 +76,7 @@ function displayTypeName(type: string): string {
 /* ---------- Dashboard ---------- */
 
 export default function Dashboard({ username }: { username: string }) {
-  const [activeSection, setActiveSection] = useState<number | null>(null);
+  const [activeSection, setActiveSection] = useState<number | null>(1);
   const [activeColumn, setActiveColumn] = useState<AdminColumn | null>(null);
   const [sections, setSections] = useState<AdminSection[]>([]);
   const [loading, setLoading] = useState(true);
