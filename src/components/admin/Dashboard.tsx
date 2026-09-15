@@ -83,6 +83,7 @@ export default function Dashboard({ username }: { username: string }) {
   const [contentRows, setContentRows] = useState<StaticRow[]>([]);
   const [productRows, setProductRows] = useState<ProductRow[]>([]);
   const [contentLoading, setContentLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
 
   // News management state
   const [newsRows, setNewsRows] = useState<Row[]>([]);
@@ -100,12 +101,16 @@ export default function Dashboard({ username }: { username: string }) {
   /* ----- Load admin sections ----- */
   useEffect(() => {
     fetch("/api/admin/sections", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((data) => {
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
         if (data.sections) setSections(data.sections);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((err) => {
+        setLoadError(`Failed to load admin sections: ${err.message}`);
+        setLoading(false);
+      });
   }, []);
 
   /* ----- Load column content ----- */
@@ -280,7 +285,13 @@ export default function Dashboard({ username }: { username: string }) {
 
         {/* Content area */}
         <div className="flex-1 overflow-y-auto p-5">
-          {!activeColumn ? (
+          {loadError ? (
+            <div className="border border-red-300 bg-red-50 p-6 text-center text-[14px] text-red-700">
+              <p className="font-bold">加载失败</p>
+              <p className="mt-2 text-[12px]">{loadError}</p>
+              <p className="mt-2 text-[12px] text-red-500">请刷新页面重试，或检查数据库连接是否正常。</p>
+            </div>
+          ) : !activeColumn ? (
             /* Dashboard overview */
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {sections.map((section) => (

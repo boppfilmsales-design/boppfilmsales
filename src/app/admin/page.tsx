@@ -12,7 +12,14 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
-  await ensureSeedData();
+  // Try to ensure seed data, but don't crash the entire page if DB is down.
+  // The login form and dashboard can still render; DB-dependent operations
+  // will fail gracefully at their own call sites.
+  try {
+    await ensureSeedData();
+  } catch (err) {
+    console.error("[admin/page] ensureSeedData failed (continuing anyway):", err);
+  }
   const session = await getAdminSession();
   if (!session) return <LoginForm />;
   return <Dashboard username={session.username} />;

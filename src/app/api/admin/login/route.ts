@@ -9,7 +9,13 @@ import { verifyPassword } from "@/lib/password";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  await ensureSeedData();
+  // Try to ensure seed data, but don't block login if DB is down.
+  // The env-var fallback below allows login even without a database.
+  try {
+    await ensureSeedData();
+  } catch (err) {
+    console.error("[admin/login] ensureSeedData failed (continuing with env fallback):", err);
+  }
   const body = (await request.json().catch(() => ({}))) as {
     username?: string;
     password?: string;
@@ -21,7 +27,13 @@ export async function POST(request: Request) {
     return Response.json({ ok: false, error: "Username and password are required." }, { status: 400 });
   }
 
-  const [user] = await db.select().from(adminUsers).where(eq(adminUsers.username, username)).limit(1);
+  let user: { passwordHash: string } | null = null;
+  try {
+    const rows = await db.select().from(adminUsers).where(eq(adminUsers.username, username)).limit(1);
+    user = rows[0] ?? null;
+  } catch (err) {
+    console.error("[admin/login] DB query failed, falling back to env credentials:", err);
+  }
   const expectedPassword = process.env.ADMIN_PASSWORD ?? "xgxadmin";
   const valid = user
     ? verifyPassword(password, user.passwordHash)
