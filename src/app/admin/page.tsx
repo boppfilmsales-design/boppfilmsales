@@ -5,7 +5,7 @@ import { ensureSeedData } from "@/db/seed";
 import { getAdminSession } from "@/lib/auth";
 
 export const metadata: Metadata = {
-  title: "Site Background - News Administration",
+  title: "XgxCms 后台管理系统 - Asia Pacific Industry Group",
   robots: { index: false, follow: false },
 };
 

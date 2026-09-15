@@ -22,7 +22,7 @@ export default function LoginForm() {
     const data = (await response.json()) as { ok?: boolean; error?: string };
     setBusy(false);
     if (!response.ok || !data.ok) {
-      setError(data.error ?? "Login failed.");
+      setError(data.error ?? "登录失败");
       return;
     }
     router.refresh();
@@ -31,15 +31,15 @@ export default function LoginForm() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#f4f5f7] px-4">
       <form
-        className="w-full max-w-[380px] border-t-4 border-[#e61d39] bg-white p-8 shadow-sm"
+        className="w-full max-w-[400px] border-t-4 border-[#e61d39] bg-white p-8 shadow-sm"
         onSubmit={submit}
       >
-        <h1 className="text-[20px] font-bold text-[#333]">Site Background</h1>
+        <h1 className="text-[20px] font-bold text-[#333]">XgxCms 后台登录</h1>
         <p className="mt-1 text-[12px] text-[#888]">
-          News administrator — Asia Pacific Industry Group Co., Limited
+          Asia Pacific Industry Group Co., Limited
         </p>
         <label className="mt-6 block text-[13px] font-bold text-[#555]">
-          Username
+          用户名
           <input
             autoComplete="username"
             className="mt-2 w-full border border-[#ddd] px-3 py-[10px] text-[13px] outline-none focus:border-[#e61d39]"
@@ -48,7 +48,7 @@ export default function LoginForm() {
           />
         </label>
         <label className="mt-4 block text-[13px] font-bold text-[#555]">
-          Password
+          密码
           <input
             autoComplete="current-password"
             className="mt-2 w-full border border-[#ddd] px-3 py-[10px] text-[13px] outline-none focus:border-[#e61d39]"
@@ -63,12 +63,8 @@ export default function LoginForm() {
           disabled={busy}
           type="submit"
         >
-          {busy ? "Signing in..." : "Login"}
+          {busy ? "登录中..." : "登录"}
         </button>
-        <p className="mt-4 text-[12px] leading-[20px] text-[#999]">
-          Default account: <b>xgxadmin / xgxadmin</b> (can be changed with the ADMIN_USERNAME and
-          ADMIN_PASSWORD environment variables).
-        </p>
       </form>
     </div>
   );

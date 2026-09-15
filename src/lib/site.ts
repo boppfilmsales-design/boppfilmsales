@@ -85,6 +85,14 @@ export function productImageUrl(value: string): string {
   return `/uploads/products/${source}`;
 }
 
+export function contentImageUrl(value: string): string {
+  const source = (value ?? "").trim();
+  if (!source) return "";
+  if (source.startsWith("/")) return source;
+  if (/^https?:\/\//i.test(source)) return source;
+  return `/uploads/content/${source}`;
+}
+
 export function getCategories(): SiteCategory[] {
   return products;
 }
@@ -180,12 +188,17 @@ export function catalogueImages(limit = 12): { src: string; title: string }[] {
   return out;
 }
 
-export function getContents(kind: SiteContent["kind"]): SiteContent[] {
+export function getContents(kind?: SiteContent["kind"]): SiteContent[] {
+  if (kind === undefined) return contents;
   return contents.filter((c) => c.kind === kind);
 }
 
 export function getContent(kind: SiteContent["kind"], sourceId: number | string): SiteContent | undefined {
   return contents.find((c) => c.kind === kind && String(c.sourceId) === String(sourceId));
+}
+
+export function getContentBySourceId(sourceId: number | string): SiteContent | undefined {
+  return contents.find((c) => String(c.sourceId) === String(sourceId));
 }
 
 export function allDownloads(): { column: string; rows: DownloadRow[] }[] {
