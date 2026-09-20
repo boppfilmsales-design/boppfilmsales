@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ProductCardImage from "@/components/ProductCardImage";
 import ProductGallery from "@/components/ProductGallery";
+import ProductTabs from "@/components/ProductTabs";
 import {
   allDownloads,
   allPdfs,
@@ -224,8 +225,8 @@ export function ProductDetail({
 }) {
   const base = lang === "zh" ? "/zh" : "";
   const title = lang === "zh" && product.titleZh ? product.titleZh : product.title;
-  const body = lang === "zh" && product.bodyHtmlZh ? product.bodyHtmlZh : product.bodyHtml;
   const catName = lang === "zh" ? (categoryNameZh(category.sourceId) ?? category.name) : category.name;
+  const validPdfs = validProductPdfs(product);
   return (
     <>
       <PageHero
@@ -238,125 +239,132 @@ export function ProductDetail({
         title={title}
       />
       <section className="py-12">
-        <div className="mx-auto grid w-full max-w-[1560px] gap-10 px-4 lg:grid-cols-[minmax(0,1fr)_420px]">
-          {/* gallery */}
-          <div>
+        <div className="mx-auto w-full max-w-[1560px] px-4">
+          {/* Top: gallery + product info box (mirrors source site prd_box) */}
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_400px]">
+            {/* Gallery */}
             <ProductGallery
               images={product.gallery}
               noImageLabel={lang === "zh" ? "暂无图片" : "Image unavailable"}
               title={title}
             />
 
-            <div className="mt-8 rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_18px_55px_rgba(15,23,42,0.05)] md:p-8">
-              <h2 className="text-[18px] font-bold text-[#22262e]">
-                {lang === "zh" ? "产品详细介绍" : "Product Description"}
-              </h2>
-              <i className="mt-3 block h-[4px] w-[70px] bg-[#c8102e]" />
-              <div
-                className="news-body mt-5 text-[14px] leading-[190%] text-[#3d3d3d]"
-                dangerouslySetInnerHTML={{ __html: body || `<p>${title}</p>` }}
-              />
-            </div>
-          </div>
-
-          {/* side panel */}
-          <aside className="space-y-5">
-            <div className="border border-[#e8e8e8] bg-white p-6">
-              <h2 className="text-[19px] font-bold leading-snug text-[#22262e]">{title}</h2>
-              <dl className="mt-4 space-y-2 text-[13px]">
-                <div className="flex justify-between border-b border-[#f2f2f2] pb-2">
-                  <dt className="text-[#888]">{lang === "zh" ? "产品编码" : "Product code"}</dt>
-                  <dd className="font-bold text-[#333]">{product.code || "—"}</dd>
-                </div>
-                <div className="flex justify-between border-b border-[#f2f2f2] pb-2">
-                  <dt className="text-[#888]">{lang === "zh" ? "产品系列" : "Family"}</dt>
-                  <dd className="font-bold text-[#333]">{catName}</dd>
-                </div>
-                {product.price ? (
-                  <div className="flex justify-between">
-                    <dt className="text-[#888]">{lang === "zh" ? "参考价格" : "Reference price"}</dt>
-                    <dd className="font-bold text-[#c8102e]">${product.price}</dd>
+            {/* Product info box - matches source site prd_box */}
+            <div className="border border-[#e8e8e8] bg-white p-6 shadow-sm">
+              <h2 className="text-[20px] font-bold leading-snug text-[#22262e]">{title}</h2>
+              {product.code || product.price ? (
+                <dl className="mt-5 space-y-3 text-[13px]">
+                  {product.code ? (
+                    <div className="flex justify-between border-b border-[#f2f2f2] pb-3">
+                      <dt className="text-[#888]">{lang === "zh" ? "产品编码" : "Product code"}</dt>
+                      <dd className="font-bold text-[#333]">{product.code}</dd>
+                    </div>
+                  ) : null}
+                  <div className="flex justify-between border-b border-[#f2f2f2] pb-3">
+                    <dt className="text-[#888]">{lang === "zh" ? "产品系列" : "Family"}</dt>
+                    <dd className="font-bold text-[#333]">{catName}</dd>
                   </div>
-                ) : null}
-              </dl>
-              <div className="mt-5 space-y-2">
+                  {product.price ? (
+                    <div className="flex justify-between border-b border-[#f2f2f2] pb-3">
+                      <dt className="text-[#888]">{lang === "zh" ? "批发价格" : "Wholesale price"}</dt>
+                      <dd className="font-bold text-[#c8102e]"><em>$</em>{product.price} {lang === "zh" ? "/起" : "/only"}</dd>
+                    </div>
+                  ) : null}
+                </dl>
+              ) : (
+                <dl className="mt-5 space-y-3 text-[13px]">
+                  <div className="flex justify-between border-b border-[#f2f2f2] pb-3">
+                    <dt className="text-[#888]">{lang === "zh" ? "产品系列" : "Family"}</dt>
+                    <dd className="font-bold text-[#333]">{catName}</dd>
+                  </div>
+                </dl>
+              )}
+
+              {/* Inquiry buttons - matches source site prd_box_lk */}
+              <div className="mt-6 space-y-2">
                 <a
                   className="block bg-[#c8102e] py-[13px] text-center text-[13px] font-bold uppercase tracking-[1px] text-white hover:bg-[#a30d25]"
                   href={`mailto:sales@boppfilmsales.com?subject=Inquiry: ${encodeURIComponent(title)}`}
                 >
-                  {lang === "zh" ? "立即询盘" : "Inquire now"}
+                  {lang === "zh" ? "立即询盘" : "Inquire Now"}
                 </a>
                 <a
                   className="block border border-[#c8102e] py-[13px] text-center text-[13px] font-bold uppercase tracking-[1px] text-[#c8102e] hover:bg-[#c8102e] hover:text-white"
                   href={lang === "zh" ? "/zh/contact" : "/contact"}
                 >
-                  {lang === "zh" ? "联系我们" : "Contact sales"}
+                  {lang === "zh" ? "联系我们" : "Contact Sales"}
                 </a>
               </div>
-            </div>
 
-            {/* prominent PDF download card */}
-            {(() => {
-              const validPdfs = validProductPdfs(product);
-              return validPdfs.length > 0 ? (
-                <div className="border-2 border-[#c8102e] bg-[#fff7f8] p-6">
-                  <h3 className="text-[15px] font-bold uppercase tracking-[1px] text-[#c8102e]">
-                    {lang === "zh" ? "技术参数下载" : "Technical Data Sheet"}
+              {/* Quick PDF list in sidebar (if any) */}
+              {validPdfs.length > 0 && (
+                <div className="mt-6 border-t-2 border-[#c8102e] pt-4">
+                  <h3 className="text-[14px] font-bold uppercase tracking-[1px] text-[#c8102e]">
+                    {lang === "zh" ? "技术资料" : "Technical Data"}
                   </h3>
-                  <p className="mt-2 text-[12px] leading-[20px] text-[#777]">
-                    {lang === "zh"
-                      ? "点击即可下载 PDF 版技术参数 / 检测报告。"
-                      : "Click to download the PDF technical data sheet / test report."}
-                  </p>
-                  <div className="mt-4 space-y-3">
+                  <ul className="mt-3 space-y-2">
                     {validPdfs.map((pdf) => (
-                      <a
-                        className="flex items-center gap-3 border border-[#f0c9cf] bg-white px-4 py-3 transition-colors hover:border-[#c8102e] hover:bg-[#c8102e] hover:text-white"
-                        download
-                        href={pdf.file}
-                        key={pdf.file}
-                      >
-                        <span className="flex h-[38px] w-[34px] shrink-0 items-center justify-center bg-[#c8102e] text-[10px] font-black text-white">
-                          PDF
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[13px] font-bold">
-                            {pdf.label || pdf.file.split("/").pop()}
-                          </span>
-                          <span className="block text-[11px] opacity-70">
-                            {lang === "zh" ? "点击下载" : "Click to download"}
-                          </span>
-                        </span>
-                        <span className="text-[16px]">↓</span>
-                      </a>
+                      <li key={pdf.file}>
+                        <a
+                          href={pdf.file}
+                          download
+                          className="flex items-center gap-2 text-[12px] text-[#666] hover:text-[#c8102e]"
+                        >
+                          <span className="flex h-[24px] w-[22px] shrink-0 items-center justify-center bg-[#c8102e] text-[8px] font-black text-white">PDF</span>
+                          <span className="truncate">{pdf.label || pdf.file.split("/").pop()}</span>
+                        </a>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 </div>
-              ) : null;
-            })()}
-
-            <div className="border border-[#e8e8e8] bg-white p-6">
-              <h3 className="text-[14px] font-bold text-[#22262e]">
-                {lang === "zh" ? "同系列其他产品" : "More from this family"}
-              </h3>
-              <ul className="mt-3 space-y-2">
-                {category.subs
-                  .flatMap((s) => s.items)
-                  .filter((p) => p.sourceId !== product.sourceId)
-                  .slice(0, 6)
-                  .map((p) => (
-                    <li className="truncate border-b border-dotted border-[#eee] pb-2" key={p.sourceId}>
-                      <Link
-                        className="text-[12px] text-[#666] hover:text-[#c8102e]"
-                        href={`${base}/products/${category.sourceId}/${p.sourceId}`}
-                      >
-                        · {lang === "zh" && p.titleZh ? p.titleZh : p.title}
-                      </Link>
-                    </li>
-                  ))}
-              </ul>
+              )}
             </div>
-          </aside>
+          </div>
+
+          {/* Tabbed content area - matches source site prdcenter with menu_drop tabs */}
+          <div className="mt-8">
+            <ProductTabs product={product} lang={lang} />
+          </div>
+
+          {/* Related products - matches source site "related Products" section */}
+          {(() => {
+            const related = category.subs
+              .flatMap((s) => s.items)
+              .filter((p) => p.sourceId !== product.sourceId)
+              .slice(0, 6);
+            if (related.length === 0) return null;
+            return (
+              <div className="mt-12">
+                <div className="mb-6 flex items-center gap-3 border-b border-[#e8e8e8] pb-4">
+                  <h2 className="text-[20px] font-bold text-[#22262e]">
+                    {lang === "zh" ? "相关产品" : "Related Products"}
+                  </h2>
+                  <i className="block h-[20px] w-[5px] bg-[#c8102e]" />
+                </div>
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                  {related.map((p) => (
+                    <Link
+                      className="group flex flex-col border border-[#e8e8e8] bg-white transition-all hover:-translate-y-[3px] hover:border-[#c8102e] hover:shadow-lg"
+                      href={`${base}/products/${category.sourceId}/${p.sourceId}`}
+                      key={p.sourceId}
+                    >
+                      <div className="h-[140px] overflow-hidden bg-[#f7f7f7]">
+                        <ProductCardImage
+                          image={p.gallery?.[0]}
+                          title={lang === "zh" && p.titleZh ? p.titleZh : p.title}
+                        />
+                      </div>
+                      <div className="p-3">
+                        <h3 className="line-clamp-2 text-[12px] font-bold leading-snug text-[#22262e] group-hover:text-[#c8102e]">
+                          {lang === "zh" && p.titleZh ? p.titleZh : p.title}
+                        </h3>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </section>
     </>

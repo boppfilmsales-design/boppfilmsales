@@ -36,26 +36,19 @@ body {
   box-sizing: border-box;
 }
 
-/* Section entrance animation. Modern browsers get a scroll-driven reveal
-   (no JavaScript required); older browsers fall back to a simple load-in. */
+/* Section entrance animation. Keep it simple and fast to avoid
+   sections getting stuck in a partially-animated (blurry/transparent)
+   state on some browsers or Cloudflare Workers' rendering. */
 @media (prefers-reduced-motion: no-preference) {
-  @supports (animation-timeline: view()) {
-    section {
-      animation: section-in linear both;
-      animation-timeline: view();
-      animation-range: entry 0% cover 28%;
-    }
-  }
-  @supports not (animation-timeline: view()) {
-    section {
-      animation: section-in 0.55s ease-out both;
-    }
+  section {
+    animation: section-in 0.3s ease-out both;
   }
 }
 
-/* Never hide the sticky nav or the page footer. */
+/* Never hide the sticky nav, footer, or content areas. */
 nav,
-footer {
+footer,
+section > div {
   animation: none !important;
 }
 
@@ -67,9 +60,11 @@ footer {
 /* Article body styling, mirroring the legacy `show.php` content area. */
 .news-body img {
   max-width: 100%;
+  max-height: 600px;
   height: auto;
   display: inline-block;
   vertical-align: middle;
+  object-fit: contain;
 }
 
 .news-body p {
@@ -78,6 +73,8 @@ footer {
 
 .news-body {
   overflow-wrap: anywhere;
+  overflow: hidden;
+  max-width: 100%;
 }
 
 .news-body table {

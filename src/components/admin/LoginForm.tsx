@@ -1,10 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function LoginForm() {
-  const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -25,7 +23,10 @@ export default function LoginForm() {
       setError(data.error ?? "登录失败");
       return;
     }
-    router.refresh();
+    // Full page reload instead of router.refresh() to guarantee the server
+    // re-renders with the new session cookie (RSC refresh can be unreliable
+    // on Cloudflare Workers edge runtime).
+    window.location.href = "/admin";
   }
 
   return (

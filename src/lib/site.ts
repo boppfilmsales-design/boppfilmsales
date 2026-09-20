@@ -34,6 +34,7 @@ export type SiteContent = {
   items: unknown;
   itemsZh: unknown;
   bodyHtmlZh?: string;
+  entries?: ContentEntry[];
 };
 
 export type DownloadRow = {
