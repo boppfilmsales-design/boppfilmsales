@@ -20,7 +20,7 @@ export default function ProductCardImage({ image, title }: { image?: string; tit
     // eslint-disable-next-line @next/next/no-img-element
     <img
       alt={title}
-      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
+      className="h-full w-full object-contain p-2 transition-transform duration-700 group-hover:scale-[1.04]"
       loading="lazy"
       onError={() => setFailed(true)}
       src={src}

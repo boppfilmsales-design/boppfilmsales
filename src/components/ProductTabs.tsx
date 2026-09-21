@@ -1,108 +1,76 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { validProductPdfs } from "@/lib/site";
-import type { SiteProduct } from "@/lib/site";
+import { useState } from "react";
 
-type Props = {
-  product: SiteProduct;
-  lang?: "en" | "zh";
+export type ProductTabItem = {
+  id: string;
+  label: string;
+  html: string;
 };
 
-/** Extracts tab sections from the combined body HTML. */
-function extractTabs(html: string) {
-  const descMatch = html.match(/<div class="tab-description">([\s\S]*?)<\/div>\s*(?:<div class="tab-|$)/);
-  const techMatch = html.match(/<div class="tab-technical">([\s\S]*?)<\/div>\s*(?:<div class="tab-|$)/);
-  const offerMatch = html.match(/<div class="tab-offer">([\s\S]*?)<\/div>\s*$/);
-  
-  return {
-    description: descMatch ? descMatch[1].trim() : html,
-    technical: techMatch ? techMatch[1].trim() : "",
-    offer: offerMatch ? offerMatch[1].trim() : "",
-  };
-}
+type Props = {
+  tabs: ProductTabItem[];
+  lang?: "en" | "zh";
+  inquiryHref?: string;
+};
 
-export default function ProductTabs({ product, lang = "en" }: Props) {
-  const body = lang === "zh" && product.bodyHtmlZh ? product.bodyHtmlZh : product.bodyHtml;
-  const tabs = useMemo(() => extractTabs(body), [body]);
-  const pdfs = useMemo(() => validProductPdfs(product), [product]);
-  
-  const hasTech = tabs.technical && tabs.technical.length > 20;
-  const hasOffer = tabs.offer && tabs.offer.length > 20;
-  
-  const tabList = [
-    { id: "desc", label: lang === "zh" ? "产品描述" : "Description", content: tabs.description },
-    ...(hasTech ? [{ id: "tech", label: lang === "zh" ? "技术参数" : "Technical Parameters", content: tabs.technical }] : []),
-    ...(hasOffer ? [{ id: "offer", label: lang === "zh" ? "报价详情" : "Offer Details", content: tabs.offer }] : []),
-  ];
-  
-  const [activeTab, setActiveTab] = useState(0);
-  const current = tabList[activeTab] ?? tabList[0];
+/**
+ * Mirrors the three legacy tabs of product_show.php:
+ * Description / TECHNICAL PARAMETERS / OFFER DETAILS.
+ */
+export default function ProductTabs({ tabs, lang = "en", inquiryHref = "/contact" }: Props) {
+  const visible = tabs.filter((tab) => tab.html && tab.html.trim().length > 0);
+  const list = visible.length ? visible : [{ id: "description", label: lang === "zh" ? "产品描述" : "Description", html: "" }];
+  const [active, setActive] = useState(0);
+  const current = list[Math.min(active, list.length - 1)];
+  const t = (en: string, zh: string) => (lang === "zh" ? zh : en);
 
   return (
-    <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_18px_55px_rgba(15,23,42,0.05)] md:p-8">
-      {/* Tab headers */}
-      <div className="flex flex-wrap gap-1 border-b-2 border-[#e8e8e8]">
-        {tabList.map((tab, idx) => (
+    <div className="border border-[#e8e8e8] bg-white">
+      <div className="flex flex-wrap border-b border-[#e8e8e8] bg-[#fafafa]">
+        {list.map((tab, index) => (
           <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(idx)}
-            className={`relative px-6 py-3 text-[14px] font-bold transition-all ${
-              activeTab === idx
-                ? "text-[#c8102e] after:absolute after:bottom-[-2px] after:left-0 after:h-[3px] after:w-full after:bg-[#c8102e]"
-                : "text-[#888] hover:text-[#c8102e]"
+            className={`relative px-5 py-[14px] text-[13px] font-bold uppercase tracking-[1px] transition-colors ${
+              index === Math.min(active, list.length - 1)
+                ? "bg-white text-[#c8102e]"
+                : "text-[#555] hover:text-[#c8102e]"
             }`}
+            key={tab.id}
+            onClick={() => setActive(index)}
+            type="button"
           >
             {tab.label}
+            {index === Math.min(active, list.length - 1) ? (
+              <i className="absolute inset-x-0 top-0 block h-[3px] bg-[#c8102e]" />
+            ) : null}
           </button>
         ))}
       </div>
 
-      {/* Tab content */}
-      <div className="mt-6">
+      <div className="px-5 py-6 md:px-8 md:py-8">
         <div
           className="news-body text-[14px] leading-[190%] text-[#3d3d3d]"
-          dangerouslySetInnerHTML={{ __html: current.content || `<p>${product.title}</p>` }}
+          dangerouslySetInnerHTML={{
+            __html: current.html || `<p>${t("Content is being prepared.", "内容整理中。")}</p>`,
+          }}
         />
-      </div>
 
-      {/* PDF downloads within Technical Parameters tab */}
-      {activeTab === 1 && pdfs.length > 0 && (
-        <div className="mt-8 border-2 border-[#c8102e] bg-[#fff7f8] p-6">
-          <h3 className="text-[15px] font-bold uppercase tracking-[1px] text-[#c8102e]">
-            {lang === "zh" ? "技术参数下载" : "Technical Data Sheet Downloads"}
-          </h3>
-          <p className="mt-2 text-[12px] leading-[20px] text-[#777]">
-            {lang === "zh"
-              ? "点击即可下载 PDF 版技术参数 / 检测报告。"
-              : "Click to download the PDF technical data sheet / test report."}
-          </p>
-          <div className="mt-4 space-y-3">
-            {pdfs.map((pdf) => (
-              <a
-                key={pdf.file}
-                href={pdf.file}
-                download
-                className="flex items-center gap-3 border border-[#f0c9cf] bg-white px-4 py-3 transition-colors hover:border-[#c8102e] hover:bg-[#c8102e] hover:text-white"
-              >
-                <span className="flex h-[38px] w-[34px] shrink-0 items-center justify-center bg-[#c8102e] text-[10px] font-black text-white">
-                  PDF
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13px] font-bold">
-                    {pdf.label || pdf.file.split("/").pop()}
-                  </span>
-                  <span className="block text-[11px] opacity-70">
-                    {lang === "zh" ? "点击下载" : "Click to download"}
-                  </span>
-                </span>
-                <span className="text-[16px]">↓</span>
-              </a>
-            ))}
-          </div>
+        <div className="mt-8 flex flex-wrap gap-3 border-t border-[#f0f0f0] pt-6">
+          <a
+            className="border border-[#c8102e] bg-[#c8102e] px-5 py-[10px] text-[12px] font-bold uppercase tracking-[1px] text-white hover:bg-[#a30d25]"
+            href={inquiryHref}
+          >
+            {t("Ask questions now", "立即咨询")}
+          </a>
+          <a
+            className="border border-[#c8102e] px-5 py-[10px] text-[12px] font-bold uppercase tracking-[1px] text-[#c8102e] hover:bg-[#c8102e] hover:text-white"
+            href={`${inquiryHref}#msg`}
+          >
+            {t("Make an inquiry now", "立即询盘")}
+          </a>
         </div>
-      )}
+      </div>
     </div>
   );
 }
+

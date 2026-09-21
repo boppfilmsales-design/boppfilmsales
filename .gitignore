@@ -37,3 +37,9 @@ yarn-error.log*
 # drizzle local artefacts
 /drizzle/meta
 .open-next/
+
+# scraper cache and intermediate scrape output
+# (re-create with: python scripts/scrape-catalog.py && python scripts/scrape-content.py)
+/.source-cache/
+/scripts/source-catalog.json
+/scripts/source-content.json

@@ -1,4 +1,4 @@
-import { getCategories, getContentBySourceId, type SiteCategory, type SiteContent } from "@/lib/site";
+import { getCategories, getContentBySourceId, getContents, type SiteCategory, type SiteContent } from "@/lib/site";
 
 /**
  * Admin column structure — mirrors the source site (apigcl.com) XgxCms admin panel.

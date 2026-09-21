@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { allProducts, getCategories } from "@/lib/site";
+import { allProducts, getCategories, getContents } from "@/lib/site";
 
 const BASE = "https://www.boppfilmsales.com";
 
@@ -58,5 +58,27 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ]);
 
-  return [...staticRoutes, ...categories, ...products];
+  const subs = getCategories().flatMap((category) =>
+    category.subs.map((sub) => ({
+      url: `${BASE}/products/${category.sourceId}/list/${sub.sourceId}`,
+      lastModified: now,
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
+  );
+
+  const entries = (["about", "lines", "honor", "service", "cases"] as const).flatMap((kind) =>
+    getContents(kind).flatMap((column) =>
+      (column.entries ?? [])
+        .filter((entry) => !entry.isLink)
+        .map((entry) => ({
+          url: `${BASE}/entry/${kind}/${column.sourceId}/${entry.sourceId}`,
+          lastModified: now,
+          changeFrequency: "monthly" as const,
+          priority: 0.6,
+        })),
+    ),
+  );
+
+  return [...staticRoutes, ...categories, ...subs, ...products, ...entries];
 }

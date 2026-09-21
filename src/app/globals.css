@@ -36,35 +36,25 @@ body {
   box-sizing: border-box;
 }
 
-/* Section entrance animation. Keep it simple and fast to avoid
-   sections getting stuck in a partially-animated (blurry/transparent)
-   state on some browsers or Cloudflare Workers' rendering. */
-@media (prefers-reduced-motion: no-preference) {
-  section {
-    animation: section-in 0.3s ease-out both;
-  }
-}
+/* No entrance animations: a transform on a large section makes the whole
+   page render through a compositing layer (blurry text and images) on some
+   browsers, and Cloudflare Workers' streaming HTML made it worse. */
 
-/* Never hide the sticky nav, footer, or content areas. */
-nav,
-footer,
-section > div {
-  animation: none !important;
-}
-
-@keyframes section-in {
-  from { opacity: 0; transform: translateY(26px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Article body styling, mirroring the legacy `show.php` content area. */
+/* Article body styling, mirroring the legacy `show.php` content area.
+   Images keep their natural size and are never scaled up, so the mirrored
+   screenshots stay as sharp as they are on apigcl.com. */
 .news-body img {
   max-width: 100%;
-  max-height: 600px;
   height: auto;
   display: inline-block;
   vertical-align: middle;
   object-fit: contain;
+}
+
+/* Anything that is not wide enough is centred instead of being stretched. */
+img {
+  max-width: 100%;
+  height: auto;
 }
 
 .news-body p {

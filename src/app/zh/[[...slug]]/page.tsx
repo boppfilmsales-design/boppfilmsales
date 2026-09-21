@@ -4,13 +4,15 @@ import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import {
   ContentColumnPage,
+  ContentEntryPage,
   DownloadsPage,
   ProductCategoryPage,
   ProductDetail,
+  ProductSubPage,
   ProductsIndex,
 } from "@/components/pages/Sections";
 import HomeContent from "@/components/pages/HomeContent";
-import { findProduct, getCategory, SITE } from "@/lib/site";
+import { findProduct, getCategory, getSub, SITE } from "@/lib/site";
 import { getLatestPostsSafe } from "@/lib/home-data";
 
 export const dynamic = "force-dynamic";
@@ -46,15 +48,29 @@ export default async function ZhPage({
   searchParams,
 }: {
   params: Params;
-  searchParams: Promise<{ id?: string }>;
+  searchParams: Promise<{ id?: string; c_id?: string; top_id?: string; p?: string; sub?: string }>;
 }) {
   const { slug = [] } = await params;
   const query = await searchParams;
-  const [first, second, third] = slug;
+  const [first, second, third, fourth] = slug;
   let content: React.ReactNode;
 
   if (!first) {
     content = <HomeContent lang="zh" />;
+  } else if (first === "products" && second && third === "list" && fourth) {
+    const category = getCategory(second);
+    const sub = category ? getSub(category, fourth) : undefined;
+    if (!category || !sub) notFound();
+    content = <ProductSubPage category={category} lang="zh" sub={sub} />;
+  } else if (first === "entry" && second && third && fourth) {
+    content = (
+      <ContentEntryPage
+        columnId={third}
+        kind={second as "about" | "lines" | "honor" | "service" | "cases"}
+        lang="zh"
+        sourceId={fourth}
+      />
+    );
   } else if (first === "products" && second && third) {
     const found = findProduct(second, third);
     if (!found) notFound();
