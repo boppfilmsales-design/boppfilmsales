@@ -366,4 +366,12 @@ export const CONTENT_NAME_ZH: Record<number, string> = {
   54: '发展案例', 145: '致买家', 146: '致市场', 147: '致自己',
   43: '公司公告', 76: '技术资料下载', 157: '证书下载', 158: 'MSDS下载',
 };
+/* --------------------------------- lines -------------------------------- */
 
+export function getProductLines(): SiteContent[] {
+  return getContents('lines');
+}
+
+export function getProductLineContent(sourceId: number | string): SiteContent | undefined {
+  return contents.find((c) => c.kind === 'lines' && String(c.sourceId) === String(sourceId));
+}

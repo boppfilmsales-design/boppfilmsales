@@ -128,7 +128,7 @@ function FamilyStrip({ active, lang }: { active: number; lang: Lang }) {
             className={`block truncate border-b border-r border-[#e2e2e2] px-3 py-[10px] transition-colors ${
               family.sourceId === active
                 ? "bg-[#c8102e] font-bold text-white"
-                : "text-[#444] hover:bg-[#fafafa] hover:text-[#c8102e]"
+                : "bg-[#f8f9fa] font-bold text-[#333] hover:bg-[#f1f3f5] hover:text-[#c8102e]"
             }`}
             href={`${base}/products/${family.sourceId}`}
             title={familyName(family, lang)}
@@ -532,19 +532,28 @@ type ContentKind = "about" | "lines" | "honor" | "service" | "cases";
 function ColumnStrip({ kind, activeId, lang }: { kind: ContentKind; activeId: number; lang: Lang }) {
   const base = baseOf(lang);
   const href = COLUMN_HREF[kind] ?? "/";
+  const columns = getContents(kind);
+
   return (
-    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-[#ececec] pb-3">
-      {getContents(kind).map((column) => (
-        <Link
-          className={`text-[13px] transition-colors ${
-            column.sourceId === activeId ? "font-bold text-[#c8102e]" : "text-[#555] hover:text-[#c8102e]"
-          }`}
-          href={`${base}${href}?id=${column.sourceId}`}
-          key={column.sourceId}
-        >
-          {lang === "zh" ? contentNameZh(column.sourceId) ?? column.name : column.name}
-        </Link>
-      ))}
+    <div className="mb-2 grid grid-cols-2 overflow-hidden rounded border border-[#e5e7eb] bg-[#f3f4f6] md:grid-cols-4">
+      {columns.map((column) => {
+        const isActive = column.sourceId === activeId;
+        const name = lang === "zh" ? contentNameZh(column.sourceId) ?? column.name : column.name;
+
+        return (
+          <Link
+            key={column.sourceId}
+            href={`${base}${href}?id=${column.sourceId}`}
+            className={`px-3 py-3.5 text-center text-[13px] font-bold transition-colors ${
+              isActive
+                ? "bg-[#c8102e] text-white shadow-sm"
+                : "bg-[#f3f4f6] text-[#374151] hover:bg-[#c8102e] hover:text-white"
+            }`}
+          >
+            {name}
+          </Link>
+        );
+      })}
     </div>
   );
 }
@@ -621,18 +630,21 @@ function CardGrid({
 function LinesList({
   cards,
   entries,
+  activeId,
   lang,
 }: {
   cards: { sourceId: number; title: string; titleZh?: string; image: string; externalUrl?: string; hot?: boolean }[];
   entries: { sourceId: number; bodyHtml: string; bodyHtmlZh?: string }[];
+  activeId: number;
   lang: Lang;
 }) {
+  const base = baseOf(lang);
   return (
     <ul className="space-y-6">
       {cards.map((card) => {
         const entry = entries.find((item) => item.sourceId === card.sourceId);
         const title = lang === "zh" && card.titleZh ? card.titleZh : card.title;
-        const href = card.externalUrl || entryHref("lines", 0, card.sourceId, lang);
+        const href = card.externalUrl || entryHref("lines", activeId, card.sourceId, lang);
         const text = lang === "zh" && entry?.bodyHtmlZh ? entry.bodyHtmlZh : entry?.bodyHtml ?? "";
         return (
           <li className="flex flex-col gap-5 border border-[#e8e8e8] bg-white p-5 md:flex-row" key={card.sourceId}>
@@ -656,10 +668,10 @@ function LinesList({
               </Link>
               <p className="mt-3 text-[13px] leading-[24px] text-[#666]">{stripHtml(text, 420)}</p>
               <Link
-                className="mt-4 inline-block text-[12px] font-bold uppercase tracking-[1px] text-[#c8102e]"
-                href={href}
+                href={`${base}/product-lines?id=${activeId}`}
+                className="mt-3 inline-block text-[12px] font-bold text-[#c8102e] hover:underline"
               >
-                {pick(lang, "view MORE", "查看详情")} →
+                {lang === "zh" ? "查看详情 →" : "VIEW MORE →"}
               </Link>
             </div>
           </li>
@@ -669,11 +681,6 @@ function LinesList({
   );
 }
 
-/**
- * Mirrors honor.php / case.php / service.php / product_lines.php / about.php:
- * a column tab strip plus the column body, every image at its natural size
- * (never stretched), so nothing looks blurry.
- */
 export function ContentColumnPage({
   kind,
   sourceId,
@@ -705,7 +712,7 @@ export function ContentColumnPage({
       <EmptyState lang={lang} />
     );
   } else if (kind === "lines") {
-    body = cards.length ? <LinesList cards={cards} entries={entries} lang={lang} /> : <EmptyState lang={lang} />;
+    body = cards.length ? <LinesList cards={cards} entries={entries} activeId={active.sourceId} lang={lang} /> : <EmptyState lang={lang} />;
   } else {
     const images = contentImages(active);
     const html = contentBody(active, lang);
@@ -749,7 +756,6 @@ export function ContentColumnPage({
   );
 }
 
-/** Detail page of one honour / case / service / production-line entry. */
 export function ContentEntryPage({
   kind,
   columnId,
@@ -835,81 +841,20 @@ export function DownloadsPage({ lang = "en" }: { lang?: Lang }) {
                     <span className="flex h-[34px] w-[30px] items-center justify-center bg-[#c8102e] text-[9px] font-black text-white">
                       PDF
                     </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13px] font-bold text-[#333]">{pdf.product}</span>
-                      <span className="block truncate text-[11px] text-[#999]">{pdf.label || "data sheet"}</span>
-                    </span>
+                    <span className="min-w-0 flex-1 text-[13px] text-[#333]">{pdf.label || pdf.file.split("/").pop()}</span>
                     <a
-                      className="border border-[#c8102e] px-4 py-[7px] text-[12px] font-bold text-[#c8102e] hover:bg-[#c8102e] hover:text-white"
+                      className="inline-flex items-center gap-1.5 border border-[#c8102e] bg-[#c8102e] px-4 py-1.5 text-[12px] font-bold text-white hover:bg-[#a30d25]"
                       href={pdf.file}
                       rel="noopener noreferrer"
                       target="_blank"
                     >
-                      {pick(lang, "Download", "下载")}
+                      {pick(lang, "Download PDF", "下载 PDF")}
                     </a>
                   </li>
                 ))}
               </ul>
             </div>
           ) : null}
-
-          {groups.map((group) => (
-            <div className="border border-[#e8e8e8] bg-white" id={`down-${group.sourceId}`} key={group.sourceId}>
-              <h2 className="border-b border-[#eee] bg-[#fafafa] px-6 py-4 text-[16px] font-bold text-[#22262e]">
-                {lang === "zh" ? group.columnZh || group.column : group.column}
-                <span className="ml-2 text-[12px] font-normal text-[#999]">{group.rows.length} files</span>
-              </h2>
-              {group.rows.length === 0 ? (
-                <p className="px-6 py-6 text-[13px] text-[#888]">
-                  {pick(
-                    lang,
-                    "No public file in this column yet — please ask sales@boppfilmsales.com for a copy.",
-                    "此栏目暂无公开文件，请联系 sales@boppfilmsales.com 索取。",
-                  )}
-                </p>
-              ) : (
-                <ul className="divide-y divide-[#f2f2f2]">
-                  {group.rows.map((row, index) => (
-                    <li key={`${row.name}-${index}`}>
-                      <details className="group">
-                        <summary className="flex cursor-pointer flex-wrap items-center gap-3 px-6 py-4">
-                          <span className="flex h-[34px] w-[30px] items-center justify-center bg-[#c8102e] text-[9px] font-black text-white">
-                            {(row.format || "PDF").slice(0, 4).toUpperCase()}
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block text-[13px] font-bold text-[#333]">{row.name}</span>
-                            <span className="block text-[11px] text-[#999]">
-                              {[row.serial, row.date].filter(Boolean).join(" · ")}
-                            </span>
-                          </span>
-                          {row.file && isValidFile(row.file) ? (
-                            <a
-                              className="border border-[#c8102e] px-4 py-[7px] text-[12px] font-bold text-[#c8102e] hover:bg-[#c8102e] hover:text-white"
-                              href={row.file}
-                              rel="noopener noreferrer"
-                              target="_blank"
-                            >
-                              {pick(lang, "Download", "下载")}
-                            </a>
-                          ) : (
-                            <span className="border border-[#c8102e] px-4 py-[7px] text-[12px] font-bold text-[#c8102e]">
-                              {pick(lang, "View details", "查看详情")}
-                            </span>
-                          )}
-                        </summary>
-                        <div
-                          className="news-body border-t border-[#f2f2f2] bg-[#fafafa] px-6 py-5 text-[13px] leading-[26px] text-[#555]"
-                          dangerouslySetInnerHTML={{
-                            __html: row.bodyHtml || `<p>${pick(lang, "Content is being prepared.", "内容整理中。")}</p>`,
-                          }}
-                        />
-                      </details>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          ))}
         </div>
       </section>
     </>
@@ -917,31 +862,30 @@ export function DownloadsPage({ lang = "en" }: { lang?: Lang }) {
 }
 
 export function AllPdfsSection({ lang = "en" }: { lang?: Lang }) {
-  const pdfs = allPdfs();
-  if (pdfs.length === 0) return null;
+  const productPdfs = allPdfs();
+  if (productPdfs.length === 0) return null;
+
   return (
-    <section className="bg-[#fafafa] py-14">
+    <section className="py-10 bg-[#f9fafb] border-t border-[#e5e7eb]">
       <div className="mx-auto w-full max-w-[1560px] px-4">
-        <h2 className="text-center text-[26px] font-black text-[#22262e]">
-          {pick(lang, "Technical Library", "技术资料库")}{" "}
-          <span className="text-[#c8102e]">({pdfs.length} PDF)</span>
+        <h2 className="text-[18px] font-bold text-[#22262e] mb-6 flex items-center gap-3">
+          <span className="w-[5px] h-[18px] bg-[#c8102e] block" />
+          {lang === "zh" ? "全部技术 PDF 资料" : "All Technical PDFs"}
         </h2>
-        <i className="mx-auto mt-3 block h-[5px] w-[90px] bg-[#c8102e]" />
-        <div className="mt-8 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {pdfs.slice(0, 24).map((pdf) => (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {productPdfs.slice(0, 12).map((pdf) => (
             <a
-              className="flex items-center gap-3 border border-[#e8e8e8] bg-white px-4 py-3 hover:border-[#c8102e]"
-              href={pdf.file}
               key={pdf.file}
-              rel="noopener noreferrer"
+              href={pdf.file}
               target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 p-4 bg-white border border-[#e8e8e8] hover:border-[#c8102e] hover:shadow-md transition-all group"
             >
               <span className="flex h-[32px] w-[28px] shrink-0 items-center justify-center bg-[#c8102e] text-[9px] font-black text-white">
                 PDF
               </span>
-              <span className="min-w-0">
-                <span className="block truncate text-[12px] font-bold text-[#333]">{pdf.product}</span>
-                <span className="block truncate text-[11px] text-[#999]">{pdf.label || "data sheet"}</span>
+              <span className="truncate text-[12px] text-[#333] group-hover:text-[#c8102e]">
+                {pdf.label || pdf.file.split("/").pop()}
               </span>
             </a>
           ))}
@@ -950,5 +894,3 @@ export function AllPdfsSection({ lang = "en" }: { lang?: Lang }) {
     </section>
   );
 }
-
-
