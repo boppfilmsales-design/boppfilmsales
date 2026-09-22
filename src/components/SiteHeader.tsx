@@ -33,10 +33,13 @@ export default function SiteHeader({ active, lang = "en" }: { active?: string; l
 
       {/* brand bar */}
       <div className="mx-auto flex w-full max-w-[1560px] items-center justify-between gap-6 px-4 py-5">
-        <Link className="flex items-center gap-3" href={lang === "zh" ? "/zh" : "/"}>
-          <span className="flex h-[52px] w-[52px] items-center justify-center bg-[#c8102e] text-[17px] font-black text-white">
-            AP
-          </span>
+        <Link className="flex items-center gap-3.5" href={lang === "zh" ? "/zh" : "/"}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/uploads/content/logo.png"
+            alt={lang === "zh" ? SITE.nameZh : SITE.name}
+            className="h-[52px] w-auto object-contain"
+          />
           <span className="leading-tight">
             <span className="block text-[17px] font-black tracking-[-0.2px] text-[#22262e] md:text-[20px]">
               {lang === "zh" ? SITE.nameZh : SITE.name}
