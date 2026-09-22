@@ -150,10 +150,12 @@ export default function HomeContent({
   // 轮播图状态控制
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  // 自动循环轮播（每隔 4 秒切换下一张图）
+  // 自动循环轮播（每隔 4 秒切换下一张图，当页面不可见时暂停以节省 Worker 资源）
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+      if (document.visibilityState === "visible") {
+        setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+      }
     }, 4000);
     return () => clearInterval(timer);
   }, []);
