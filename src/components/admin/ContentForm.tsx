@@ -3,63 +3,505 @@
 import { useState } from "react";
 import type { SiteContent } from "@/lib/site";
 
-export default function ContentForm({ content, onCancel, onSaved }: {
+/* ---------------- types ---------------- */
+
+type CardItem = {
+  sourceId?: number;
+  title?: string;
+  titleZh?: string;
+  image?: string;
+  externalUrl?: string;
+  hot?: boolean;
+  [k: string]: unknown;
+};
+
+type EntryItem = {
+  sourceId?: number;
+  title?: string;
+  titleZh?: string;
+  bodyHtml?: string;
+  bodyHtmlZh?: string;
+  images?: string[];
+  externalUrl?: string;
+  date?: string;
+  [k: string]: unknown;
+};
+
+type DownloadRow = {
+  name?: string;
+  serial?: string;
+  format?: string;
+  date?: string;
+  bodyHtml?: string;
+  [k: string]: unknown;
+};
+
+type AboutBlock = { bodyHtml?: string; images?: string[] };
+
+const inputCls =
+  "mt-1 w-full border border-[#ddd] px-3 py-2 text-[13px] outline-none focus:border-[#e61d39]";
+const btnCls =
+  "rounded bg-[#e61d39] px-4 py-2 text-[13px] font-bold text-white disabled:opacity-60";
+
+/* ---------------- helpers ---------------- */
+
+function isAboutBlock(v: unknown): v is AboutBlock {
+  return !!v && typeof v === "object" && !Array.isArray(v);
+}
+
+function ImageListEditor({
+  images,
+  onChange,
+}: {
+  images: string[];
+  onChange: (next: string[]) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      {images.map((img, i) => (
+        <div className="flex items-center gap-2" key={i}>
+          <input
+            className={inputCls}
+            value={img}
+            onChange={(e) => {
+              const next = [...images];
+              next[i] = e.target.value;
+              onChange(next);
+            }}
+            placeholder="图片 URL，例如 /uploads/content/xxx.jpg"
+          />
+          <button
+            className="shrink-0 rounded bg-[#f4f4f4] px-3 py-2 text-[12px] text-[#888] hover:bg-[#eee]"
+            onClick={() => onChange(images.filter((_, idx) => idx !== i))}
+            type="button"
+          >
+            删除
+          </button>
+        </div>
+      ))}
+      <button
+        className="rounded border border-dashed border-[#ccc] px-3 py-2 text-[12px] text-[#888] hover:border-[#e61d39] hover:text-[#e61d39]"
+        onClick={() => onChange([...images, ""])}
+        type="button"
+      >
+        + 添加图片
+      </button>
+    </div>
+  );
+}
+
+/* ---------------- main ---------------- */
+
+export default function ContentForm({
+  content,
+  onCancel,
+  onSaved,
+}: {
   content: SiteContent;
   onCancel: () => void;
   onSaved: () => void;
 }) {
+  const kind = content.kind;
+  const isAbout = kind === "about";
+  const isDown = kind === "down";
+  const isList = !isAbout && !isDown;
+
   const [name, setName] = useState(content.name);
   const [nameZh, setNameZh] = useState(content.nameZh);
-  const [items, setItems] = useState(JSON.stringify(content.items ?? {}, null, 2));
-  const [itemsZh, setItemsZh] = useState(JSON.stringify(content.itemsZh ?? {}, null, 2));
-  const [entries, setEntries] = useState(JSON.stringify(content.entries ?? [], null, 2));
+
+  // about
+  const aboutEn = isAboutBlock(content.items) ? (content.items as AboutBlock) : {};
+  const aboutZh = isAboutBlock(content.itemsZh) ? (content.itemsZh as AboutBlock) : {};
+  const [bodyEn, setBodyEn] = useState(aboutEn.bodyHtml ?? "");
+  const [bodyZh, setBodyZh] = useState(aboutZh.bodyHtml ?? "");
+  const [images, setImages] = useState<string[]>(aboutEn.images ?? []);
+
+  // list (cards + entries)
+  const [cards, setCards] = useState<CardItem[]>(
+    Array.isArray(content.items) ? (content.items as CardItem[]) : [],
+  );
+  const [entries, setEntries] = useState<EntryItem[]>(
+    Array.isArray(content.entries) ? (content.entries as EntryItem[]) : [],
+  );
+
+  // download rows
+  const [rows, setRows] = useState<DownloadRow[]>(
+    Array.isArray(content.items) ? (content.items as DownloadRow[]) : [],
+  );
+
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+
+  function move<T>(list: T[], index: number, dir: -1 | 1): T[] {
+    const target = index + dir;
+    if (target < 0 || target >= list.length) return list;
+    const next = [...list];
+    [next[index], next[target]] = [next[target], next[index]];
+    return next;
+  }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setBusy(true);
     setMessage("");
+    let payload: Record<string, unknown>;
+    if (isAbout) {
+      payload = {
+        name,
+        nameZh,
+        items: { bodyHtml: bodyEn, images },
+        itemsZh: { bodyHtml: bodyZh, images },
+      };
+    } else if (isDown) {
+      payload = { name, nameZh, items: rows };
+    } else {
+      payload = { name, nameZh, items: cards, entries };
+    }
     try {
       const response = await fetch(`/api/admin/content/${content.sourceId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          nameZh,
-          items: JSON.parse(items),
-          itemsZh: JSON.parse(itemsZh),
-          entries: JSON.parse(entries),
-        }),
+        body: JSON.stringify(payload),
       });
-      const data = await response.json() as { ok?: boolean; error?: string };
+      const data = (await response.json()) as { ok?: boolean; error?: string };
       if (!response.ok || !data.ok) throw new Error(data.error ?? "保存失败");
       onSaved();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "JSON 格式或保存失败");
+      setMessage(error instanceof Error ? error.message : "保存失败");
     } finally {
       setBusy(false);
     }
   }
 
-  const input = "mt-1 w-full border border-[#ddd] px-3 py-2 text-[13px] outline-none focus:border-[#e61d39]";
   return (
     <form className="mb-5 border border-[#e3e3e3] bg-white p-5" onSubmit={submit}>
       <div className="flex items-center justify-between">
-        <h2 className="text-[16px] font-bold text-[#333]">编辑栏目：{content.name}</h2>
-        <button className="text-[12px] text-[#888] hover:text-[#e61d39]" onClick={onCancel} type="button">关闭 ✕</button>
+        <h2 className="text-[16px] font-bold text-[#333]">
+          编辑栏目：{name} <span className="text-[12px] font-normal text-[#aaa]">（{kind}）</span>
+        </h2>
+        <button className="text-[12px] text-[#888] hover:text-[#e61d39]" onClick={onCancel} type="button">
+          关闭 ✕
+        </button>
       </div>
+
       <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <label className="text-[12px] font-bold text-[#555]">英文栏目名称<input className={input} onChange={(event) => setName(event.target.value)} value={name} /></label>
-        <label className="text-[12px] font-bold text-[#555]">中文栏目名称<input className={input} onChange={(event) => setNameZh(event.target.value)} value={nameZh} /></label>
+        <label className="text-[12px] font-bold text-[#555]">
+          英文栏目名称
+          <input className={inputCls} onChange={(e) => setName(e.target.value)} value={name} />
+        </label>
+        <label className="text-[12px] font-bold text-[#555]">
+          中文栏目名称
+          <input className={inputCls} onChange={(e) => setNameZh(e.target.value)} value={nameZh} />
+        </label>
       </div>
-      <div className="mt-4 grid gap-4 lg:grid-cols-3">
-        <label className="text-[12px] font-bold text-[#555]">英文数据 JSON<textarea className={`${input} h-72 font-mono text-[11px]`} onChange={(event) => setItems(event.target.value)} value={items} /></label>
-        <label className="text-[12px] font-bold text-[#555]">中文数据 JSON<textarea className={`${input} h-72 font-mono text-[11px]`} onChange={(event) => setItemsZh(event.target.value)} value={itemsZh} /></label>
-        <label className="text-[12px] font-bold text-[#555]">列表/文章 entries JSON<textarea className={`${input} h-72 font-mono text-[11px]`} onChange={(event) => setEntries(event.target.value)} value={entries} /></label>
-      </div>
-      <div className="mt-4 flex items-center gap-3">
-        <button className="bg-[#e61d39] px-6 py-2 text-[13px] font-bold text-white disabled:opacity-60" disabled={busy} type="submit">{busy ? "保存中..." : "保存栏目"}</button>
+
+      {/* ABOUT */}
+      {isAbout && (
+        <div className="mt-4 space-y-4">
+          <label className="block text-[12px] font-bold text-[#555]">
+            英文正文（支持 HTML）
+            <textarea
+              className={`${inputCls} h-48 font-mono text-[12px]`}
+              onChange={(e) => setBodyEn(e.target.value)}
+              value={bodyEn}
+            />
+          </label>
+          <label className="block text-[12px] font-bold text-[#555]">
+            中文正文（支持 HTML）
+            <textarea
+              className={`${inputCls} h-48 font-mono text-[12px]`}
+              onChange={(e) => setBodyZh(e.target.value)}
+              value={bodyZh}
+            />
+          </label>
+          <div>
+            <p className="mb-2 text-[12px] font-bold text-[#555]">图片（{images.length}）</p>
+            <ImageListEditor images={images} onChange={setImages} />
+          </div>
+        </div>
+      )}
+
+      {/* DOWNLOAD */}
+      {isDown && (
+        <div className="mt-4 space-y-3">
+          <p className="text-[12px] font-bold text-[#555]">下载文件列表</p>
+          {rows.map((row, i) => (
+            <div className="rounded border border-[#eee] p-3" key={i}>
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="text-[11px] font-bold text-[#777]">
+                  名称
+                  <input
+                    className={inputCls}
+                    value={row.name ?? ""}
+                    onChange={(e) => {
+                      const next = [...rows];
+                      next[i] = { ...next[i], name: e.target.value };
+                      setRows(next);
+                    }}
+                  />
+                </label>
+                <label className="text-[11px] font-bold text-[#777]">
+                  编号/格式/日期
+                  <input
+                    className={inputCls}
+                    value={`${row.serial ?? ""} ${row.format ?? ""} ${row.date ?? ""}`.trim()}
+                    onChange={(e) => {
+                      const [serial = "", format = "", date = ""] = e.target.value.split(" ");
+                      const next = [...rows];
+                      next[i] = { ...next[i], serial, format, date };
+                      setRows(next);
+                    }}
+                    placeholder="serial format date"
+                  />
+                </label>
+              </div>
+              <label className="mt-2 block text-[11px] font-bold text-[#777]">
+                说明（支持 HTML）
+                <textarea
+                  className={`${inputCls} h-24 font-mono text-[11px]`}
+                  value={row.bodyHtml ?? ""}
+                  onChange={(e) => {
+                    const next = [...rows];
+                    next[i] = { ...next[i], bodyHtml: e.target.value };
+                    setRows(next);
+                  }}
+                />
+              </label>
+              <div className="mt-2 flex gap-2">
+                <button
+                  className="rounded bg-[#f4f4f4] px-3 py-1 text-[12px] text-[#888] hover:bg-[#eee]"
+                  onClick={() => setRows(rows.filter((_, idx) => idx !== i))}
+                  type="button"
+                >
+                  删除
+                </button>
+              </div>
+            </div>
+          ))}
+          <button
+            className="rounded border border-dashed border-[#ccc] px-3 py-2 text-[12px] text-[#888] hover:border-[#e61d39] hover:text-[#e61d39]"
+            onClick={() => setRows([...rows, { name: "", serial: "", format: "", date: "", bodyHtml: "" }])}
+            type="button"
+          >
+            + 添加下载项
+          </button>
+        </div>
+      )}
+
+      {/* LIST: cards + entries (honor / cases / service / lines) */}
+      {isList && (
+        <div className="mt-4 space-y-6">
+          <div>
+            <p className="mb-2 text-[12px] font-bold text-[#555]">条目卡片（列表显示）</p>
+            {cards.map((card, i) => (
+              <div className="mb-3 rounded border border-[#eee] p-3" key={i}>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <label className="text-[11px] font-bold text-[#777]">
+                    标题（英）
+                    <input
+                      className={inputCls}
+                      value={card.title ?? ""}
+                      onChange={(e) => {
+                        const next = [...cards];
+                        next[i] = { ...next[i], title: e.target.value };
+                        setCards(next);
+                      }}
+                    />
+                  </label>
+                  <label className="text-[11px] font-bold text-[#777]">
+                    标题（中）
+                    <input
+                      className={inputCls}
+                      value={card.titleZh ?? ""}
+                      onChange={(e) => {
+                        const next = [...cards];
+                        next[i] = { ...next[i], titleZh: e.target.value };
+                        setCards(next);
+                      }}
+                    />
+                  </label>
+                  <label className="text-[11px] font-bold text-[#777]">
+                    图片 URL
+                    <input
+                      className={inputCls}
+                      value={card.image ?? ""}
+                      onChange={(e) => {
+                        const next = [...cards];
+                        next[i] = { ...next[i], image: e.target.value };
+                        setCards(next);
+                      }}
+                    />
+                  </label>
+                  <label className="text-[11px] font-bold text-[#777]">
+                    外部链接（留空为本站详情）
+                    <input
+                      className={inputCls}
+                      value={card.externalUrl ?? ""}
+                      onChange={(e) => {
+                        const next = [...cards];
+                        next[i] = { ...next[i], externalUrl: e.target.value };
+                        setCards(next);
+                      }}
+                    />
+                  </label>
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <label className="flex items-center gap-1 text-[11px] text-[#777]">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(card.hot)}
+                      onChange={(e) => {
+                        const next = [...cards];
+                        next[i] = { ...next[i], hot: e.target.checked };
+                        setCards(next);
+                      }}
+                    />
+                    热门 (HOT)
+                  </label>
+                  <button
+                    className="rounded bg-[#f4f4f4] px-2 py-1 text-[11px] text-[#888] hover:bg-[#eee]"
+                    onClick={() => setCards(move(cards, i, -1))}
+                    type="button"
+                  >
+                    ↑上移
+                  </button>
+                  <button
+                    className="rounded bg-[#f4f4f4] px-2 py-1 text-[11px] text-[#888] hover:bg-[#eee]"
+                    onClick={() => setCards(move(cards, i, 1))}
+                    type="button"
+                  >
+                    ↓下移
+                  </button>
+                  <button
+                    className="rounded bg-[#f4f4f4] px-2 py-1 text-[11px] text-[#e61d39] hover:bg-[#eee]"
+                    onClick={() => setCards(cards.filter((_, idx) => idx !== i))}
+                    type="button"
+                  >
+                    删除
+                  </button>
+                </div>
+              </div>
+            ))}
+            <button
+              className="rounded border border-dashed border-[#ccc] px-3 py-2 text-[12px] text-[#888] hover:border-[#e61d39] hover:text-[#e61d39]"
+              onClick={() =>
+                setCards([...cards, { sourceId: -Date.now(), title: "", titleZh: "", image: "", externalUrl: "", hot: false }])
+              }
+              type="button"
+            >
+              + 添加条目
+            </button>
+          </div>
+
+          <div>
+            <p className="mb-2 text-[12px] font-bold text-[#555]">条目详情正文（与上面卡片按 sourceId 对应）</p>
+            {entries.map((entry, i) => (
+              <div className="mb-3 rounded border border-[#eee] p-3" key={i}>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <label className="text-[11px] font-bold text-[#777]">
+                    标题（英）
+                    <input
+                      className={inputCls}
+                      value={entry.title ?? ""}
+                      onChange={(e) => {
+                        const next = [...entries];
+                        next[i] = { ...next[i], title: e.target.value };
+                        setEntries(next);
+                      }}
+                    />
+                  </label>
+                  <label className="text-[11px] font-bold text-[#777]">
+                    标题（中）
+                    <input
+                      className={inputCls}
+                      value={entry.titleZh ?? ""}
+                      onChange={(e) => {
+                        const next = [...entries];
+                        next[i] = { ...next[i], titleZh: e.target.value };
+                        setEntries(next);
+                      }}
+                    />
+                  </label>
+                  <label className="text-[11px] font-bold text-[#777]">
+                    日期
+                    <input
+                      className={inputCls}
+                      value={entry.date ?? ""}
+                      onChange={(e) => {
+                        const next = [...entries];
+                        next[i] = { ...next[i], date: e.target.value };
+                        setEntries(next);
+                      }}
+                    />
+                  </label>
+                  <label className="text-[11px] font-bold text-[#777]">
+                    图片 URL（详情配图）
+                    <input
+                      className={inputCls}
+                      value={(entry.images ?? [])[0] ?? ""}
+                      onChange={(e) => {
+                        const next = [...entries];
+                        next[i] = { ...next[i], images: e.target.value ? [e.target.value] : [] };
+                        setEntries(next);
+                      }}
+                    />
+                  </label>
+                </div>
+                <label className="mt-2 block text-[11px] font-bold text-[#777]">
+                  详情正文（英，支持 HTML）
+                  <textarea
+                    className={`${inputCls} h-28 font-mono text-[11px]`}
+                    value={entry.bodyHtml ?? ""}
+                    onChange={(e) => {
+                      const next = [...entries];
+                      next[i] = { ...next[i], bodyHtml: e.target.value };
+                      setEntries(next);
+                    }}
+                  />
+                </label>
+                <label className="mt-2 block text-[11px] font-bold text-[#777]">
+                  详情正文（中，支持 HTML）
+                  <textarea
+                    className={`${inputCls} h-28 font-mono text-[11px]`}
+                    value={entry.bodyHtmlZh ?? ""}
+                    onChange={(e) => {
+                      const next = [...entries];
+                      next[i] = { ...next[i], bodyHtmlZh: e.target.value };
+                      setEntries(next);
+                    }}
+                  />
+                </label>
+                <div className="mt-2 flex gap-2">
+                  <button
+                    className="rounded bg-[#f4f4f4] px-2 py-1 text-[11px] text-[#e61d39] hover:bg-[#eee]"
+                    onClick={() => setEntries(entries.filter((_, idx) => idx !== i))}
+                    type="button"
+                  >
+                    删除
+                  </button>
+                </div>
+              </div>
+            ))}
+            <button
+              className="rounded border border-dashed border-[#ccc] px-3 py-2 text-[12px] text-[#888] hover:border-[#e61d39] hover:text-[#e61d39]"
+              onClick={() =>
+                setEntries([
+                  ...entries,
+                  { sourceId: -Date.now(), title: "", titleZh: "", date: "", bodyHtml: "", bodyHtmlZh: "", images: [] },
+                ])
+              }
+              type="button"
+            >
+              + 添加详情
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="mt-5 flex items-center gap-3">
+        <button className={btnCls} disabled={busy} type="submit">
+          {busy ? "保存中..." : "保存栏目"}
+        </button>
         {message ? <span className="text-[12px] text-[#e61d39]">{message}</span> : null}
       </div>
     </form>

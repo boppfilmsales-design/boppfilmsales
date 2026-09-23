@@ -6,7 +6,7 @@ import { ContentEntryPage } from "@/components/pages/Sections";
 import { getContent, getContents, stripHtml } from "@/lib/site";
 import { getContentForSite } from "@/lib/content-db";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 const KINDS = ["about", "lines", "honor", "service", "cases"] as const;
 type ContentKind = (typeof KINDS)[number];

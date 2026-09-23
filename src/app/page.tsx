@@ -6,7 +6,7 @@ import { SITE } from "@/lib/site-helpers";
 import { getLatestPostsSafe } from "@/lib/home-data";
 import { getHomeSummary } from "@/lib/site-summary";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: `${SITE.name} - 4.5Mic BOPET film, BOPP film, BOPP tape, thermal laminating film`,
