@@ -18,8 +18,7 @@ export async function GET(
 
   try {
     const { catId } = await params;
-    
-    const familyId = Number.parseInt((await params).catId, 10);
+    const familyId = Number.parseInt(catId, 10);
     const categories = getCategories();
     const currentCategory = categories.find((c) => c.sourceId === familyId);
     if (!currentCategory) return NextResponse.json({ ok: false, error: "Product category not found" }, { status: 404 });

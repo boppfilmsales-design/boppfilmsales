@@ -87,6 +87,7 @@ export default function Dashboard({ username }: { username: string }) {
   const [productCats, setProductCats] = useState<AdminCategory[]>([]);
   const [productEditing, setProductEditing] = useState<AdminProductDetail | null>(null);
   const [productCreating, setProductCreating] = useState(false);
+  const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
   const [contentLoading, setContentLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
 
@@ -126,6 +127,7 @@ export default function Dashboard({ username }: { username: string }) {
     setNewsRows([]);
     setProductEditing(null);
     setProductCreating(false);
+    setSelectedProducts([]);
 
     if (col.dataSource === "news-db") {
       const params = new URLSearchParams({ page: "1", perPage: "50", categoryId: String(col.sourceId) });
@@ -176,6 +178,34 @@ export default function Dashboard({ username }: { username: string }) {
     const res = await fetch(`/api/admin/products/item/${id}`, { method: "DELETE" });
     setNotice(res.ok ? `产品 #${id} 已删除。` : "删除失败。");
     if (activeColumn) await loadColumnContent(activeColumn);
+  }
+
+  function toggleProductSelection(id: number) {
+    setSelectedProducts((current) => current.includes(id)
+      ? current.filter((value) => value !== id)
+      : [...current, id]);
+  }
+
+  function toggleAllProducts() {
+    setSelectedProducts((current) => current.length === productRows.length
+      ? []
+      : productRows.map((row) => row.id));
+  }
+
+  async function bulkProductAction(action: "delete" | "status", status?: string) {
+    if (selectedProducts.length === 0) {
+      setNotice("请先选择产品。");
+      return;
+    }
+    if (action === "delete" && !window.confirm(`确定删除选中的 ${selectedProducts.length} 个产品吗？`)) return;
+    const response = await fetch("/api/admin/products", {
+      method: action === "delete" ? "DELETE" : "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(action === "delete" ? { ids: selectedProducts } : { ids: selectedProducts, status }),
+    });
+    const data = await response.json() as { ok?: boolean; error?: string; count?: number };
+    setNotice(data.ok ? `已处理 ${data.count ?? 0} 个产品。` : (data.error ?? "操作失败。"));
+    if (data.ok && activeColumn) await loadColumnContent(activeColumn);
   }
 
   async function removeNews(id: number, title: string) {
@@ -482,11 +512,20 @@ export default function Dashboard({ username }: { username: string }) {
                 </button>
                 <span className="text-[12px] text-[#888]">{productRows.length} products in this category</span>
                 <span className="rounded bg-[#f4f4f4] px-2 py-[3px] text-[11px] font-bold text-[#888]">{displayTypeName(activeColumn.displayType)}</span>
+                <button className="border border-[#ddd] px-3 py-[7px] text-[12px] text-[#666] disabled:opacity-40" disabled={selectedProducts.length === 0} onClick={() => void bulkProductAction("delete")} type="button">批量删除</button>
+                <select className="border border-[#ddd] px-2 py-[6px] text-[12px] text-[#666]" defaultValue="" onChange={(event) => { const value = event.target.value; event.target.value = ""; if (value) void bulkProductAction("status", value); }}>
+                  <option value="">批量设置状态</option>
+                  <option value="正常">正常</option>
+                  <option value="置顶">置顶</option>
+                  <option value="下架">下架</option>
+                </select>
+                {notice ? <span className="text-[12px] text-[#e61d39]">{notice}</span> : null}
               </div>
               <div className="overflow-x-auto border border-[#e3e3e3] bg-white">
                 <table className="w-full min-w-[900px] text-left text-[13px]">
                   <thead className="bg-[#fafafa] text-[12px] text-[#888]">
                     <tr>
+                      <th className="px-3 py-3"><input aria-label="全选产品" checked={productRows.length > 0 && selectedProducts.length === productRows.length} onChange={toggleAllProducts} type="checkbox" /></th>
                       <th className="px-3 py-3">编号</th>
                       <th className="px-3 py-3">排序</th>
                       <th className="px-3 py-3">标题</th>
@@ -499,6 +538,7 @@ export default function Dashboard({ username }: { username: string }) {
                   <tbody className="divide-y divide-[#eee]">
                     {productRows.map((row) => (
                       <tr key={row.id} className="align-top">
+                        <td className="px-3 py-3"><input aria-label={`选择产品 ${row.title}`} checked={selectedProducts.includes(row.id)} onChange={() => toggleProductSelection(row.id)} type="checkbox" /></td>
                         <td className="px-3 py-3 text-[#999]">{row.id}</td>
                         <td className="px-3 py-3 text-[#666]">{row.sort}</td>
                         <td className="max-w-[280px] px-3 py-3">
@@ -515,7 +555,7 @@ export default function Dashboard({ username }: { username: string }) {
                         </td>
                         <td className="px-3 py-3 text-[#666]">{row.subCategory}</td>
                         <td className="px-3 py-3">
-                          <span className="bg-[#e6f6ea] px-2 py-[3px] text-[11px] font-bold text-[#1c7c39]">正常</span>
+                          <span className={`px-2 py-[3px] text-[11px] font-bold ${row.status === "下架" ? "bg-[#f4f4f4] text-[#888]" : row.status === "置顶" ? "bg-[#fff5d6] text-[#9a6b00]" : "bg-[#e6f6ea] text-[#1c7c39]"}`}>{row.status}</span>
                         </td>
                         <td className="px-3 py-3">
                           <button className="mr-3 text-[12px] text-[#1c6dd0] hover:underline" onClick={() => void openProductEdit(row.id)} type="button">编辑</button>
@@ -525,7 +565,7 @@ export default function Dashboard({ username }: { username: string }) {
                       </tr>
                     ))}
                     {productRows.length === 0 && (
-                      <tr><td className="py-8 text-center text-[13px] text-[#888]" colSpan={7}>No products found.</td></tr>
+                      <tr><td className="py-8 text-center text-[13px] text-[#888]" colSpan={8}>No products found.</td></tr>
                     )}
                   </tbody>
                 </table>
