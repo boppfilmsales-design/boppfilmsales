@@ -861,8 +861,14 @@ export function DownloadsPage({ lang = "en" }: { lang?: Lang }) {
   );
 }
 
-export function AllPdfsSection({ lang = "en" }: { lang?: Lang }) {
-  const productPdfs = allPdfs();
+export function AllPdfsSection({
+  lang = "en",
+  pdfs,
+}: {
+  lang?: Lang;
+  pdfs?: { label: string; file: string; product: string }[];
+}) {
+  const productPdfs = pdfs ?? allPdfs();
   if (productPdfs.length === 0) return null;
 
   return (

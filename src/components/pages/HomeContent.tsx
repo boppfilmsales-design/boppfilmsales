@@ -2,15 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import {
-  SITE,
-  productCount,
-  categoryProductNames,
-  productImageUrl,
-  categoryNameZh,
-  categoryProductNamesZh,
-  homeAboutZhHtml,
-} from "@/lib/site";
+import { categoryNameZh, SITE } from "@/lib/site-helpers";
 import { AllPdfsSection } from "@/components/pages/Sections";
 
 const COPY = {
@@ -143,9 +135,9 @@ export default function HomeContent({
   const news = initialData?.news || [];
   const featured = initialData?.featured || [];
   const gallery = initialData?.gallery || [];
-  const totalProducts = initialData?.totalProducts || productCount();
+  const totalProducts = initialData?.totalProducts || 0;
 
-  const aboutZh = lang === "zh" ? homeAboutZhHtml() : "";
+  const aboutZh = lang === "zh" ? initialData?.aboutZhHtml || "" : "";
 
   // 轮播图状态控制
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -351,13 +343,13 @@ export default function HomeContent({
                       {lang === "zh" && zhName ? zhName : category.name}
                     </h3>
                     <span className="shrink-0 bg-[#f4f4f4] px-2 py-[2px] text-[11px] font-bold text-[#888]">
-                      {productCount(category)}
+                      {category.count}
                     </span>
                   </div>
                   <p className="mt-3 line-clamp-3 text-[13px] leading-[22px] text-[#777]">
                     {lang === "zh"
-                      ? categoryProductNamesZh(category, 3).join(" · ")
-                      : categoryProductNames(category, 3).join(" · ")}
+                      ? (category.sampleNamesZh || []).join(" · ")
+                      : (category.sampleNames || []).join(" · ")}
                   </p>
                 </Link>
               );
@@ -395,7 +387,7 @@ export default function HomeContent({
                     <img
                       alt={product.title}
                       className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-110"
-                      src={productImageUrl(product.gallery[0])}
+                      src={product.gallery0}
                     />
                   </div>
                   <div className="p-4 flex-1 flex flex-col justify-between">
@@ -415,7 +407,7 @@ export default function HomeContent({
         </div>
       </section>
 
-      <AllPdfsSection lang={lang} />
+      <AllPdfsSection lang={lang} pdfs={pdfs} />
 
       {/* News Section */}
       <section className="py-16">
