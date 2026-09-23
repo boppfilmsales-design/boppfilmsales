@@ -3,6 +3,7 @@ import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { allPdfs } from "@/lib/site";
 import Link from "next/link";
+import { getContentForSite } from "@/lib/content-db";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,8 @@ export default async function Page({
 }) {
   const params = await searchParams;
   const currentSlug = params.category || "company-notice";
+  const sourceId = currentSlug === "technology-data" ? 76 : currentSlug === "certificate-download" ? 157 : currentSlug === "msds-download" ? 158 : 43;
+  const managedContent = await getContentForSite("down", sourceId);
   
   // 获取项目中真实的 PDF 数据
   const allPdfFiles = allPdfs();
@@ -32,7 +35,16 @@ export default async function Page({
   // 严格根据当前 slug 匹配对应的内容列表
   let items: Array<{ name: string; serial: string; format: string; date: string; url: string }> = [];
 
-  if (currentSlug === "company-notice") {
+  const managedRows = managedContent && Array.isArray(managedContent.items) ? managedContent.items as Array<{ name?: string; serial?: string; format?: string; date?: string; file?: string }> : [];
+  if (managedRows.length > 0) {
+    items = managedRows.map((row) => ({
+      name: row.name ?? "Download",
+      serial: row.serial ?? "",
+      format: row.format ?? "PDF",
+      date: row.date ?? "",
+      url: row.file ?? "#",
+    }));
+  } else if (currentSlug === "company-notice") {
     items = [
       { 
         name: "Our Company's Bank Accounts", 
@@ -44,8 +56,8 @@ export default async function Page({
     ];
   } else if (currentSlug === "technology-data") {
     items = allPdfFiles.map((pdf) => ({
-      name: pdf.label || pdf.name || "Technical Data Sheet",
-      serial: pdf.code || "TDS-PDF",
+      name: pdf.label || "Technical Data Sheet",
+      serial: "TDS-PDF",
       format: "PDF",
       date: "2024-01-10",
       url: pdf.file || "#"

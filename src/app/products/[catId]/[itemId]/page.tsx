@@ -4,9 +4,10 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
-import { allProducts, findProduct, productImageUrl, stripHtml, validProductPdfs } from "@/lib/site";
+import { allProducts, productImageUrl, stripHtml, validProductPdfs } from "@/lib/site";
+import { getProductForSite } from "@/lib/catalogue-db";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
   return allProducts().map(({ category, product }) => ({
@@ -21,7 +22,7 @@ export async function generateMetadata({
   params: Promise<{ catId: string; itemId: string }>;
 }): Promise<Metadata> {
   const { catId, itemId } = await params;
-  const found = findProduct(catId, itemId);
+  const found = await getProductForSite(catId, itemId);
   if (!found) return { title: "Product" };
   const path = `/products/${catId}/${itemId}`;
   return {
@@ -46,7 +47,7 @@ export default async function Page({
   params: Promise<{ catId: string; itemId: string }>;
 }) {
   const { catId, itemId } = await params;
-  const found = findProduct(catId, itemId);
+  const found = await getProductForSite(catId, itemId);
   if (!found) notFound();
 
   const jsonLd = {
@@ -195,8 +196,9 @@ export default async function Page({
 
         {/* 经典 5 大红底折叠面板区域 */}
         <ProductDetailSection 
-          description={found.product.bodyHtml}
-          offerDetails="We offer competitive pricing (FOB / CNF terms available). Minimum order quantity (MOQ) and customized slitting/packaging options can be negotiated based on specific requirements. Contact our sales team for an updated quotation."
+          description={found.product.description || found.product.bodyHtml}
+          technicalDetails={found.product.technical}
+          offerDetails={found.product.offer || "We offer competitive pricing (FOB / CNF terms available). Contact our sales team for an updated quotation."}
           helpfulLinks={pdfs.map(pdf => ({ title: pdf.label, url: pdf.file }))}
         />
 

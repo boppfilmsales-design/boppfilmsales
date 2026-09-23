@@ -22,10 +22,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: "产品栏目、分类和标题不能为空" }, { status: 400 });
     }
     const sourceId = Date.now();
+    const gallery = Array.isArray(body.gallery) ? body.gallery.map(String) : [];
+    const pdfs = Array.isArray(body.pdfs) ? body.pdfs : [];
     await db.insert(adminProducts).values({
       sourceId, familyId, categoryId, sort: Number(body.sort) || 0, title,
-      subtitle: String(body.subtitle ?? ""), image: String(body.image ?? ""),
-      status: String(body.status ?? "正常"), bodyHtml: String(body.bodyHtml ?? ""), bodyText: String(body.bodyText ?? ""),
+      titleZh: String(body.titleZh ?? ""), subtitle: String(body.subtitle ?? ""), subtitleZh: String(body.subtitleZh ?? ""),
+      code: String(body.code ?? ""), price: String(body.price ?? ""), image: String(body.image ?? ""),
+      galleryJson: JSON.stringify(gallery), status: String(body.status ?? "正常"),
+      bodyHtml: String(body.bodyHtml ?? ""), bodyText: String(body.bodyText ?? ""), bodyHtmlZh: String(body.bodyHtmlZh ?? ""),
+      description: String(body.description ?? ""), descriptionZh: String(body.descriptionZh ?? ""),
+      technical: String(body.technical ?? ""), technicalZh: String(body.technicalZh ?? ""),
+      offer: String(body.offer ?? ""), offerZh: String(body.offerZh ?? ""), pdfsJson: JSON.stringify(pdfs),
     });
 
     return NextResponse.json({ 

@@ -1,8 +1,8 @@
-﻿import { sql } from "drizzle-orm";
+﻿import { eq, sql } from "drizzle-orm";
 import seedRaw from "@/data/news-seed.json";
 import { db } from "@/db";
-import { adminProducts, adminUsers, newsCategories, newsPosts } from "@/db/schema";
-import { allProducts } from "@/lib/site";
+import { adminContents, adminProducts, adminUsers, newsCategories, newsPosts } from "@/db/schema";
+import { allProducts, getContents } from "@/lib/site";
 import { hashPassword } from "@/lib/password";
 
 export type SeedItem = {
@@ -80,15 +80,50 @@ async function ensureSchema() {
       category_id integer not null,
       sort integer not null default 10,
       title text not null,
+      title_zh text not null default '',
       subtitle text not null default '',
+      subtitle_zh text not null default '',
+      code text not null default '',
+      price text not null default '',
       image text not null default '',
+      gallery_json text not null default '[]',
       body_html text not null default '',
       body_text text not null default '',
+      body_html_zh text not null default '',
+      description text not null default '',
+      description_zh text not null default '',
+      technical text not null default '',
+      technical_zh text not null default '',
+      offer text not null default '',
+      offer_zh text not null default '',
+      pdfs_json text not null default '[]',
       status text not null default '正常',
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now()
     )`);
+  for (const column of [
+    ["title_zh", "text not null default ''"], ["subtitle_zh", "text not null default ''"],
+    ["code", "text not null default ''"], ["price", "text not null default ''"],
+    ["gallery_json", "text not null default '[]'"], ["body_html_zh", "text not null default ''"],
+    ["description", "text not null default ''"], ["description_zh", "text not null default ''"],
+    ["technical", "text not null default ''"], ["technical_zh", "text not null default ''"],
+    ["offer", "text not null default ''"], ["offer_zh", "text not null default ''"],
+    ["pdfs_json", "text not null default '[]'"],
+  ] as const) {
+    await db.execute(sql.raw(`alter table admin_products add column if not exists ${column[0]} ${column[1]}`));
+  }
   await db.execute(sql`create index if not exists admin_products_family_idx on admin_products (family_id)`);
+  await db.execute(sql`
+    create table if not exists admin_contents (
+      id serial primary key,
+      source_id integer not null unique,
+      kind text not null,
+      name text not null default '',
+      name_zh text not null default '',
+      data_json text not null default '{}',
+      updated_at timestamptz not null default now()
+    )`);
+  await db.execute(sql`create index if not exists admin_contents_kind_idx on admin_contents (kind)`);
 }
 
 export function parseSortDate(listDate: string, newsDate: string): Date | null {
@@ -157,24 +192,57 @@ async function seedAdmin() {
 
 async function seedProducts() {
   const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(adminProducts);
-  if (total > 0) return;
-
   const values = allProducts().map(({ category, product }, index) => ({
     sourceId: product.sourceId,
     familyId: category.sourceId,
     categoryId: product.catId,
     sort: index + 1,
     title: product.title,
+    titleZh: product.titleZh,
     subtitle: product.summary,
+    subtitleZh: product.summaryZh,
+    code: product.code,
+    price: product.price,
     image: product.gallery?.[0] ?? "",
+    galleryJson: JSON.stringify(product.gallery ?? []),
     bodyHtml: product.bodyHtml || product.description || "",
     bodyText: product.summary,
+    bodyHtmlZh: product.bodyHtmlZh,
+    description: product.description,
+    descriptionZh: product.descriptionZh,
+    technical: product.technical,
+    technicalZh: product.technicalZh,
+    offer: product.offer,
+    offerZh: product.offerZh,
+    pdfsJson: JSON.stringify(product.pdfs ?? []),
     status: "正常",
   }));
+
+  if (total > 0) {
+    for (const value of values) {
+      await db.update(adminProducts).set(value).where(eq(adminProducts.sourceId, value.sourceId));
+    }
+    return;
+  }
 
   const chunkSize = 20;
   for (let i = 0; i < values.length; i += chunkSize) {
     await db.insert(adminProducts).values(values.slice(i, i + chunkSize));
+  }
+}
+
+async function seedContents() {
+  const contents = getContents();
+  const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(adminContents);
+  if (total > 0) return;
+  for (const content of contents) {
+    await db.insert(adminContents).values({
+      sourceId: content.sourceId,
+      kind: content.kind,
+      name: content.name,
+      nameZh: content.nameZh,
+      dataJson: JSON.stringify({ items: content.items, itemsZh: content.itemsZh, entries: content.entries }),
+    });
   }
 }
 
@@ -184,6 +252,7 @@ async function init() {
   await seedPosts();
   await seedAdmin();
   await seedProducts();
+  await seedContents();
 }
 
 let readyPromise: Promise<void> | null = null;

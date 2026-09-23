@@ -8,10 +8,23 @@ export type AdminProductDetail = {
   categoryId: number;
   sort: number;
   title: string;
+  titleZh: string;
   subtitle: string;
+  subtitleZh: string;
+  code: string;
+  price: string;
   image: string;
+  gallery: string[];
+  pdfs: Array<{ file: string; label: string }>;
   bodyHtml: string;
   bodyText: string;
+  bodyHtmlZh: string;
+  description: string;
+  descriptionZh: string;
+  technical: string;
+  technicalZh: string;
+  offer: string;
+  offerZh: string;
   status: string;
 };
 
@@ -35,10 +48,23 @@ export default function ProductForm({
   );
   const [sort, setSort] = useState<number>(product?.sort ?? 10);
   const [title, setTitle] = useState(product?.title ?? "");
+  const [titleZh, setTitleZh] = useState(product?.titleZh ?? "");
   const [subtitle, setSubtitle] = useState(product?.subtitle ?? "");
+  const [subtitleZh, setSubtitleZh] = useState(product?.subtitleZh ?? "");
+  const [code, setCode] = useState(product?.code ?? "");
+  const [price, setPrice] = useState(product?.price ?? "");
   const [image, setImage] = useState(product?.image ?? "");
+  const [galleryText, setGalleryText] = useState((product?.gallery ?? []).join("\n"));
+  const [pdfsText, setPdfsText] = useState((product?.pdfs ?? []).map((pdf) => `${pdf.label} | ${pdf.file}`).join("\n"));
   const [bodyHtml, setBodyHtml] = useState(product?.bodyHtml ?? "");
   const [bodyText, setBodyText] = useState(product?.bodyText ?? "");
+  const [bodyHtmlZh, setBodyHtmlZh] = useState(product?.bodyHtmlZh ?? "");
+  const [description, setDescription] = useState(product?.description ?? "");
+  const [descriptionZh, setDescriptionZh] = useState(product?.descriptionZh ?? "");
+  const [technical, setTechnical] = useState(product?.technical ?? "");
+  const [technicalZh, setTechnicalZh] = useState(product?.technicalZh ?? "");
+  const [offer, setOffer] = useState(product?.offer ?? "");
+  const [offerZh, setOfferZh] = useState(product?.offerZh ?? "");
   const [mode, setMode] = useState<"text" | "html">(
     product?.bodyHtml?.includes("<") ? "html" : "text"
   );
@@ -56,11 +82,27 @@ export default function ProductForm({
       categoryId,
       sort,
       title,
+      titleZh,
       subtitle,
+      subtitleZh,
+      code,
+      price,
       image,
+      gallery: galleryText.split("\n").map((value) => value.trim()).filter(Boolean),
+      pdfs: pdfsText.split("\n").map((line) => {
+        const [label, file] = line.split("|").map((value) => value.trim());
+        return { label: label || file || "PDF", file: file || label || "" };
+      }).filter((pdf) => pdf.file),
       status,
       bodyHtml: mode === "html" ? bodyHtml : "",
       bodyText: mode === "text" ? bodyText : "",
+      bodyHtmlZh,
+      description,
+      descriptionZh,
+      technical,
+      technicalZh,
+      offer,
+      offerZh,
     };
 
     const url = product ? `/api/admin/products/item/${product.id}` : "/api/admin/products";
@@ -131,8 +173,28 @@ export default function ProductForm({
         </label>
 
         <label className={labelClass}>
+          中文产品名称
+          <input className={inputClass} onChange={(event) => setTitleZh(event.target.value)} value={titleZh} />
+        </label>
+
+        <label className={labelClass}>
           副标题 / 规格型号 (如: 4.5 Micron, 500mm width)
           <input className={inputClass} onChange={(event) => setSubtitle(event.target.value)} value={subtitle} />
+        </label>
+
+        <label className={labelClass}>
+          中文副标题 / 规格
+          <input className={inputClass} onChange={(event) => setSubtitleZh(event.target.value)} value={subtitleZh} />
+        </label>
+
+        <label className={labelClass}>
+          产品代码
+          <input className={inputClass} onChange={(event) => setCode(event.target.value)} value={code} />
+        </label>
+
+        <label className={labelClass}>
+          批发价格
+          <input className={inputClass} onChange={(event) => setPrice(event.target.value)} value={price} />
         </label>
 
         <label className={labelClass}>
@@ -182,6 +244,31 @@ export default function ProductForm({
             value={bodyHtml}
           />
         )}
+      </div>
+
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <label className={labelClass}>
+          产品图集（每行一个图片路径）
+          <textarea className={`${inputClass} h-28 font-mono text-[12px]`} onChange={(event) => setGalleryText(event.target.value)} value={galleryText} />
+        </label>
+        <label className={labelClass}>
+          技术 PDF（每行：显示名称 | 文件路径）
+          <textarea className={`${inputClass} h-28 font-mono text-[12px]`} onChange={(event) => setPdfsText(event.target.value)} value={pdfsText} />
+        </label>
+      </div>
+
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        {[
+          ["英文描述", description, setDescription], ["中文描述", descriptionZh, setDescriptionZh],
+          ["英文技术参数", technical, setTechnical], ["中文技术参数", technicalZh, setTechnicalZh],
+          ["英文报价说明", offer, setOffer], ["中文报价说明", offerZh, setOfferZh],
+          ["中文详情 HTML", bodyHtmlZh, setBodyHtmlZh],
+        ].map(([label, value, setter]) => (
+          <label className={labelClass} key={label as string}>
+            {label as string}
+            <textarea className={`${inputClass} h-32 font-mono text-[12px]`} onChange={(event) => (setter as (value: string) => void)(event.target.value)} value={value as string} />
+          </label>
+        ))}
       </div>
 
       <div className="mt-5 flex items-center gap-3">

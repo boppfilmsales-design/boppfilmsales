@@ -4,6 +4,7 @@ import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { ContentEntryPage } from "@/components/pages/Sections";
 import { getContent, getContents, stripHtml } from "@/lib/site";
+import { getContentForSite } from "@/lib/content-db";
 
 export const dynamic = "force-static";
 
@@ -54,13 +55,13 @@ export default async function Page({
 }) {
   const { kind, columnId, id } = await params;
   if (!KINDS.includes(kind as ContentKind)) notFound();
-  const column = getContent(kind as ContentKind, columnId);
+  const column = await getContentForSite(kind as ContentKind, columnId);
   const entry = column?.entries?.find((item) => String(item.sourceId) === id);
   if (!column || !entry) notFound();
   return (
     <div className="min-h-screen bg-white">
       <SiteHeader active={ACTIVE[kind]} />
-      <ContentEntryPage columnId={columnId} kind={kind as ContentKind} lang="en" sourceId={id} />
+      <ContentEntryPage columnId={columnId} content={column} kind={kind as ContentKind} lang="en" sourceId={id} />
       <SiteFooter />
     </div>
   );

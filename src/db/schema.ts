@@ -76,15 +76,42 @@ export const adminProducts = pgTable(
     categoryId: integer("category_id").notNull(),
     sort: integer("sort").notNull().default(10),
     title: text("title").notNull(),
+    titleZh: text("title_zh").notNull().default(""),
     subtitle: text("subtitle").notNull().default(""),
+    subtitleZh: text("subtitle_zh").notNull().default(""),
+    code: text("code").notNull().default(""),
+    price: text("price").notNull().default(""),
     image: text("image").notNull().default(""),
+    galleryJson: text("gallery_json").notNull().default("[]"),
     bodyHtml: text("body_html").notNull().default(""),
     bodyText: text("body_text").notNull().default(""),
+    bodyHtmlZh: text("body_html_zh").notNull().default(""),
+    description: text("description").notNull().default(""),
+    descriptionZh: text("description_zh").notNull().default(""),
+    technical: text("technical").notNull().default(""),
+    technicalZh: text("technical_zh").notNull().default(""),
+    offer: text("offer").notNull().default(""),
+    offerZh: text("offer_zh").notNull().default(""),
+    pdfsJson: text("pdfs_json").notNull().default("[]"),
     status: text("status").notNull().default("正常"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [uniqueIndex("admin_products_source_id_key").on(table.sourceId), index("admin_products_family_idx").on(table.familyId)],
+);
+
+export const adminContents = pgTable(
+  "admin_contents",
+  {
+    id: serial("id").primaryKey(),
+    sourceId: integer("source_id").notNull(),
+    kind: text("kind").notNull(),
+    name: text("name").notNull().default(""),
+    nameZh: text("name_zh").notNull().default(""),
+    dataJson: text("data_json").notNull().default("{}"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("admin_contents_source_id_key").on(table.sourceId), index("admin_contents_kind_idx").on(table.kind)],
 );
 
 export const inquiries = pgTable(

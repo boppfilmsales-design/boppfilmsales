@@ -23,6 +23,7 @@ import {
   type ProductFamily,
   type ProductItem,
   type ProductSub,
+  type SiteContent,
 } from "@/lib/site";
 
 type Lang = "en" | "zh";
@@ -684,14 +685,16 @@ function LinesList({
 export function ContentColumnPage({
   kind,
   sourceId,
+  content,
   lang = "en",
 }: {
   kind: ContentKind;
   sourceId?: number;
+  content?: SiteContent;
   lang?: Lang;
 }) {
   const columns = getContents(kind);
-  const active = (sourceId ? getContent(kind, sourceId) : undefined) ?? columns[0];
+  const active = content ?? (sourceId ? getContent(kind, sourceId) : undefined) ?? columns[0];
   if (!active) return <section className="py-16" />;
   const title = lang === "zh" ? contentNameZh(active.sourceId) ?? active.name : active.name;
   const sectionTitle = pick(lang, SECTION_TITLES[kind].en, SECTION_TITLES[kind].zh);
@@ -760,14 +763,16 @@ export function ContentEntryPage({
   kind,
   columnId,
   sourceId,
+  content,
   lang = "en",
 }: {
   kind: ContentKind;
   columnId: string | number;
   sourceId: string | number;
+  content?: SiteContent;
   lang?: Lang;
 }) {
-  const column = getContent(kind, columnId);
+  const column = content ?? getContent(kind, columnId);
   const entry = column?.entries?.find((item) => String(item.sourceId) === String(sourceId));
   if (!column || !entry) return null;
   const card = contentCards(column).find((item) => String(item.sourceId) === String(sourceId));

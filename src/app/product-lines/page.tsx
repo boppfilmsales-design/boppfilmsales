@@ -3,6 +3,7 @@ import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { ContentColumnPage } from "@/components/pages/Sections";
 import { getContents } from "@/lib/site";
+import { getContentForSite } from "@/lib/content-db";
 
 export const dynamic = "force-dynamic";
 
@@ -26,11 +27,12 @@ export default async function Page({
   const validSourceId = Number.isFinite(parsed) && parsed > 0 
     ? parsed 
     : (defaultSourceId && defaultSourceId > 0 ? defaultSourceId : undefined);
+  const content = validSourceId ? await getContentForSite("lines", validSourceId) : undefined;
 
   return (
     <div className="min-h-screen bg-white">
       <SiteHeader active="Products Lines" />
-      <ContentColumnPage kind="lines" sourceId={validSourceId} />
+      <ContentColumnPage content={content} kind="lines" sourceId={validSourceId} />
       <SiteFooter />
     </div>
   );

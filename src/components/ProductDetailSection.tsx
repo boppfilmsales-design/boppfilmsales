@@ -40,6 +40,7 @@ function AccordionSection({ title, defaultOpen = false, children }: AccordionIte
 interface ProductDetailSectionProps {
   description?: string;
   parameters?: Array<{ key: string; value: string }>;
+  technicalDetails?: string;
   offerDetails?: string;
   inquiryContent?: React.ReactNode;
   helpfulLinks?: Array<{ title: string; url: string }>;
@@ -48,6 +49,7 @@ interface ProductDetailSectionProps {
 export default function ProductDetailSection({
   description,
   parameters,
+  technicalDetails,
   offerDetails,
   inquiryContent,
   helpfulLinks,
@@ -66,7 +68,9 @@ export default function ProductDetailSection({
 
       {/* 2. TECHNICAL PARAMETERS */}
       <AccordionSection title="TECHNICAL PARAMETERS" defaultOpen={false}>
-        {parameters && parameters.length > 0 ? (
+        {technicalDetails ? (
+          <div className="prose max-w-none text-xs text-gray-700" dangerouslySetInnerHTML={{ __html: technicalDetails }} />
+        ) : parameters && parameters.length > 0 ? (
           <table className="w-full text-left text-xs">
             <tbody>
               {parameters.map((param, index) => (

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import NewsForm, { type AdminCategory, type AdminPostDetail } from "@/components/admin/NewsForm";
 import ProductForm, { type AdminProductDetail } from "@/components/admin/ProductForm";
+import ContentForm from "@/components/admin/ContentForm";
+import type { SiteContent } from "@/lib/site";
 
 /* ---------- Types ---------- */
 
@@ -83,6 +85,8 @@ export default function Dashboard({ username }: { username: string }) {
   const [sections, setSections] = useState<AdminSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [contentRows, setContentRows] = useState<StaticRow[]>([]);
+  const [selectedContent, setSelectedContent] = useState<SiteContent | null>(null);
+  const [contentEditing, setContentEditing] = useState(false);
   const [productRows, setProductRows] = useState<ProductRow[]>([]);
   const [productCats, setProductCats] = useState<AdminCategory[]>([]);
   const [productEditing, setProductEditing] = useState<AdminProductDetail | null>(null);
@@ -123,6 +127,8 @@ export default function Dashboard({ username }: { username: string }) {
   const loadColumnContent = useCallback(async (col: AdminColumn) => {
     setContentLoading(true);
     setContentRows([]);
+    setSelectedContent(null);
+    setContentEditing(false);
     setProductRows([]);
     setNewsRows([]);
     setProductEditing(null);
@@ -148,6 +154,7 @@ export default function Dashboard({ username }: { username: string }) {
       const res = await fetch(`/api/admin/content/${col.sourceId}`, { cache: "no-store" });
       const data = await res.json();
       if (data.rows) setContentRows(data.rows);
+      if (data.content) setSelectedContent(data.content as SiteContent);
     }
     setContentLoading(false);
   }, []);
@@ -572,12 +579,25 @@ export default function Dashboard({ username }: { username: string }) {
               </div>
             </div>
           ) : (
-            /* Static content management (read-only from site-seed.json) */
+            /* Database-backed content management */
             <div>
+              {selectedContent && contentEditing ? (
+                <ContentForm
+                  content={selectedContent}
+                  onCancel={() => setContentEditing(false)}
+                  onSaved={() => {
+                    setNotice("栏目内容已保存。");
+                    setContentEditing(false);
+                    void loadColumnContent(activeColumn);
+                  }}
+                />
+              ) : null}
               <div className="mb-3 flex items-center gap-3 border border-[#e3e3e3] bg-white p-3">
+                {selectedContent ? <button className="bg-[#e61d39] px-4 py-[8px] text-[12px] font-bold text-white" onClick={() => setContentEditing(true)} type="button">编辑栏目内容</button> : null}
                 <span className="text-[12px] text-[#888]">{contentRows.length} items</span>
                 <span className="rounded bg-[#f4f4f4] px-2 py-[3px] text-[11px] font-bold text-[#888]">{displayTypeName(activeColumn.displayType)}</span>
                 <span className="text-[11px] text-[#aaa]">sourceId: {activeColumn.sourceId}</span>
+                {notice ? <span className="text-[12px] text-[#e61d39]">{notice}</span> : null}
               </div>
               <div className="overflow-x-auto border border-[#e3e3e3] bg-white">
                 <table className="w-full min-w-[800px] text-left text-[13px]">

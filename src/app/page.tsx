@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 export default async function HomePage() {
   const summary = getHomeSummary();
 
-  let news = [];
+  let news: Awaited<ReturnType<typeof getLatestPostsSafe>> = [];
   try {
     news = await getLatestPostsSafe(6).catch(() => []);
   } catch (e) {

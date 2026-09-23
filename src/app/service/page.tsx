@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { ContentColumnPage } from "@/components/pages/Sections";
+import { getContentForSite } from "@/lib/content-db";
 
 export const dynamic = "force-dynamic";
 
@@ -17,10 +18,11 @@ export default async function Page({
 }) {
   const query = await searchParams;
   const parsed = Number(query.id ?? query.c_id ?? "");
+  const content = await getContentForSite("service", Number.isFinite(parsed) && parsed > 0 ? parsed : 79);
   return (
     <div className="min-h-screen bg-white">
       <SiteHeader active="Service Center" />
-      <ContentColumnPage kind="service" sourceId={Number.isFinite(parsed) && parsed > 0 ? parsed : undefined} />
+      <ContentColumnPage content={content} kind="service" sourceId={Number.isFinite(parsed) && parsed > 0 ? parsed : undefined} />
       <SiteFooter />
     </div>
   );

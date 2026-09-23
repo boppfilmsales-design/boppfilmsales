@@ -1,5 +1,9 @@
 import { getContentBySourceId, getContents, contentImageUrl, type SiteContent } from "@/lib/site";
 import { requireAdmin } from "@/lib/api-auth";
+import { db } from "@/db";
+import { adminContents } from "@/db/schema";
+import { ensureSeedData } from "@/db/seed";
+import { eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +71,7 @@ export async function GET(
 ) {
   const denied = await requireAdmin();
   if (denied) return denied;
+  await ensureSeedData();
 
   try {
     const resolvedParams = await params;
@@ -77,7 +82,14 @@ export async function GET(
       return Response.json({ ok: false, error: "Invalid sourceId" }, { status: 400 });
     }
 
-    const content = getContentBySourceId(sourceId);
+    const [stored] = await db.select().from(adminContents).where(eq(adminContents.sourceId, sourceId)).limit(1);
+    const content = stored ? {
+      sourceId: stored.sourceId,
+      kind: stored.kind as SiteContent["kind"],
+      name: stored.name,
+      nameZh: stored.nameZh,
+      ...parseData(stored.dataJson),
+    } satisfies SiteContent : getContentBySourceId(sourceId);
     if (!content) {
       const allContents = getContents();
       const found = allContents.find((c) => c.sourceId === sourceId);
@@ -91,5 +103,34 @@ export async function GET(
   } catch (error) {
     console.error("[api/admin/content] failed", error);
     return Response.json({ ok: false, error: String(error) }, { status: 500 });
+  }
+}
+
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ sourceId: string }> },
+) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+  await ensureSeedData();
+  const sourceId = Number.parseInt((await params).sourceId, 10);
+  if (!Number.isInteger(sourceId)) return Response.json({ ok: false, error: "Invalid sourceId" }, { status: 400 });
+  const body = await request.json().catch(() => ({})) as Record<string, unknown>;
+  const [updated] = await db.update(adminContents).set({
+    name: String(body.name ?? ""),
+    nameZh: String(body.nameZh ?? ""),
+    dataJson: JSON.stringify({ items: body.items ?? {}, itemsZh: body.itemsZh, entries: body.entries ?? [] }),
+    updatedAt: new Date(),
+  }).where(eq(adminContents.sourceId, sourceId)).returning({ id: adminContents.sourceId });
+  if (!updated) return Response.json({ ok: false, error: "Content not found" }, { status: 404 });
+  return Response.json({ ok: true, id: updated.id });
+}
+
+function parseData(value: string): Pick<SiteContent, "items" | "itemsZh" | "entries"> {
+  try {
+    const parsed = JSON.parse(value) as Partial<SiteContent>;
+    return { items: parsed.items ?? {}, itemsZh: parsed.itemsZh, entries: parsed.entries ?? [] };
+  } catch {
+    return { items: {}, entries: [] };
   }
 }

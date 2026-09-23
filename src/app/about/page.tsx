@@ -4,6 +4,7 @@ import SiteHeader from "@/components/SiteHeader";
 import { permanentRedirect } from "next/navigation";
 import { ContentColumnPage } from "@/components/pages/Sections";
 import { getContent } from "@/lib/site";
+import { getContentForSite } from "@/lib/content-db";
 
 /* Rendered on the server for every ?id= column, so the HTML always contains
    the complete column (the old client-side rendering produced blank pages). */
@@ -30,14 +31,15 @@ export default async function Page({
 }) {
   const query = await searchParams;
   const parsed = Number(query.id ?? query.c_id ?? "");
-  if (Number.isFinite(parsed) && parsed > 0 && !getContent("about", parsed)) {
+  const content = await getContentForSite("about", Number.isFinite(parsed) && parsed > 0 ? parsed : 13);
+  if (Number.isFinite(parsed) && parsed > 0 && !content) {
     const owner = OTHER_KINDS.find((item) => getContent(item.kind, parsed));
     if (owner) permanentRedirect(`${owner.href}?id=${parsed}`);
   }
   return (
     <div className="min-h-screen bg-white">
       <SiteHeader active="About Us" />
-      <ContentColumnPage kind="about" sourceId={Number.isFinite(parsed) && parsed > 0 ? parsed : undefined} />
+      <ContentColumnPage content={content} kind="about" sourceId={Number.isFinite(parsed) && parsed > 0 ? parsed : undefined} />
       <SiteFooter />
     </div>
   );

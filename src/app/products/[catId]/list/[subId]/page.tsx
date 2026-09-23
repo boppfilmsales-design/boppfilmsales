@@ -3,9 +3,10 @@ import { notFound } from "next/navigation";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { ProductSubPage } from "@/components/pages/Sections";
-import { getCategories, getCategory, getSub, subProducts } from "@/lib/site";
+import { getCategories, getSub, subProducts } from "@/lib/site";
+import { getCategoryForSite } from "@/lib/catalogue-db";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
   return getCategories().flatMap((family) =>
@@ -19,7 +20,7 @@ export async function generateMetadata({
   params: Promise<{ catId: string; subId: string }>;
 }): Promise<Metadata> {
   const { catId, subId } = await params;
-  const family = getCategory(catId);
+  const family = await getCategoryForSite(catId);
   const sub = family ? getSub(family, subId) : undefined;
   if (!family || !sub) return { title: "Products" };
   const path = `/products/${catId}/list/${subId}`;
@@ -39,7 +40,7 @@ export default async function Page({
   params: Promise<{ catId: string; subId: string }>;
 }) {
   const { catId, subId } = await params;
-  const family = getCategory(catId);
+  const family = await getCategoryForSite(catId);
   const sub = family ? getSub(family, subId) : undefined;
   if (!family || !sub) notFound();
   return (
