@@ -47,3 +47,7 @@ yarn-error.log*
 # build-time generated runtime data (small JSONs rebuilt by npm run build)
 /src/data/site-nav.json
 /src/data/home-summary.json
+
+# local build/deploy logs
+/*.log
+.open-next-*/
