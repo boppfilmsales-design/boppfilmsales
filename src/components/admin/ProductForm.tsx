@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { AdminCategory } from "./NewsForm";
 
 export type AdminProductDetail = {
@@ -18,12 +18,14 @@ export type AdminProductDetail = {
 export default function ProductForm({
   categories,
   product,
+  familyId,
   defaultCategoryId,
   onCancel,
   onSaved,
 }: {
   categories: AdminCategory[];
   product?: AdminProductDetail | null;
+  familyId: number;
   defaultCategoryId?: number;
   onCancel: () => void;
   onSaved: () => void;
@@ -44,20 +46,13 @@ export default function ProductForm({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
-  useEffect(() => {
-    if (product) {
-      setBodyHtml(product.bodyHtml ?? "");
-      setBodyText(product.bodyText ?? "");
-      setMode(product.bodyHtml?.includes("<") ? "html" : "text");
-    }
-  }, [product]);
-
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setBusy(true);
     setMessage("");
 
     const payload = {
+      familyId,
       categoryId,
       sort,
       title,

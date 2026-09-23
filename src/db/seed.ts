@@ -1,7 +1,8 @@
 ﻿import { sql } from "drizzle-orm";
 import seedRaw from "@/data/news-seed.json";
 import { db } from "@/db";
-import { adminUsers, newsCategories, newsPosts } from "@/db/schema";
+import { adminProducts, adminUsers, newsCategories, newsPosts } from "@/db/schema";
+import { allProducts } from "@/lib/site";
 import { hashPassword } from "@/lib/password";
 
 export type SeedItem = {
@@ -71,6 +72,23 @@ async function ensureSchema() {
       created_at timestamptz not null default now()
     )`);
   await db.execute(sql`create unique index if not exists admin_users_username_key on admin_users (username)`);
+  await db.execute(sql`
+    create table if not exists admin_products (
+      id serial primary key,
+      source_id integer not null unique,
+      family_id integer not null,
+      category_id integer not null,
+      sort integer not null default 10,
+      title text not null,
+      subtitle text not null default '',
+      image text not null default '',
+      body_html text not null default '',
+      body_text text not null default '',
+      status text not null default '正常',
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    )`);
+  await db.execute(sql`create index if not exists admin_products_family_idx on admin_products (family_id)`);
 }
 
 export function parseSortDate(listDate: string, newsDate: string): Date | null {
@@ -137,11 +155,35 @@ async function seedAdmin() {
   });
 }
 
+async function seedProducts() {
+  const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(adminProducts);
+  if (total > 0) return;
+
+  const values = allProducts().map(({ category, product }, index) => ({
+    sourceId: product.sourceId,
+    familyId: category.sourceId,
+    categoryId: product.catId,
+    sort: index + 1,
+    title: product.title,
+    subtitle: product.summary,
+    image: product.gallery?.[0] ?? "",
+    bodyHtml: product.bodyHtml || product.description || "",
+    bodyText: product.summary,
+    status: "正常",
+  }));
+
+  const chunkSize = 20;
+  for (let i = 0; i < values.length; i += chunkSize) {
+    await db.insert(adminProducts).values(values.slice(i, i + chunkSize));
+  }
+}
+
 async function init() {
   await ensureSchema();
   await seedCategories();
   await seedPosts();
   await seedAdmin();
+  await seedProducts();
 }
 
 let readyPromise: Promise<void> | null = null;

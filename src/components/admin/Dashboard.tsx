@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import NewsForm, { type AdminCategory, type AdminPostDetail } from "@/components/admin/NewsForm";
+import ProductForm, { type AdminProductDetail } from "@/components/admin/ProductForm";
 
 /* ---------- Types ---------- */
 
@@ -53,6 +54,7 @@ type StaticRow = {
 
 type ProductRow = {
   id: number;
+  categoryId: number;
   sort: number;
   title: string;
   subtitle: string;
@@ -82,6 +84,9 @@ export default function Dashboard({ username }: { username: string }) {
   const [loading, setLoading] = useState(true);
   const [contentRows, setContentRows] = useState<StaticRow[]>([]);
   const [productRows, setProductRows] = useState<ProductRow[]>([]);
+  const [productCats, setProductCats] = useState<AdminCategory[]>([]);
+  const [productEditing, setProductEditing] = useState<AdminProductDetail | null>(null);
+  const [productCreating, setProductCreating] = useState(false);
   const [contentLoading, setContentLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
 
@@ -119,6 +124,8 @@ export default function Dashboard({ username }: { username: string }) {
     setContentRows([]);
     setProductRows([]);
     setNewsRows([]);
+    setProductEditing(null);
+    setProductCreating(false);
 
     if (col.dataSource === "news-db") {
       const params = new URLSearchParams({ page: "1", perPage: "50", categoryId: String(col.sourceId) });
@@ -134,6 +141,7 @@ export default function Dashboard({ username }: { username: string }) {
       const res = await fetch(`/api/admin/products/${col.sourceId}`, { cache: "no-store" });
       const data = await res.json();
       if (data.rows) setProductRows(data.rows);
+      setProductCats(data.category?.categories ?? []);
     } else {
       const res = await fetch(`/api/admin/content/${col.sourceId}`, { cache: "no-store" });
       const data = await res.json();
@@ -151,6 +159,23 @@ export default function Dashboard({ username }: { username: string }) {
       setEditing(data.post);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
+  }
+
+  async function openProductEdit(id: number) {
+    const res = await fetch(`/api/admin/products/item/${id}`, { cache: "no-store" });
+    const data = (await res.json()) as { ok: boolean; product?: AdminProductDetail };
+    if (data.product) {
+      setProductCreating(false);
+      setProductEditing(data.product);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
+  async function removeProduct(id: number, title: string) {
+    if (!window.confirm(`确定删除“${title}”吗？此操作不可恢复。`)) return;
+    const res = await fetch(`/api/admin/products/item/${id}`, { method: "DELETE" });
+    setNotice(res.ok ? `产品 #${id} 已删除。` : "删除失败。");
+    if (activeColumn) await loadColumnContent(activeColumn);
   }
 
   async function removeNews(id: number, title: string) {
@@ -407,7 +432,7 @@ export default function Dashboard({ username }: { username: string }) {
                     {newsRows.length === 0 && (
                       <tr>
                         <td className="py-8 text-center text-[13px] text-[#888]" colSpan={6}>
-                          No articles found. Click "+ 添加信息" to add one.
+                          No articles found. Use the add button to create one.
                         </td>
                       </tr>
                     )}
@@ -427,9 +452,34 @@ export default function Dashboard({ username }: { username: string }) {
               )}
             </div>
           ) : activeColumn.dataSource === "products" ? (
-            /* Products management (read-only from site-seed.json) */
+            /* Products management */
             <div>
+              {(productCreating || productEditing) && (
+                <div className="mb-5">
+                  <ProductForm
+                    categories={productCats}
+                    defaultCategoryId={productEditing?.categoryId ?? productCats[0]?.id}
+                    familyId={activeColumn.sourceId}
+                    key={productEditing?.id ?? "new"}
+                    onCancel={() => { setProductCreating(false); setProductEditing(null); }}
+                    onSaved={() => {
+                      setNotice("产品已保存。");
+                      setProductCreating(false);
+                      setProductEditing(null);
+                      void loadColumnContent(activeColumn);
+                    }}
+                    product={productEditing}
+                  />
+                </div>
+              )}
               <div className="mb-3 flex items-center gap-3 border border-[#e3e3e3] bg-white p-3">
+                <button
+                  className="bg-[#e61d39] px-4 py-[8px] text-[12px] font-bold text-white"
+                  onClick={() => { setProductEditing(null); setProductCreating(true); }}
+                  type="button"
+                >
+                  + 添加产品
+                </button>
                 <span className="text-[12px] text-[#888]">{productRows.length} products in this category</span>
                 <span className="rounded bg-[#f4f4f4] px-2 py-[3px] text-[11px] font-bold text-[#888]">{displayTypeName(activeColumn.displayType)}</span>
               </div>
@@ -468,7 +518,9 @@ export default function Dashboard({ username }: { username: string }) {
                           <span className="bg-[#e6f6ea] px-2 py-[3px] text-[11px] font-bold text-[#1c7c39]">正常</span>
                         </td>
                         <td className="px-3 py-3">
-                          <Link className="text-[12px] text-[#1c6dd0] hover:underline" href={`/products/${activeColumn.sourceId}`} target="_blank">查看</Link>
+                          <button className="mr-3 text-[12px] text-[#1c6dd0] hover:underline" onClick={() => void openProductEdit(row.id)} type="button">编辑</button>
+                          <button className="text-[12px] text-[#e61d39] hover:underline" onClick={() => void removeProduct(row.id, row.title)} type="button">删除</button>
+                          <Link className="ml-3 text-[12px] text-[#666] hover:underline" href={`/products/${activeColumn.sourceId}`} target="_blank">查看</Link>
                         </td>
                       </tr>
                     ))}

@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
-import { getCategories, featuredProducts } from "@/lib/site";
+import { asc, eq } from "drizzle-orm";
+import { db } from "@/db";
+import { adminProducts } from "@/db/schema";
+import { ensureSeedData } from "@/db/seed";
+import { getCategories } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -10,29 +14,24 @@ export async function GET(
 ) {
   const denied = await requireAdmin();
   if (denied) return denied;
+  await ensureSeedData();
 
   try {
     const { catId } = await params;
     
-    // 从现有的 site.ts 静态数据中获取对应分类的产品，保证后台有内容展示
+    const familyId = Number.parseInt((await params).catId, 10);
     const categories = getCategories();
-    const currentCategory = categories.find((c) => c.sourceId === catId);
-    
-    const rawProducts = currentCategory ? currentCategory.products : featuredProducts(20).map(f => f.product);
-
-    const rows = rawProducts.map((item: any, index: number) => ({
-      id: item.id || index + 1,
-      sort: item.sort || index + 1,
-      title: item.title || "未命名产品",
-      subtitle: item.subtitle || "",
-      image: item.image || (item.gallery && item.gallery[0]) || "",
-      subCategory: "标准子分类",
-      status: "正常",
-    }));
+    const currentCategory = categories.find((c) => c.sourceId === familyId);
+    if (!currentCategory) return NextResponse.json({ ok: false, error: "Product category not found" }, { status: 404 });
+    const rows = await db
+      .select({ id: adminProducts.sourceId, categoryId: adminProducts.categoryId, sort: adminProducts.sort, title: adminProducts.title, subtitle: adminProducts.subtitle, image: adminProducts.image, status: adminProducts.status })
+      .from(adminProducts)
+      .where(eq(adminProducts.familyId, familyId))
+      .orderBy(asc(adminProducts.sort), asc(adminProducts.sourceId));
 
     return NextResponse.json({
       ok: true,
-      category: { sourceId: catId, name: currentCategory ? currentCategory.name : "产品分类" },
+      category: { sourceId: familyId, name: currentCategory.name, categories: currentCategory.subs.map((sub) => ({ id: sub.sourceId, slug: String(sub.sourceId), name: sub.name })) },
       rows,
     });
   } catch (error: any) {

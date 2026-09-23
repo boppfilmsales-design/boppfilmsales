@@ -67,6 +67,26 @@ export const adminUsers = pgTable(
   (table) => [uniqueIndex("admin_users_username_key").on(table.username)],
 );
 
+export const adminProducts = pgTable(
+  "admin_products",
+  {
+    id: serial("id").primaryKey(),
+    sourceId: integer("source_id").notNull(),
+    familyId: integer("family_id").notNull(),
+    categoryId: integer("category_id").notNull(),
+    sort: integer("sort").notNull().default(10),
+    title: text("title").notNull(),
+    subtitle: text("subtitle").notNull().default(""),
+    image: text("image").notNull().default(""),
+    bodyHtml: text("body_html").notNull().default(""),
+    bodyText: text("body_text").notNull().default(""),
+    status: text("status").notNull().default("正常"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("admin_products_source_id_key").on(table.sourceId), index("admin_products_family_idx").on(table.familyId)],
+);
+
 export const inquiries = pgTable(
   "inquiries",
   {

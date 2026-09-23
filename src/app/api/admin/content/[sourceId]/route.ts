@@ -1,6 +1,5 @@
 import { getContentBySourceId, getContents, contentImageUrl, type SiteContent } from "@/lib/site";
-// 暂时注释掉认证，排查是否是登录态校验导致的连接中断
-// import { requireAdmin } from "@/lib/api-auth";
+import { requireAdmin } from "@/lib/api-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -66,15 +65,13 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ sourceId: string }> },
 ) {
-  // 放在最顶端，只要请求进来就必然打印
-  console.log("🔥 [API HIT] GET /api/admin/content/ triggered successfully!");
+  const denied = await requireAdmin();
+  if (denied) return denied;
 
   try {
     const resolvedParams = await params;
     const sourceIdStr = resolvedParams?.sourceId;
     const sourceId = Number.parseInt(sourceIdStr, 10);
-    
-    console.log("Parsed sourceId:", sourceId);
 
     if (Number.isNaN(sourceId)) {
       return Response.json({ ok: false, error: "Invalid sourceId" }, { status: 400 });
@@ -92,7 +89,7 @@ export async function GET(
 
     return Response.json({ ok: true, content, rows: extractRows(content, sourceId) });
   } catch (error) {
-    console.error("❌ [API ERROR] in content/[sourceId]:", error);
+    console.error("[api/admin/content] failed", error);
     return Response.json({ ok: false, error: String(error) }, { status: 500 });
   }
 }
