@@ -7,7 +7,7 @@ import { getCategories, getContentBySourceId, getContents, type SiteCategory, ty
  */
 
 export type DisplayType = "single" | "image-list" | "text-list" | "news-list";
-export type DataSource = "static" | "news-db" | "products";
+export type DataSource = "static" | "news-db" | "products" | "inquiries";
 
 export type AdminColumn = {
   sourceId: number;
@@ -161,6 +161,14 @@ export function getAdminSections(): AdminSection[] {
         { sourceId: 141, name: "Company Announcement", displayType: "news-list", dataSource: "static", parentId: 78, itemCount: staticItemCount(findContent(141)) },
         { sourceId: 148, name: "Useful Knowledge", displayType: "news-list", dataSource: "static", parentId: 78, itemCount: staticItemCount(findContent(148)) },
         { sourceId: 199, name: "Vessel Shipping Lines", displayType: "news-list", dataSource: "static", parentId: 78, itemCount: staticItemCount(findContent(199)) },
+      ],
+    },
+    {
+      pid: 90,
+      name: "询盘管理",
+      nameEn: "Inquiries",
+      columns: [
+        { sourceId: 90, name: "客户询盘", displayType: "news-list", dataSource: "inquiries", parentId: 90, itemCount: 0 },
       ],
     },
   ];

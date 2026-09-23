@@ -65,6 +65,17 @@ type ProductRow = {
   status: string;
 };
 
+type InquiryRow = {
+  id: number;
+  company: string;
+  contact: string;
+  email: string;
+  message: string;
+  language: string;
+  status: string;
+  createdAt: string;
+};
+
 /* ---------- Helpers ---------- */
 
 function displayTypeName(type: string): string {
@@ -97,6 +108,7 @@ export default function Dashboard({ username }: { username: string }) {
 
   // News management state
   const [newsRows, setNewsRows] = useState<Row[]>([]);
+  const [inquiryRows, setInquiryRows] = useState<InquiryRow[]>([]);
   const [newsCats, setNewsCats] = useState<AdminCategory[]>([]);
   const [newsTotal, setNewsTotal] = useState(0);
   const [newsPages, setNewsPages] = useState(1);
@@ -131,11 +143,16 @@ export default function Dashboard({ username }: { username: string }) {
     setContentEditing(false);
     setProductRows([]);
     setNewsRows([]);
+    setInquiryRows([]);
     setProductEditing(null);
     setProductCreating(false);
     setSelectedProducts([]);
 
-    if (col.dataSource === "news-db") {
+    if (col.dataSource === "inquiries") {
+      const res = await fetch("/api/admin/inquiries", { cache: "no-store" });
+      const data = await res.json() as { rows?: InquiryRow[] };
+      setInquiryRows(data.rows ?? []);
+    } else if (col.dataSource === "news-db") {
       const params = new URLSearchParams({ page: "1", perPage: "50", categoryId: String(col.sourceId) });
       const res = await fetch(`/api/admin/posts?${params}`, { cache: "no-store" });
       const data = (await res.json()) as ListResponse;
@@ -248,6 +265,25 @@ export default function Dashboard({ username }: { username: string }) {
     setNewsTotal(data.total ?? 0);
     setNewsPages(data.pages ?? 1);
     setNewsPage(page);
+  }
+
+  async function updateInquiry(id: number, status: string) {
+    await fetch("/api/admin/inquiries", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status }),
+    });
+    if (activeColumn) await loadColumnContent(activeColumn);
+  }
+
+  async function removeInquiry(id: number) {
+    if (!window.confirm("确定删除这条客户询盘吗？")) return;
+    await fetch("/api/admin/inquiries", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    if (activeColumn) await loadColumnContent(activeColumn);
   }
 
   async function logout() {
@@ -384,6 +420,28 @@ export default function Dashboard({ username }: { username: string }) {
             </div>
           ) : contentLoading ? (
             <div className="py-16 text-center text-[14px] text-[#888]">Loading...</div>
+          ) : activeColumn.dataSource === "inquiries" ? (
+            <div className="overflow-x-auto border border-[#e3e3e3] bg-white">
+              <div className="flex items-center justify-between border-b border-[#eee] p-4">
+                <div><h2 className="text-[16px] font-bold text-[#333]">客户询盘</h2><p className="mt-1 text-[12px] text-[#888]">共 {inquiryRows.length} 条记录</p></div>
+              </div>
+              <table className="w-full min-w-[980px] text-left text-[13px]">
+                <thead className="bg-[#fafafa] text-[12px] text-[#888]"><tr><th className="px-3 py-3">时间</th><th className="px-3 py-3">客户</th><th className="px-3 py-3">联系方式</th><th className="px-3 py-3">留言</th><th className="px-3 py-3">状态</th><th className="px-3 py-3">操作</th></tr></thead>
+                <tbody className="divide-y divide-[#eee]">
+                  {inquiryRows.map((row) => (
+                    <tr className="align-top" key={row.id}>
+                      <td className="whitespace-nowrap px-3 py-3 text-[#888]">{new Date(row.createdAt).toLocaleString()}</td>
+                      <td className="px-3 py-3"><strong>{row.contact}</strong><div className="text-[11px] text-[#888]">{row.company || "未填写公司"}</div></td>
+                      <td className="px-3 py-3"><a className="text-[#1c6dd0]" href={`mailto:${row.email}`}>{row.email}</a></td>
+                      <td className="max-w-[360px] whitespace-pre-wrap px-3 py-3 text-[#555]">{row.message}</td>
+                      <td className="px-3 py-3"><select className="border border-[#ddd] px-2 py-1 text-[12px]" onChange={(event) => void updateInquiry(row.id, event.target.value)} value={row.status}><option value="new">新询盘</option><option value="processing">处理中</option><option value="replied">已回复</option><option value="archived">已归档</option></select></td>
+                      <td className="px-3 py-3"><button className="text-[12px] text-[#e61d39] hover:underline" onClick={() => void removeInquiry(row.id)} type="button">删除</button></td>
+                    </tr>
+                  ))}
+                  {inquiryRows.length === 0 ? <tr><td className="py-10 text-center text-[#888]" colSpan={6}>暂无客户询盘</td></tr> : null}
+                </tbody>
+              </table>
+            </div>
           ) : activeColumn.dataSource === "news-db" ? (
             /* News management (database-backed CRUD) */
             <div>
