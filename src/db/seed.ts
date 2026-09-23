@@ -182,12 +182,13 @@ async function seedPosts() {
 }
 
 async function seedAdmin() {
-  const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(adminUsers);
-  if (total > 0) return;
-  await db.insert(adminUsers).values({
-    username: ADMIN_USERNAME,
-    passwordHash: hashPassword(ADMIN_PASSWORD),
-  });
+  const [existing] = await db.select({ id: adminUsers.id }).from(adminUsers).where(eq(adminUsers.username, ADMIN_USERNAME)).limit(1);
+  const passwordHash = hashPassword(ADMIN_PASSWORD);
+  if (existing) {
+    await db.update(adminUsers).set({ passwordHash }).where(eq(adminUsers.id, existing.id));
+    return;
+  }
+  await db.insert(adminUsers).values({ username: ADMIN_USERNAME, passwordHash });
 }
 
 async function seedProducts() {
