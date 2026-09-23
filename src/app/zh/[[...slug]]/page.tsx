@@ -2,18 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
-import {
-  ContentColumnPage,
-  ContentEntryPage,
-  DownloadsPage,
-  ProductCategoryPage,
-  ProductDetail,
-  ProductSubPage,
-  ProductsIndex,
-} from "@/components/pages/Sections";
 import HomeContent from "@/components/pages/HomeContent";
-import { findProduct, getCategory, getSub, SITE } from "@/lib/site";
 import { getLatestPostsSafe } from "@/lib/home-data";
+import { SITE } from "@/lib/site-helpers";
+import { getHomeSummary } from "@/lib/site-summary";
 
 export const dynamic = "force-dynamic";
 
@@ -56,13 +48,20 @@ export default async function ZhPage({
   let content: React.ReactNode;
 
   if (!first) {
-    content = <HomeContent lang="zh" />;
+    const summary = getHomeSummary();
+    const news = await getLatestPostsSafe(6).catch(() => []);
+    content = <HomeContent lang="zh" initialData={{ ...summary, news }} />;
   } else if (first === "products" && second && third === "list" && fourth) {
+    const [{ getCategory, getSub }, { ProductSubPage }] = await Promise.all([
+      import("@/lib/site"),
+      import("@/components/pages/Sections"),
+    ]);
     const category = getCategory(second);
     const sub = category ? getSub(category, fourth) : undefined;
     if (!category || !sub) notFound();
     content = <ProductSubPage category={category} lang="zh" sub={sub} />;
   } else if (first === "entry" && second && third && fourth) {
+    const { ContentEntryPage } = await import("@/components/pages/Sections");
     content = (
       <ContentEntryPage
         columnId={third}
@@ -72,16 +71,26 @@ export default async function ZhPage({
       />
     );
   } else if (first === "products" && second && third) {
+    const [{ findProduct }, { ProductDetail }] = await Promise.all([
+      import("@/lib/site"),
+      import("@/components/pages/Sections"),
+    ]);
     const found = findProduct(second, third);
     if (!found) notFound();
     content = <ProductDetail category={found.category} product={found.product} lang="zh" />;
   } else if (first === "products" && second) {
+    const [{ getCategory }, { ProductCategoryPage }] = await Promise.all([
+      import("@/lib/site"),
+      import("@/components/pages/Sections"),
+    ]);
     const category = getCategory(second);
     if (!category) notFound();
     content = <ProductCategoryPage category={category} lang="zh" />;
   } else if (first === "downloads") {
+    const { DownloadsPage } = await import("@/components/pages/Sections");
     content = <DownloadsPage lang="zh" />;
   } else if (["about", "honor", "service", "cases", "product-lines"].includes(first)) {
+    const { ContentColumnPage } = await import("@/components/pages/Sections");
     const kind = first === "product-lines" ? "lines" : (first as "about" | "honor" | "service" | "cases");
     const id = Number(query.id ?? query.c_id ?? second);
     content = (
@@ -121,20 +130,32 @@ export default async function ZhPage({
         <p>地址：{SITE.address}</p>
         <p>电话：{SITE.tel}</p>
         <p>手机 / WhatsApp：{SITE.mobile}</p>
-        <p>邮箱：<a className="text-[#c8102e] underline" href={`mailto:${SITE.email}`}>{SITE.email}</a></p>
+        <p>
+          邮箱：
+          <a className="text-[#c8102e] underline" href={`mailto:${SITE.email}`}>
+            {SITE.email}
+          </a>
+        </p>
         <a className="mt-6 inline-block bg-[#c8102e] px-6 py-[11px] text-[13px] font-bold text-white" href="/contact">
           在线询盘（英文表单）
         </a>
       </div>
     );
   } else {
+    const { ProductsIndex } = await import("@/components/pages/Sections");
     content = <ProductsIndex lang="zh" />;
   }
 
   const map: Record<string, string> = {
-    products: "Products", about: "About Us", news: "News", downloads: "Download",
-    "product-lines": "Products Lines", honor: "Honor", service: "Service Center",
-    cases: "Classic Cases", contact: "Contact",
+    products: "Products",
+    about: "About Us",
+    news: "News",
+    downloads: "Download",
+    "product-lines": "Products Lines",
+    honor: "Honor",
+    service: "Service Center",
+    cases: "Classic Cases",
+    contact: "Contact",
   };
 
   return (

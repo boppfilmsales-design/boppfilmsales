@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getCategories, productCount, SITE, categoryNameZh } from "@/lib/site";
+import { categoryNameZh, SITE } from "@/lib/site-helpers";
+import { getNavCategories } from "@/lib/site-summary";
 
 const NEWS_TABS = [
   { slug: "industry-news", name: "Industry News", nameZh: "行业新闻" },
@@ -67,7 +68,7 @@ export default function SiteNav({ lang = "en" }: Props) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<string>("");
-  const categories = getCategories();
+  const categories = getNavCategories();
   const normalizedPath = pathname.replace(/^\/zh(?=\/|$)/, "") || "/";
   const englishPath = normalizedPath;
   const chinesePath = normalizedPath === "/" ? "/zh" : `/zh${normalizedPath}`;
@@ -151,7 +152,7 @@ export default function SiteNav({ lang = "en" }: Props) {
                           >
                             {catName}
                             <span className="ml-1.5 text-[11px] font-normal text-[#777]">
-                              ({productCount(category)})
+                              ({category.count})
                             </span>
                           </Link>
                         </div>
@@ -160,7 +161,7 @@ export default function SiteNav({ lang = "en" }: Props) {
                             <li key={sub.sourceId}>
                               <Link
                                 className="text-[13px] text-[#444] hover:text-[#c8102e] leading-snug block break-words transition-colors"
-                                href={`${lang === "zh" ? "/zh" : ""}/products/${category.sourceId}/${sub.itemIds[0] || ""}`}
+                                href={`${lang === "zh" ? "/zh" : ""}/products/${category.sourceId}/${sub.firstItemId || ""}`}
                               >
                                 <span className="text-[#c8102e] mr-2 font-bold">▪</span>
                                 {lang === "zh" && sub.nameZh ? sub.nameZh : sub.name}

@@ -43,3 +43,7 @@ yarn-error.log*
 /.source-cache/
 /scripts/source-catalog.json
 /scripts/source-content.json
+
+# build-time generated runtime data (small JSONs rebuilt by npm run build)
+/src/data/site-nav.json
+/src/data/home-summary.json
