@@ -2,6 +2,26 @@
 
 import { useState } from "react";
 import type { AdminCategory } from "./NewsForm";
+import RichEditor from "./RichEditor";
+import ImageField from "./ImageField";
+import ImageListField from "./ImageListField";
+import PdfListField from "./PdfListField";
+
+function htmlToText(html: string): string {
+  if (!html) return "";
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|h[1-6]|li|tr)>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
 
 export type AdminProductDetail = {
   id: number;
@@ -44,7 +64,7 @@ export default function ProductForm({
   onSaved: () => void;
 }) {
   const [categoryId, setCategoryId] = useState<number>(
-    product?.categoryId ?? defaultCategoryId ?? categories[0]?.id ?? 0
+    product?.categoryId ?? defaultCategoryId ?? categories[0]?.id ?? 0,
   );
   const [sort, setSort] = useState<number>(product?.sort ?? 10);
   const [title, setTitle] = useState(product?.title ?? "");
@@ -54,10 +74,9 @@ export default function ProductForm({
   const [code, setCode] = useState(product?.code ?? "");
   const [price, setPrice] = useState(product?.price ?? "");
   const [image, setImage] = useState(product?.image ?? "");
-  const [galleryText, setGalleryText] = useState((product?.gallery ?? []).join("\n"));
-  const [pdfsText, setPdfsText] = useState((product?.pdfs ?? []).map((pdf) => `${pdf.label} | ${pdf.file}`).join("\n"));
+  const [gallery, setGallery] = useState<string[]>(product?.gallery ?? []);
+  const [pdfs, setPdfs] = useState<Array<{ file: string; label: string }>>(product?.pdfs ?? []);
   const [bodyHtml, setBodyHtml] = useState(product?.bodyHtml ?? "");
-  const [bodyText, setBodyText] = useState(product?.bodyText ?? "");
   const [bodyHtmlZh, setBodyHtmlZh] = useState(product?.bodyHtmlZh ?? "");
   const [description, setDescription] = useState(product?.description ?? "");
   const [descriptionZh, setDescriptionZh] = useState(product?.descriptionZh ?? "");
@@ -65,9 +84,6 @@ export default function ProductForm({
   const [technicalZh, setTechnicalZh] = useState(product?.technicalZh ?? "");
   const [offer, setOffer] = useState(product?.offer ?? "");
   const [offerZh, setOfferZh] = useState(product?.offerZh ?? "");
-  const [mode, setMode] = useState<"text" | "html">(
-    product?.bodyHtml?.includes("<") ? "html" : "text"
-  );
   const [status, setStatus] = useState(product?.status ?? "正常");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -88,14 +104,11 @@ export default function ProductForm({
       code,
       price,
       image,
-      gallery: galleryText.split("\n").map((value) => value.trim()).filter(Boolean),
-      pdfs: pdfsText.split("\n").map((line) => {
-        const [label, file] = line.split("|").map((value) => value.trim());
-        return { label: label || file || "PDF", file: file || label || "" };
-      }).filter((pdf) => pdf.file),
+      gallery,
+      pdfs,
       status,
-      bodyHtml: mode === "html" ? bodyHtml : "",
-      bodyText: mode === "text" ? bodyText : "",
+      bodyHtml,
+      bodyText: htmlToText(bodyHtml),
       bodyHtmlZh,
       description,
       descriptionZh,
@@ -129,6 +142,7 @@ export default function ProductForm({
   const inputClass =
     "mt-1 w-full border border-[#ddd] px-3 py-[9px] text-[13px] outline-none focus:border-[#e61d39]";
   const labelClass = "block text-[12px] font-bold text-[#555]";
+  const sectionTitle = "mb-3 mt-6 border-l-4 border-[#e61d39] pl-3 text-[14px] font-bold text-[#333]";
 
   return (
     <form className="border border-[#e3e3e3] bg-white p-5" onSubmit={submit}>
@@ -141,7 +155,9 @@ export default function ProductForm({
         </button>
       </div>
 
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
+      {/* ---------- Basic info ---------- */}
+      <p className={sectionTitle}>基本信息</p>
+      <div className="grid gap-4 md:grid-cols-2">
         <label className={labelClass}>
           产品子栏目
           <select
@@ -178,7 +194,7 @@ export default function ProductForm({
         </label>
 
         <label className={labelClass}>
-          副标题 / 规格型号 (如: 4.5 Micron, 500mm width)
+          副标题 / 规格型号
           <input className={inputClass} onChange={(event) => setSubtitle(event.target.value)} value={subtitle} />
         </label>
 
@@ -198,11 +214,6 @@ export default function ProductForm({
         </label>
 
         <label className={labelClass}>
-          封面图片路径 (如: /uploads/products/xxx.jpg)
-          <input className={inputClass} onChange={(event) => setImage(event.target.value)} value={image} />
-        </label>
-
-        <label className={labelClass}>
           状态
           <select className={inputClass} onChange={(event) => setStatus(event.target.value)} value={status}>
             <option value="正常">正常</option>
@@ -212,66 +223,76 @@ export default function ProductForm({
         </label>
       </div>
 
-      <div className="mt-4 flex items-center gap-3 text-[12px]">
-        <span className="font-bold text-[#555]">详情内容格式:</span>
-        {(["text", "html"] as const).map((value) => (
-          <button
-            className={`border px-3 py-1 ${
-              mode === value ? "border-[#e61d39] bg-[#e61d39] text-white" : "border-[#ddd] text-[#666]"
-            }`}
-            key={value}
-            onClick={() => setMode(value)}
-            type="button"
-          >
-            {value === "text" ? "纯文本" : "HTML 源码"}
-          </button>
-        ))}
+      {/* ---------- Cover image ---------- */}
+      <p className={sectionTitle}>封面图片</p>
+      <ImageField value={image} onChange={setImage} folder="uploads/products" />
+
+      {/* ---------- Product detail (EN + ZN side-by-side) ---------- */}
+      <p className={sectionTitle}>产品详情内容</p>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div>
+          <label className={labelClass}>英文详情</label>
+          <RichEditor value={bodyHtml} onChange={setBodyHtml} placeholder="在此编辑英文详情..." height={260} />
+        </div>
+        <div>
+          <label className={labelClass}>中文详情</label>
+          <RichEditor value={bodyHtmlZh} onChange={setBodyHtmlZh} placeholder="在此编辑中文详情..." height={260} />
+        </div>
       </div>
 
-      <div className="mt-3">
-        {mode === "text" ? (
-          <textarea
-            className="h-[220px] w-full border border-[#ddd] p-3 text-[13px] leading-[22px] outline-none focus:border-[#e61d39]"
-            onChange={(event) => setBodyText(event.target.value)}
-            placeholder={"在此输入产品详细描述/技术指标，空行自动分段。"}
-            value={bodyText}
-          />
-        ) : (
-          <textarea
-            className="h-[220px] w-full border border-[#ddd] p-3 font-mono text-[12px] leading-[20px] outline-none focus:border-[#e61d39]"
-            onChange={(event) => setBodyHtml(event.target.value)}
-            placeholder={'<p>HTML 详情代码...</p>'}
-            value={bodyHtml}
-          />
-        )}
+      {/* ---------- Gallery + Technical PDFs ---------- */}
+      <p className={sectionTitle}>产品图集 &amp; 技术文档</p>
+      <div className="grid gap-6 md:grid-cols-2">
+        <div>
+          <label className={labelClass}>产品图集</label>
+          <ImageListField images={gallery} onChange={setGallery} folder="uploads/products" />
+        </div>
+        <div>
+          <label className={labelClass}>技术 PDF / 文档</label>
+          <PdfListField pdfs={pdfs} onChange={setPdfs} />
+        </div>
       </div>
 
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <label className={labelClass}>
-          产品图集（每行一个图片路径）
-          <textarea className={`${inputClass} h-28 font-mono text-[12px]`} onChange={(event) => setGalleryText(event.target.value)} value={galleryText} />
-        </label>
-        <label className={labelClass}>
-          技术 PDF（每行：显示名称 | 文件路径）
-          <textarea className={`${inputClass} h-28 font-mono text-[12px]`} onChange={(event) => setPdfsText(event.target.value)} value={pdfsText} />
-        </label>
+      {/* ---------- Description EN/ZH ---------- */}
+      <p className={sectionTitle}>英文描述 &amp; 中文描述</p>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div>
+          <label className={labelClass}>英文描述</label>
+          <RichEditor value={description} onChange={setDescription} placeholder="English description..." height={220} />
+        </div>
+        <div>
+          <label className={labelClass}>中文描述</label>
+          <RichEditor value={descriptionZh} onChange={setDescriptionZh} placeholder="中文描述..." height={220} />
+        </div>
       </div>
 
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
-        {[
-          ["英文描述", description, setDescription], ["中文描述", descriptionZh, setDescriptionZh],
-          ["英文技术参数", technical, setTechnical], ["中文技术参数", technicalZh, setTechnicalZh],
-          ["英文报价说明", offer, setOffer], ["中文报价说明", offerZh, setOfferZh],
-          ["中文详情 HTML", bodyHtmlZh, setBodyHtmlZh],
-        ].map(([label, value, setter]) => (
-          <label className={labelClass} key={label as string}>
-            {label as string}
-            <textarea className={`${inputClass} h-32 font-mono text-[12px]`} onChange={(event) => (setter as (value: string) => void)(event.target.value)} value={value as string} />
-          </label>
-        ))}
+      {/* ---------- Technical params EN/ZH ---------- */}
+      <p className={sectionTitle}>英文技术参数 &amp; 中文技术参数</p>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div>
+          <label className={labelClass}>英文技术参数</label>
+          <RichEditor value={technical} onChange={setTechnical} placeholder="Technical parameters..." height={220} />
+        </div>
+        <div>
+          <label className={labelClass}>中文技术参数</label>
+          <RichEditor value={technicalZh} onChange={setTechnicalZh} placeholder="中文技术参数..." height={220} />
+        </div>
       </div>
 
-      <div className="mt-5 flex items-center gap-3">
+      {/* ---------- Offer/Quotation EN/ZH ---------- */}
+      <p className={sectionTitle}>英文报价说明 &amp; 中文报价说明（支持报价表）</p>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div>
+          <label className={labelClass}>英文报价说明</label>
+          <RichEditor value={offer} onChange={setOffer} placeholder="Quotation / pricing notes..." height={220} />
+        </div>
+        <div>
+          <label className={labelClass}>中文报价说明</label>
+          <RichEditor value={offerZh} onChange={setOfferZh} placeholder="中文报价说明..." height={220} />
+        </div>
+      </div>
+
+      <div className="mt-6 flex items-center gap-3">
         <button
           className="bg-[#e61d39] px-6 py-[10px] text-[13px] font-bold uppercase text-white disabled:opacity-60"
           disabled={busy}

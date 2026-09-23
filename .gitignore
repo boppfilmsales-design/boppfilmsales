@@ -51,3 +51,7 @@ yarn-error.log*
 # local build/deploy logs
 /*.log
 .open-next-*/
+
+# locally uploaded files during dev (created by /api/admin/upload)
+/public/uploads/
+/public/downloads/
