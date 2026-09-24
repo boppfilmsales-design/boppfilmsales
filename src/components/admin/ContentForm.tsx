@@ -32,6 +32,7 @@ type DownloadRow = {
   serial?: string;
   format?: string;
   date?: string;
+  file?: string;
   bodyHtml?: string;
   [k: string]: unknown;
 };
@@ -272,7 +273,25 @@ export default function ContentForm({
       {/* DOWNLOAD */}
       {isDown && (
         <div className="mt-4 space-y-3">
-          <p className="text-[12px] font-bold text-[#555]">下载文件列表</p>
+          <div className="rounded border border-[#e8e8e8] bg-[#fafafa] px-3 py-2 text-[11px] text-[#777]">
+            该栏目在前台渲染为<b>下载表格</b>：名称 / 编号 / 格式 / 日期 / 下载按钮。
+            <b>文件地址</b>留空时前台显示「Coming Soon」；填写后会直接出现可点击的下载按钮。
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-[12px] font-bold text-[#555]">下载文件列表（{rows.length} 条）</p>
+            <button
+              className="rounded border border-[#ddd] px-2 py-1 text-[11px] text-[#666] hover:border-[#e61d39] hover:text-[#e61d39]"
+              onClick={() => {
+                const next = [...rows];
+                const first = next[0];
+                if (first) next.push({ ...first, name: `${first.name ?? ""} (副本)`, serial: `${first.serial ?? ""}-COPY`.replace(/^-/, "") });
+                setRows(next);
+              }}
+              type="button"
+            >
+              复制首行
+            </button>
+          </div>
           {rows.map((row, i) => (
             <div className="rounded border border-[#eee] p-3" key={i}>
               <div className="grid gap-3 md:grid-cols-2">
@@ -289,22 +308,59 @@ export default function ContentForm({
                   />
                 </label>
                 <label className="text-[11px] font-bold text-[#777]">
-                  编号/格式/日期
+                  文件地址（PDF 链接或 /downloads/xxx.pdf）
                   <input
                     className={inputCls}
-                    value={`${row.serial ?? ""} ${row.format ?? ""} ${row.date ?? ""}`.trim()}
+                    value={row.file ?? ""}
                     onChange={(e) => {
-                      const [serial = "", format = "", date = ""] = e.target.value.split(" ");
                       const next = [...rows];
-                      next[i] = { ...next[i], serial, format, date };
+                      next[i] = { ...next[i], file: e.target.value };
                       setRows(next);
                     }}
-                    placeholder="serial format date"
+                    placeholder="/downloads/20180921141713_83602.pdf"
+                  />
+                </label>
+                <label className="text-[11px] font-bold text-[#777]">
+                  编号
+                  <input
+                    className={inputCls}
+                    value={row.serial ?? ""}
+                    onChange={(e) => {
+                      const next = [...rows];
+                      next[i] = { ...next[i], serial: e.target.value };
+                      setRows(next);
+                    }}
+                  />
+                </label>
+                <label className="text-[11px] font-bold text-[#777]">
+                  格式
+                  <input
+                    className={inputCls}
+                    value={row.format ?? ""}
+                    onChange={(e) => {
+                      const next = [...rows];
+                      next[i] = { ...next[i], format: e.target.value };
+                      setRows(next);
+                    }}
+                    placeholder="PDF"
+                  />
+                </label>
+                <label className="text-[11px] font-bold text-[#777]">
+                  日期
+                  <input
+                    className={inputCls}
+                    value={row.date ?? ""}
+                    onChange={(e) => {
+                      const next = [...rows];
+                      next[i] = { ...next[i], date: e.target.value };
+                      setRows(next);
+                    }}
+                    placeholder="07/25/2018"
                   />
                 </label>
               </div>
               <label className="mt-2 block text-[11px] font-bold text-[#777]">
-                说明（支持 HTML）
+                说明（支持 HTML，可留空）
                 <textarea
                   className={`${inputCls} h-24 font-mono text-[11px]`}
                   value={row.bodyHtml ?? ""}
@@ -328,7 +384,7 @@ export default function ContentForm({
           ))}
           <button
             className="rounded border border-dashed border-[#ccc] px-3 py-2 text-[12px] text-[#888] hover:border-[#e61d39] hover:text-[#e61d39]"
-            onClick={() => setRows([...rows, { name: "", serial: "", format: "", date: "", bodyHtml: "" }])}
+            onClick={() => setRows([...rows, { name: "", serial: "", format: "PDF", date: "", file: "", bodyHtml: "" }])}
             type="button"
           >
             + 添加下载项

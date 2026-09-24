@@ -4,7 +4,12 @@ import SiteHeader from "@/components/SiteHeader";
 import { AllPdfsSection, ProductsIndex } from "@/components/pages/Sections";
 import { allPdfs, productCount } from "@/lib/site";
 
-export const dynamic = "force-static";
+/**
+ * Rendered per request: the per-page count comes from 高级管理 → 站点设置
+ * (`products_per_page`), so a static render would freeze whatever value was
+ * live at build time.
+ */
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Products - BOPET / BOPP / POF Film, Tape & Machine Lines",

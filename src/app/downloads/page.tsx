@@ -28,62 +28,43 @@ export default async function Page({
   const currentSlug = params.category || "company-notice";
   const sourceId = currentSlug === "technology-data" ? 76 : currentSlug === "certificate-download" ? 157 : currentSlug === "msds-download" ? 158 : 43;
   const managedContent = await getContentForSite("down", sourceId);
-  
-  // 获取项目中真实的 PDF 数据
+
+  // Real PDF catalogue, used to backfill the "Technology Data" tab when the
+  // admin column has not been filled in yet.
   const allPdfFiles = allPdfs();
 
-  // 严格根据当前 slug 匹配对应的内容列表
-  let items: Array<{ name: string; serial: string; format: string; date: string; url: string }> = [];
+  type DownloadItem = { name: string; serial: string; format: string; date: string; url: string };
+  const managedRows = managedContent && Array.isArray(managedContent.items)
+    ? (managedContent.items as Array<{ name?: string; serial?: string; format?: string; date?: string; file?: string }>)
+    : [];
 
-  const managedRows = managedContent && Array.isArray(managedContent.items) ? managedContent.items as Array<{ name?: string; serial?: string; format?: string; date?: string; file?: string }> : [];
-  if (managedRows.length > 0) {
-    items = managedRows.map((row) => ({
+  let items: DownloadItem[] = managedRows
+    .filter((row) => row && (row.name || row.file))
+    .map((row) => ({
       name: row.name ?? "Download",
       serial: row.serial ?? "",
-      format: row.format ?? "PDF",
+      format: row.format || "PDF",
       date: row.date ?? "",
-      url: row.file ?? "#",
+      // The legacy rows store either an absolute /downloads/... path or a bare
+      // file name; normalise both so the download button actually works.
+      url: !row.file ? "#" : row.file.startsWith("/") || /^https?:\/\//i.test(row.file) ? row.file : `/downloads/${row.file}`,
     }));
-  } else if (currentSlug === "company-notice") {
-    items = [
-      { 
-        name: "Our Company's Bank Accounts", 
-        serial: "195717-184", 
-        format: "PDF", 
-        date: "07/25/2018", 
-        url: "#" // 若无此文件可暂用 # 或提示
-      }
-    ];
-  } else if (currentSlug === "technology-data") {
-    items = allPdfFiles.map((pdf) => ({
+
+  // Fallback: when the managed column has no rows yet, still show the real
+  // catalogue instead of a hardcoded placeholder.
+  if (items.length === 0 && currentSlug === "technology-data") {
+    items = allPdfFiles.map((pdf, index) => ({
       name: pdf.label || "Technical Data Sheet",
-      serial: "TDS-PDF",
+      serial: `TDS-${String(index + 1).padStart(3, "0")}`,
       format: "PDF",
-      date: "2024-01-10",
-      url: pdf.file || "#"
+      date: "",
+      url: pdf.file || "#",
     }));
-  } else if (currentSlug === "certificate-download") {
-    items = [
-      { 
-        name: "ISO9001 Quality Management System Certificate", 
-        serial: "CERT-ISO", 
-        format: "PDF", 
-        date: "2023-05-20", 
-        url: "#" 
-      }
-    ];
-  } else if (currentSlug === "msds-download") {
-    items = [
-      { 
-        name: "MSDS for BOPET, BOPP and POF Film Products", 
-        serial: "MSDS-FILM", 
-        format: "PDF", 
-        date: "2024-02-15", 
-        url: "#" 
-      }
-    ];
   }
 
+  if (items.length === 0) {
+    items = [];
+  }
   return (
     <div className="min-h-screen bg-white">
       <SiteHeader active="Download" />

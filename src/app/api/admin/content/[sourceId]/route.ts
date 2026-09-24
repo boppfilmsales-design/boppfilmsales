@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/db";
 import { adminContents } from "@/db/schema";
+import { readSiteSeed } from "@/db/site-seed-reader";
 import { ensureSeedData } from "@/db/seed";
 import { eq } from "drizzle-orm";
 import type { SiteContent } from "@/lib/site-types";
@@ -96,9 +97,14 @@ function extractRows(content: SiteContent | undefined): ContentRow[] {
 
   // --- Download lists (items is an array of file rows) ---
   if (content.kind === "down" && Array.isArray(items)) {
-    const rows = items as Array<{ name?: string; title?: string; file?: string; image?: string }>;
+    const rows = items as Array<{ name?: string; title?: string; serial?: string; format?: string; date?: string; file?: string; image?: string }>;
     return rows.map((row, i) => {
       const image = row.image ? contentImageUrl(row.image) : "";
+      // Show the downloadable file itself as the thumbnail when there is no
+      // cover image, so an editor can see at a glance whether the row is wired
+      // to a real PDF.
+      const file = (row.file ?? "").trim();
+      const meta = [row.serial, row.format, row.date].filter(Boolean).join(" · ");
       return {
         id: i + 1,
         sort: (i + 1) * 10,
@@ -106,8 +112,8 @@ function extractRows(content: SiteContent | undefined): ContentRow[] {
         titleZh: "",
         image,
         imageCount: image ? 1 : 0,
-        excerpt: plainText(row.file ?? ""),
-        status: "正常",
+        excerpt: meta || plainText(file),
+        status: file ? "正常" : "未绑定文件",
       };
     });
   }
@@ -181,14 +187,17 @@ export async function GET(
 
     if (!content) {
       // Fallback to the static seed, for a column that exists in the seed file
-      // but has no DB row yet. The 14 MB `site-seed.json` must not be pulled
-      // into this route's bundle, so the reader is resolved through a
-      // non-analysable specifier (a literal `import("@/db/site-seed-reader")`
-      // would still be statically traced and re-inflate the chunk).
-      const specifier = ["@/db", "site-seed-reader"].join("/");
-      const { readSiteSeed } = (await import(
-        /* webpackIgnore: true */ specifier
-      )) as typeof import("@/db/site-seed-reader");
+      // but has no DB row yet.
+      //
+      // NOTE: this used to resolve the reader through a non-analysable
+      // specifier (`["@/db","site-seed-reader"].join("/")`) with
+      // `webpackIgnore`. That works under the webpack dev server but *fails at
+      // runtime* in the `output: "standalone"` server, where Node cannot
+      // resolve the fabricated "@/" package name — every request for such a
+      // column threw ERR_MODULE_NOT_FOUND. A plain static import is correct
+      // here: `site-seed-reader` reads `site-seed.json` lazily inside its own
+      // functions, so importing it does not re-inflate the bundle the way
+      // `@/lib/site` did.
       const seed = readSiteSeed();
       content =
         (seed.getContents().find((c) => String(c.sourceId) === String(sourceId)) as SiteContent | undefined) ??

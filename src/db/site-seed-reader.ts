@@ -10,13 +10,21 @@
  * JSON to every admin API route that (transitively) imports `seed.ts` via
  * `ensureSeedData()`. That produced ~16 MB server chunks and 70–110 s requests.
  *
- * By keeping the JSON read here — and only ever reaching this module through a
- * non-analysable dynamic import — the admin module graph stays free of the
- * 14 MB payload. Nothing on the admin request path should import this module
- * statically.
+ * HOW IT STAYS CHEAP NOW
+ * ----------------------
+ * The JSON is **not** a static `import`. It is read from disk lazily, inside a
+ * memoised function, so merely importing this module costs nothing and the
+ * bundler has no edge to `site-seed.json` at all.
+ *
+ * This matters for the `output: "standalone"` production build: the previous
+ * approach — a non-analysable dynamic specifier plus `webpackIgnore` — cannot
+ * survive there, because Node cannot resolve a fabricated "@/…" package name
+ * (`ERR_MODULE_NOT_FOUND: Cannot find package '@/db'` on every cold start).
+ * Reading the file with `fs` is bundler-independent and works everywhere.
  */
 
-import seed from "@/data/site-seed.json";
+import fs from "node:fs";
+import path from "node:path";
 
 export type SeedProductItem = {
   sourceId: number;
@@ -70,11 +78,53 @@ type SeedShape = {
   contents?: SeedContent[];
 };
 
-const data = seed as unknown as SeedShape;
-const products: SeedCategory[] = data.products ?? [];
-const contents: SeedContent[] = data.contents ?? [];
+/**
+ * Resolves `src/data/site-seed.json` without a bundler edge.
+ *
+ * The build output puts this module either at `<root>/src/db/…` (dev / tsc) or
+ * inside `.next/server/chunks/…` (bundled), so several candidate roots are
+ * probed. The first existing file wins and the parsed result is memoised for
+ * the life of the process.
+ */
+function candidatePaths(): string[] {
+  const cwd = process.cwd();
+  const relative = ["src", "data", "site-seed.json"];
+  return [
+    path.join(cwd, ...relative),
+    // standalone output: server.js sits at <root>/.next/standalone/
+    path.join(cwd, "..", "..", ...relative),
+    path.join(cwd, "..", "..", "..", ...relative),
+    path.resolve(__dirname, "..", "..", "..", ...relative),
+    path.resolve(__dirname, "..", "..", "..", "..", ...relative),
+  ];
+}
+
+let cached: SeedShape | null = null;
+
+function loadSeed(): SeedShape {
+  if (cached) return cached;
+  let lastError: unknown = null;
+  for (const candidate of candidatePaths()) {
+    try {
+      if (!fs.existsSync(candidate)) continue;
+      cached = JSON.parse(fs.readFileSync(candidate, "utf8")) as SeedShape;
+      return cached;
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  // Degrade to an empty seed rather than throwing: callers already handle the
+  // "no data" case, and a missing seed file must not take an admin route down.
+  console.error("[site-seed-reader] could not read site-seed.json", lastError);
+  cached = {};
+  return cached;
+}
 
 export function readSiteSeed() {
+  const data = loadSeed();
+  const products: SeedCategory[] = data.products ?? [];
+  const contents: SeedContent[] = data.contents ?? [];
+
   return {
     products,
     contents,

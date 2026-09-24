@@ -1,6 +1,20 @@
 import Link from "next/link";
+import { getSiteSettings, setting } from "@/lib/site-settings";
 
-export default function SiteFooter() {
+/**
+ * Async server component: the contact block and the copyright line are driven
+ * by 高级管理 → 系统管理 → 站点设置, so an operator can change them without a
+ * redeploy. `getSiteSettings()` never throws — it falls back to the built-in
+ * defaults when the database is unavailable.
+ */
+export default async function SiteFooter() {
+  const settings = await getSiteSettings();
+  const address = setting(settings, "contact_address");
+  const phone = setting(settings, "contact_phone");
+  const mobile = setting(settings, "contact_mobile");
+  const email = setting(settings, "contact_email");
+  const copyright = setting(settings, "footer_copyright");
+  const beian = setting(settings, "footer_beian");
   return (
     <>
       <footer className="mt-16 bg-[#c8102e] py-10 text-white">
@@ -91,29 +105,29 @@ export default function SiteFooter() {
               <span className="mt-0.5 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-white text-[11px] text-[#c8102e] shadow">
                 📍
               </span>
-              <span>NO.3399 LUZHOU AVE., BAOHE DIST., 230051, HEFEI, ANHUI, CHINA</span>
+              <span>{address}</span>
             </dd>
 
             <dd className="flex items-center gap-2.5 text-[13px] leading-[26px]">
               <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-white text-[11px] text-[#c8102e] shadow">
                 ☎
               </span>
-              <span>Tel: 86-551-64687285</span>
+              <span>Tel: {phone}</span>
             </dd>
 
             <dd className="flex items-center gap-2.5 text-[13px] leading-[26px]">
               <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-white text-[11px] text-[#c8102e] shadow">
                 📱
               </span>
-              <span>Mobile: 86-18919654871</span>
+              <span>Mobile: {mobile}</span>
             </dd>
 
             <dd className="flex items-center gap-2.5 text-[13px] leading-[26px]">
               <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-white text-[10px] text-[#c8102e] shadow">
                 ✉
               </span>
-              <a className="hover:underline" href="mailto:sales@boppfilmsales.com">
-                sales@boppfilmsales.com
+              <a className="hover:underline" href={`mailto:${email}`}>
+                {email}
               </a>
             </dd>
           </dl>
@@ -140,8 +154,9 @@ export default function SiteFooter() {
               </li>
             ))}
           </ul>
-          <div>
-            Copyright &copy; 2018 All rights reserved. Asia Pacific Industry Group Co., Limited
+          <div className="flex flex-wrap items-center gap-3">
+            <span>{copyright}</span>
+            {beian ? <span className="opacity-80">{beian}</span> : null}
           </div>
         </div>
       </div>

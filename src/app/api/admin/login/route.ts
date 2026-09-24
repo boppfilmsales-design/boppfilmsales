@@ -27,9 +27,18 @@ export async function POST(request: Request) {
     return Response.json({ ok: false, error: "Username and password are required." }, { status: 400 });
   }
 
-  let user: { passwordHash: string } | null = null;
+  let user: { id: number; username: string; passwordHash: string; status: string } | null = null;
   try {
-    const rows = await db.select().from(adminUsers).where(eq(adminUsers.username, username)).limit(1);
+    const rows = await db
+      .select({
+        id: adminUsers.id,
+        username: adminUsers.username,
+        passwordHash: adminUsers.passwordHash,
+        status: adminUsers.status,
+      })
+      .from(adminUsers)
+      .where(eq(adminUsers.username, username))
+      .limit(1);
     user = rows[0] ?? null;
   } catch (err) {
     console.error("[admin/login] DB query failed, falling back to env credentials:", err);
@@ -41,6 +50,24 @@ export async function POST(request: Request) {
 
   if (!valid) {
     return Response.json({ ok: false, error: "Invalid username or password." }, { status: 401 });
+  }
+
+  // A disabled account (set in 高级管理 → 权限管理 → 管理员) cannot sign in.
+  if (user && user.status === "disabled") {
+    return Response.json({ ok: false, error: "该账号已被停用，请联系超级管理员。" }, { status: 403 });
+  }
+
+  // Record the sign-in for the 管理员 list ("最后登录" column). Best-effort:
+  // a failure here must not block a valid login.
+  if (user) {
+    try {
+      await db
+        .update(adminUsers)
+        .set({ lastLoginAt: new Date() })
+        .where(eq(adminUsers.id, user.id));
+    } catch (err) {
+      console.error("[admin/login] failed to record lastLoginAt:", err);
+    }
   }
 
   const store = await cookies();

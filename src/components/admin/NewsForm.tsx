@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-export type AdminCategory = { id: number; slug: string; name: string };
+export type AdminCategory = { id: number; slug: string; name: string; sourceId?: number };
 
 export type AdminPostDetail = {
   id: number;

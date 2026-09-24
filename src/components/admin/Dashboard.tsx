@@ -5,6 +5,11 @@ import { useCallback, useEffect, useState } from "react";
 import NewsForm, { type AdminCategory, type AdminPostDetail } from "@/components/admin/NewsForm";
 import ProductForm, { type AdminProductDetail } from "@/components/admin/ProductForm";
 import ContentForm from "@/components/admin/ContentForm";
+import MessageBoard from "@/components/admin/MessageBoard";
+import SiteSettings from "@/components/admin/SiteSettings";
+import RoleManager from "@/components/admin/RoleManager";
+import AdminUsers from "@/components/admin/AdminUsers";
+import InfoTransfer from "@/components/admin/InfoTransfer";
 import type { SiteContent } from "@/lib/site-types";
 
 /* ---------- Types ---------- */
@@ -25,6 +30,8 @@ type ListResponse = {
   ok: boolean;
   items: Row[];
   categories: AdminCategory[];
+  /** DB id of the requested column (the sidebar's sourceId -> news_categories.id). */
+  resolvedCategoryId?: number | null;
   total: number;
   page: number;
   pages: number;
@@ -81,6 +88,44 @@ type InquiryRow = {
 
 /* ---------- Helpers ---------- */
 
+/**
+ * Structure of the legacy 「高级管理」 root, mirroring the source panel:
+ *   高级管理 → 留言板
+ *   系统管理 → 站点设置 / 信息转移
+ *   权限管理 → 角色管理 / 管理员
+ */
+const ADVANCED_TREE: { key: string; name: string; items: { key: string; name: string }[] }[] = [
+  {
+    key: "message-board",
+    name: "留言板",
+    items: [{ key: "messages", name: "留言板" }],
+  },
+  {
+    key: "system",
+    name: "系统管理",
+    items: [
+      { key: "settings", name: "站点设置" },
+      { key: "transfer", name: "信息转移" },
+    ],
+  },
+  {
+    key: "permission",
+    name: "权限管理",
+    items: [
+      { key: "roles", name: "角色管理" },
+      { key: "users", name: "管理员" },
+    ],
+  },
+];
+
+function advancedTabName(key: string): string {
+  for (const group of ADVANCED_TREE) {
+    const item = group.items.find((i) => i.key === key);
+    if (item) return `${group.name} / ${item.name}`;
+  }
+  return "高级管理";
+}
+
 function displayTypeName(type: string): string {
   switch (type) {
     case "single": return "单页内容";
@@ -94,6 +139,13 @@ function displayTypeName(type: string): string {
 /* ---------- Dashboard ---------- */
 
 export default function Dashboard({ username }: { username: string }) {
+  /**
+   * Top-level navigation: the legacy panel has two roots —
+   * 「内容管理」(this component's column browser) and 「高级管理」
+   * (留言板 / 系统管理 / 权限管理). `mode` switches between them.
+   */
+  const [mode, setMode] = useState<"content" | "advanced">("content");
+  const [advancedTab, setAdvancedTab] = useState<string>("messages");
   const [activeSection, setActiveSection] = useState<number | null>(1);
   const [activeColumn, setActiveColumn] = useState<AdminColumn | null>(null);
   const [sections, setSections] = useState<AdminSection[]>([]);
@@ -117,6 +169,8 @@ export default function Dashboard({ username }: { username: string }) {
   const [newsPages, setNewsPages] = useState(1);
   const [newsPage, setNewsPage] = useState(1);
   const [newsCatId, setNewsCatId] = useState("all");
+  /** DB id of the news column currently open (sourceId is resolved to this). */
+  const [newsColumnId, setNewsColumnId] = useState(0);
   const [keyword, setKeyword] = useState("");
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<AdminPostDetail | null>(null);
@@ -156,7 +210,9 @@ export default function Dashboard({ username }: { username: string }) {
       const data = await res.json() as { rows?: InquiryRow[] };
       setInquiryRows(data.rows ?? []);
     } else if (col.dataSource === "news-db") {
-      const params = new URLSearchParams({ page: "1", perPage: "50", categoryId: String(col.sourceId) });
+      // Query by the columns' *legacy* sourceId (41/49/52); the API resolves
+      // it to the news_categories.id FK and tells us which one it picked.
+      const params = new URLSearchParams({ page: "1", perPage: "20", categoryId: String(col.sourceId) });
       const res = await fetch(`/api/admin/posts?${params}`, { cache: "no-store" });
       const data = (await res.json()) as ListResponse;
       setNewsRows(data.items ?? []);
@@ -164,7 +220,8 @@ export default function Dashboard({ username }: { username: string }) {
       setNewsTotal(data.total ?? 0);
       setNewsPages(data.pages ?? 1);
       setNewsPage(1);
-      setNewsCatId(String(col.sourceId));
+      setNewsCatId(String(data.resolvedCategoryId ?? data.categories?.[0]?.id ?? col.sourceId));
+      setNewsColumnId(data.resolvedCategoryId ?? data.categories?.[0]?.id ?? 0);
     } else if (col.dataSource === "products") {
       const res = await fetch(`/api/admin/products/${col.sourceId}`, { cache: "no-store" });
       const data = await res.json();
@@ -270,6 +327,12 @@ export default function Dashboard({ username }: { username: string }) {
     setNewsPage(page);
   }
 
+  /** Client-side keyword filter over the column currently open. */
+  async function runNewsSearch(term: string) {
+    setQuery(term);
+    await loadNews(1, newsCatId, term);
+  }
+
   async function updateInquiry(id: number, status: string) {
     await fetch("/api/admin/inquiries", {
       method: "PATCH",
@@ -320,8 +383,60 @@ export default function Dashboard({ username }: { username: string }) {
           <span className="flex h-8 w-8 items-center justify-center bg-[#e61d39] text-[12px]">AP</span>
           XgxCms
         </div>
+
+        {/* Top-level roots: 内容管理 / 高级管理 */}
+        <div className="flex border-b border-white/10 bg-[#2f333d]">
+          {(
+            [
+              ["content", "内容管理"],
+              ["advanced", "高级管理"],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              className={`flex-1 py-[10px] text-[12px] font-bold transition-colors ${
+                mode === key ? "bg-[#e61d39] text-white" : "text-white/60 hover:bg-white/5 hover:text-white"
+              }`}
+              key={key}
+              onClick={() => {
+                setMode(key);
+                setNotice("");
+              }}
+              type="button"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         <div className="flex-1 overflow-y-auto py-2">
-          {loading ? (
+          {mode === "advanced" ? (
+            ADVANCED_TREE.map((group) => (
+              <div key={group.key} className="border-b border-white/5">
+                <div className="px-4 py-[10px] text-[12px] font-bold text-white/90">{group.name}</div>
+                <ul className="bg-black/20">
+                  {group.items.map((item) => (
+                    <li key={item.key}>
+                      <button
+                        className={`flex w-full items-center justify-between px-4 py-[8px] text-left text-[12px] ${
+                          advancedTab === item.key
+                            ? "bg-[#e61d39] text-white"
+                            : "text-white/70 hover:bg-white/5 hover:text-white"
+                        }`}
+                        onClick={() => {
+                          setAdvancedTab(item.key);
+                          setNotice("");
+                          setLoadError("");
+                        }}
+                        type="button"
+                      >
+                        <span className="truncate">{item.name}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))
+          ) : loading ? (
             <div className="px-4 py-8 text-center text-[12px] text-white/50">Loading...</div>
           ) : (
             sections.map((section) => (
@@ -376,7 +491,14 @@ export default function Dashboard({ username }: { username: string }) {
         {/* Top bar */}
         <div className="flex items-center justify-between bg-[#23262E] px-4 py-3 text-white">
           <div className="text-[13px] font-bold">
-            {activeColumn ? (
+            {mode === "advanced" ? (
+              <span className="text-white/80">
+                <span className="text-white/50">当前位置：</span>
+                <span className="ml-1">高级管理</span>
+                <span className="mx-2 text-white/30">/</span>
+                <span className="text-white">{advancedTabName(advancedTab)}</span>
+              </span>
+            ) : activeColumn ? (
               <span className="text-white/80">
                 <span className="text-white/50">当前位置：</span>
                 <span className="ml-1">内容管理</span>
@@ -402,7 +524,19 @@ export default function Dashboard({ username }: { username: string }) {
 
         {/* Content area */}
         <div className="flex-1 overflow-y-auto p-5">
-          {loadError ? (
+          {mode === "advanced" ? (
+            advancedTab === "messages" ? (
+              <MessageBoard username={username} />
+            ) : advancedTab === "settings" ? (
+              <SiteSettings />
+            ) : advancedTab === "transfer" ? (
+              <InfoTransfer />
+            ) : advancedTab === "roles" ? (
+              <RoleManager />
+            ) : (
+              <AdminUsers currentUser={username} />
+            )
+          ) : loadError ? (
             <div className="border border-red-300 bg-red-50 p-6 text-center text-[14px] text-red-700">
               <p className="font-bold">加载失败</p>
               <p className="mt-2 text-[12px]">{loadError}</p>
@@ -467,11 +601,11 @@ export default function Dashboard({ username }: { username: string }) {
               {(creating || editing) && activeColumn && (
                 <div className="mb-5">
                   <NewsForm
-                    categories={newsCats.length > 0 ? newsCats : [{ id: activeColumn.sourceId, slug: "news", name: activeColumn.name }]}
-                    defaultCategoryId={activeColumn.sourceId}
+                    categories={newsCats.length > 0 ? newsCats : [{ id: newsColumnId, slug: "news", name: activeColumn.name }]}
+                    defaultCategoryId={newsColumnId || newsCats[0]?.id}
                     onCancel={() => { setCreating(false); setEditing(null); }}
                     onSaved={() => {
-                      setNotice("Saved. The website is updated immediately.");
+                      setNotice("已保存，前台立即生效。");
                       setCreating(false);
                       setEditing(null);
                       void loadColumnContent(activeColumn);
@@ -490,8 +624,33 @@ export default function Dashboard({ username }: { username: string }) {
                 >
                   + 添加信息
                 </button>
+                <input
+                  className="w-[200px] border border-[#ddd] px-3 py-[7px] text-[12px] outline-none focus:border-[#e61d39]"
+                  onChange={(event) => setKeyword(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") void runNewsSearch(keyword.trim());
+                  }}
+                  placeholder="搜索标题 / 正文，回车执行"
+                  value={keyword}
+                />
+                <button
+                  className="border border-[#ddd] px-3 py-[7px] text-[12px] text-[#666] hover:border-[#e61d39] hover:text-[#e61d39]"
+                  onClick={() => void runNewsSearch(keyword.trim())}
+                  type="button"
+                >
+                  搜索
+                </button>
+                {query ? (
+                  <button
+                    className="text-[12px] text-[#1c6dd0] hover:underline"
+                    onClick={() => { setKeyword(""); void runNewsSearch(""); }}
+                    type="button"
+                  >
+                    清除「{query}」
+                  </button>
+                ) : null}
                 <span className="text-[12px] text-[#888]">
-                  {newsTotal} record(s) · page {newsPage} / {newsPages}
+                  共 {newsTotal} 条 · 第 {newsPage} / {newsPages} 页
                 </span>
                 {notice ? <span className="text-[12px] text-[#e61d39]">{notice}</span> : null}
               </div>
@@ -546,7 +705,7 @@ export default function Dashboard({ username }: { username: string }) {
                     {newsRows.length === 0 && (
                       <tr>
                         <td className="py-8 text-center text-[13px] text-[#888]" colSpan={6}>
-                          No articles found. Use the add button to create one.
+                          {query ? `没有匹配「${query}」的文章。` : "此栏目暂无文章，点击「+ 添加信息」新建一条。"}
                         </td>
                       </tr>
                     )}

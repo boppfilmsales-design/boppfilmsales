@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ProductFamilyGrid from "@/components/ProductFamilyGrid";
 import ProductGallery from "@/components/ProductGallery";
 import ProductListing, { type ProductCard } from "@/components/ProductListing";
 import ProductTabs, { type ProductTabItem } from "@/components/ProductTabs";
@@ -25,6 +26,7 @@ import {
   type ProductSub,
   type SiteContent,
 } from "@/lib/site";
+import { getSiteSettings, settingNumber } from "@/lib/site-settings";
 
 type Lang = "en" | "zh";
 
@@ -198,9 +200,29 @@ function FamilyHeader({
   );
 }
 
-export function ProductsIndex({ lang = "en" }: { lang?: Lang }) {
+export async function ProductsIndex({ lang = "en" }: { lang?: Lang }) {
   const categories = getCategories();
   const base = baseOf(lang);
+  // Per-page count is an operator-editable setting (高级管理 → 站点设置).
+  const settings = await getSiteSettings();
+  const perPage = settingNumber(settings, "products_per_page", 9);
+
+  // Pre-compute the cards on the server; the grid itself is a client component
+  // so it can paginate (18 families no longer fit on one screen without the
+  // last rows being cut off).
+  const familyCards = categories.map((family) => {
+    const items = familyProducts(family);
+    const lead = items.find((item) => (item.gallery ?? []).length > 0);
+    return {
+      key: family.sourceId,
+      href: `${base}/products/${family.sourceId}`,
+      title: familyName(family, lang),
+      image: lead?.gallery?.[0] ? productImageUrl(lead.gallery[0]) : "",
+      itemCount: items.length,
+      names: items.slice(0, 5).map((item) => itemName(item, lang)),
+    };
+  });
+
   return (
     <>
       <PageHero
@@ -215,51 +237,7 @@ export function ProductsIndex({ lang = "en" }: { lang?: Lang }) {
       />
       <section className="py-12">
         <div className="mx-auto w-full max-w-[1560px] px-4">
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {categories.map((family) => {
-              const items = familyProducts(family);
-              const lead = items.find((item) => (item.gallery ?? []).length > 0);
-              const names = items.slice(0, 5).map((item) => itemName(item, lang));
-              return (
-                <Link
-                  className="group flex flex-col overflow-hidden border border-[#e8e8e8] bg-white transition-all hover:-translate-y-1 hover:border-[#c8102e] hover:shadow-2xl"
-                  href={`${base}/products/${family.sourceId}`}
-                  key={family.sourceId}
-                >
-                  {lead ? (
-                    <div className="flex h-[220px] items-center justify-center overflow-hidden bg-[#f4f5f7]">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        alt={familyName(family, lang)}
-                        className="h-full w-full object-contain transition duration-700 group-hover:scale-[1.03]"
-                        src={productImageUrl(lead.gallery[0])}
-                      />
-                    </div>
-                  ) : null}
-                  <div className="flex flex-1 flex-col p-6">
-                    <div className="flex items-start justify-between gap-3">
-                      <h2 className="text-[16px] font-bold leading-snug text-[#22262e] group-hover:text-[#c8102e]">
-                        {familyName(family, lang)}
-                      </h2>
-                      <span className="shrink-0 rounded-full bg-[#f4f4f4] px-2 py-[2px] text-[11px] font-bold text-[#888]">
-                        {items.length}
-                      </span>
-                    </div>
-                    <ul className="mt-4 space-y-[6px]">
-                      {names.map((name, index) => (
-                        <li className="truncate text-[13px] text-[#666]" key={index}>
-                          · {name}
-                        </li>
-                      ))}
-                    </ul>
-                    <span className="mt-auto pt-5 inline-block text-[12px] font-bold uppercase tracking-[1px] text-[#c8102e]">
-                      {pick(lang, "Explore range", "查看系列")} →
-                    </span>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+          <ProductFamilyGrid families={familyCards} lang={lang} perPage={perPage} />
         </div>
       </section>
       <AllPdfsSection lang={lang} />

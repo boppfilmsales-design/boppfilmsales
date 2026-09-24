@@ -1,22 +1,28 @@
 ﻿import { eq, sql } from "drizzle-orm";
 import seedRaw from "@/data/news-seed.json";
 import { db } from "@/db";
-import { adminContents, adminProducts, adminUsers, newsCategories, newsPosts } from "@/db/schema";
+import { adminContents, adminMessages, adminProducts, adminRoles, adminUsers, newsCategories, newsPosts, siteSettings } from "@/db/schema";
 import { hashPassword } from "@/lib/password";
 
 /**
- * Loads the heavy site-seed reader at runtime.
+ * The site-seed reader, imported statically.
  *
- * The specifier is deliberately split so the bundler cannot statically resolve
- * it: a literal `import("@/db/site-seed-reader")` is still traced and would
- * drag the 14 MB `site-seed.json` into every admin route that imports this
- * module. See the header of `site-seed-reader.ts` for the full story.
+ * HISTORY: this used to be loaded through a deliberately non-analysable
+ * specifier (`["@/db","site-seed-reader"].join("/")` + `webpackIgnore: true`)
+ * to keep the 14 MB `site-seed.json` out of the admin bundle. That trick works
+ * under the webpack dev server but **breaks at runtime** in the
+ * `output: "standalone"` production server: Node cannot resolve a fabricated
+ * "@/…" package name, so every cold start on an empty database died with
+ * `ERR_MODULE_NOT_FOUND: Cannot find package '@/db'`.
+ *
+ * The static import below is safe because `site-seed-reader` opens
+ * `site-seed.json` lazily *inside* its functions — importing the module does
+ * not pull the JSON into the bundle graph the way `@/lib/site` does.
  */
-async function loadSiteSeedReader(): Promise<
-  typeof import("@/db/site-seed-reader")
-> {
-  const specifier = ["@/db", "site-seed-reader"].join("/");
-  return (await import(/* webpackIgnore: true */ specifier)) as typeof import("@/db/site-seed-reader");
+import { readSiteSeed } from "@/db/site-seed-reader";
+
+async function loadSiteSeedReader(): Promise<typeof import("@/db/site-seed-reader")> {
+  return { readSiteSeed };
 }
 
 export type SeedItem = {
@@ -86,6 +92,58 @@ async function ensureSchema() {
       created_at timestamptz not null default now()
     )`);
   await db.execute(sql`create unique index if not exists admin_users_username_key on admin_users (username)`);
+  await db.execute(sql`create table if not exists admin_roles (
+      id serial primary key,
+      key text not null,
+      name text not null,
+      name_zh text not null default '',
+      description text not null default '',
+      permissions_json text not null default '["*"]',
+      is_built_in boolean not null default false,
+      created_at timestamptz not null default now()
+    )`);
+  await db.execute(sql`create unique index if not exists admin_roles_key_key on admin_roles (key)`);
+  await db.execute(sql`create table if not exists site_settings (
+      id serial primary key,
+      key text not null,
+      value text not null default '',
+      label text not null default '',
+      group_name text not null default 'general',
+      updated_at timestamptz not null default now()
+    )`);
+  await db.execute(sql`create unique index if not exists site_settings_key_key on site_settings (key)`);
+  await db.execute(sql`create table if not exists admin_audit_log (
+      id serial primary key,
+      actor text not null default '',
+      action text not null,
+      detail text not null default '',
+      created_at timestamptz not null default now()
+    )`);
+  await db.execute(sql`create index if not exists admin_audit_log_created_idx on admin_audit_log (created_at)`);
+  await db.execute(sql`create table if not exists admin_messages (
+      id serial primary key,
+      author text not null default '',
+      title text not null default '',
+      body text not null,
+      section_pid integer,
+      column_source_id integer,
+      status text not null default 'open',
+      reply text not null default '',
+      replied_by text not null default '',
+      replied_at timestamptz,
+      is_pinned boolean not null default false,
+      created_at timestamptz not null default now()
+    )`);
+  await db.execute(sql`create index if not exists admin_messages_created_idx on admin_messages (created_at)`);
+  await db.execute(sql`create index if not exists admin_messages_status_idx on admin_messages (status)`);
+  for (const column of [
+    ["display_name", "text not null default ''"],
+    ["role_key", "text not null default 'owner'"],
+    ["status", "text not null default 'active'"],
+    ["last_login_at", "timestamptz"],
+  ] as const) {
+    await db.execute(sql.raw(`alter table admin_users add column if not exists ${column[0]} ${column[1]}`));
+  }
   await db.execute(sql`
     create table if not exists admin_products (
       id serial primary key,
@@ -199,10 +257,142 @@ async function seedAdmin() {
   const [existing] = await db.select({ id: adminUsers.id }).from(adminUsers).where(eq(adminUsers.username, ADMIN_USERNAME)).limit(1);
   const passwordHash = hashPassword(ADMIN_PASSWORD);
   if (existing) {
-    await db.update(adminUsers).set({ passwordHash }).where(eq(adminUsers.id, existing.id));
+    await db
+      .update(adminUsers)
+      .set({ passwordHash, roleKey: "owner", status: "active" })
+      .where(eq(adminUsers.id, existing.id));
     return;
   }
-  await db.insert(adminUsers).values({ username: ADMIN_USERNAME, passwordHash });
+  await db.insert(adminUsers).values({
+    username: ADMIN_USERNAME,
+    passwordHash,
+    displayName: "超级管理员",
+    roleKey: "owner",
+    status: "active",
+  });
+}
+
+/** Built-in roles behind "高级管理 → 权限管理 → 角色管理". */
+const ROLE_DEFS = [
+  {
+    key: "owner",
+    name: "Super Admin",
+    nameZh: "超级管理员",
+    description: "拥有全部内容与高级管理权限，可管理角色与管理员账号。",
+    permissionsJson: '["*"]',
+    isBuiltIn: true,
+  },
+  {
+    key: "editor",
+    name: "Content Editor",
+    nameZh: "内容编辑",
+    description: "可维护产品、新闻、案例、下载等前台内容，不可进入权限管理。",
+    permissionsJson: JSON.stringify(["about", "product", "news", "download", "case", "service", "contact", "other", "inquiry", "message"]),
+    isBuiltIn: true,
+  },
+  {
+    key: "sales",
+    name: "Sales",
+    nameZh: "销售",
+    description: "仅可查看和跟进询盘、留言板，不可修改站点内容。",
+    permissionsJson: JSON.stringify(["inquiry", "message"]),
+    isBuiltIn: true,
+  },
+  {
+    key: "viewer",
+    name: "Read Only",
+    nameZh: "只读访客",
+    description: "仅可浏览后台数据，不能保存任何修改。",
+    permissionsJson: JSON.stringify([]),
+    isBuiltIn: true,
+  },
+];
+
+async function seedRoles() {
+  const existing = await db.select({ key: adminRoles.key }).from(adminRoles);
+  const known = new Set(existing.map((row) => row.key));
+  const missing = ROLE_DEFS.filter((def) => !known.has(def.key));
+  if (missing.length > 0) {
+    await db.insert(adminRoles).values(missing);
+  }
+}
+
+/**
+ * Default rows for "高级管理 → 系统管理 → 站点设置".
+ *
+ * These power the *live* front end: the company name, hotline, e-mail and
+ * footer text are read through `getSiteSettings()` so an operator can change
+ * them without a redeploy.
+ */
+const SETTING_DEFS = [
+  { key: "site_name", value: "Hebei Xinguangxing Packing Material Co., Ltd.", label: "站点名称（英文）", groupName: "general" },
+  { key: "site_name_zh", value: "河北新光兴包装材料有限公司", label: "站点名称（中文）", groupName: "general" },
+  { key: "site_tagline", value: "BOPP Film & Packaging Material Manufacturer", label: "副标题 / Slogan", groupName: "general" },
+  { key: "contact_person", value: "Ms. Linda", label: "联系人", groupName: "contact" },
+  { key: "contact_phone", value: "+86-311-88888888", label: "联系电话", groupName: "contact" },
+  { key: "contact_mobile", value: "+86-138-0000-0000", label: "手机 / WhatsApp", groupName: "contact" },
+  { key: "contact_email", value: "sales@apigcl.com", label: "业务邮箱", groupName: "contact" },
+  { key: "contact_address", value: "Xinguangxing Industrial Park, Shijiazhuang, Hebei, China", label: "公司地址（英文）", groupName: "contact" },
+  { key: "contact_address_zh", value: "中国河北省石家庄市新光兴工业园", label: "公司地址（中文）", groupName: "contact" },
+  { key: "footer_copyright", value: "© 2024 Hebei Xinguangxing Packing Material Co., Ltd. All rights reserved.", label: "页脚版权", groupName: "footer" },
+  { key: "footer_beian", value: "冀ICP备00000000号", label: "备案号", groupName: "footer" },
+  { key: "products_per_page", value: "9", label: "前台产品分页条数", groupName: "display" },
+  { key: "news_per_page", value: "10", label: "前台新闻分页条数", groupName: "display" },
+  { key: "site_status", value: "online", label: "站点状态（online / maintenance）", groupName: "display" },
+  { key: "maintenance_notice", value: "网站正在维护升级，请稍后访问。", label: "维护公告", groupName: "display" },
+];
+
+async function seedSettings() {
+  const existing = await db.select({ key: siteSettings.key }).from(siteSettings);
+  const known = new Set(existing.map((row) => row.key));
+  const missing = SETTING_DEFS.filter((def) => !known.has(def.key));
+  if (missing.length > 0) {
+    await db.insert(siteSettings).values(missing);
+  }
+}
+
+/** Starter notes so 高级管理 → 留言板 is never an empty screen. */
+const MESSAGE_DEFS = [
+  {
+    author: "xgxadmin",
+    title: "关于本后台的镜像同步说明",
+    body:
+      "本站后台按源站 apigcl.com 的结构重建，分为「内容管理」与「高级管理」两大区块。\n" +
+      "内容管理的每一列均可直接编辑并保存，保存后前台会立即生效。\n" +
+      "如有栏目需要新增或调整，请在此留言给管理员。",
+    sectionPid: 1,
+    columnSourceId: 13,
+    status: "open",
+    isPinned: true,
+  },
+  {
+    author: "xgxadmin",
+    title: "下载中心 PDF 文件命名规范",
+    body:
+      "下载中心的文件地址请使用 /downloads/ 开头的相对路径，例如 /downloads/bopp-film-tds.pdf。\n" +
+      "编号列用于前台列表显示，建议格式为 TDS-001 这类可排序的短编号。",
+    sectionPid: 42,
+    columnSourceId: 76,
+    status: "open",
+    isPinned: false,
+  },
+  {
+    author: "xgxadmin",
+    title: "新闻中心各栏目投稿要求",
+    body:
+      "Industry News / Company News / Employees Literary 三个栏目共用同一套编辑器。\n" +
+      "发布日期留空时会自动按当前时间排序；摘要为空时将截取正文前 400 字。",
+    sectionPid: 2,
+    columnSourceId: 41,
+    status: "open",
+    isPinned: false,
+  },
+];
+
+async function seedMessages() {
+  const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(adminMessages);
+  if (total > 0) return;
+  await db.insert(adminMessages).values(MESSAGE_DEFS);
 }
 
 async function seedProducts() {
@@ -271,6 +461,9 @@ async function init() {
   await seedAdmin();
   await seedProducts();
   await seedContents();
+  await seedRoles();
+  await seedSettings();
+  await seedMessages();
 }
 
 /**
@@ -308,7 +501,15 @@ export function ensureSeedData(): Promise<void> {
   if (readyPromise) return readyPromise;
 
   readyPromise = (async () => {
+    // `ensureSchema` is cheap (idempotent `create table if not exists` + a
+    // couple of `alter table` no-ops) and — crucially — it is what adds the
+    // 高级管理 tables/columns to databases seeded before those existed.
+    await ensureSchema();
     if (await isDatabasePopulated()) {
+      // Already seeded: only the additive 高级管理 defaults may be missing.
+      await seedRoles();
+      await seedSettings();
+      await seedMessages();
       seeded = true;
       return;
     }

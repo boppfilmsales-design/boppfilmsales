@@ -15,12 +15,34 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const page = Math.max(1, Number.parseInt(url.searchParams.get("page") ?? "1", 10) || 1);
   const perPage = Math.min(100, Math.max(5, Number.parseInt(url.searchParams.get("perPage") ?? "20", 10) || 20));
-  const categoryParam = url.searchParams.get("categoryId");
+  const categoryParam =
+    url.searchParams.get("categoryId") ??
+    url.searchParams.get("sourceId") ??
+    url.searchParams.get("c_id");
   const keyword = (url.searchParams.get("q") ?? "").trim();
 
-  const filters: SQL[] = [];
+  // The admin sidebar addresses columns by their *legacy* source id
+  // (41 / 49 / 52), while `news_posts.category_id` is the serial FK into
+  // `news_categories.id` (1 / 2 / 3). Resolve either form, otherwise the
+  // column filter never matches and every news column looks empty.
+  const allCategories = await db
+    .select()
+    .from(newsCategories)
+    .orderBy(asc(newsCategories.sortOrder), asc(newsCategories.id));
+
+  let resolvedCategoryId: number | undefined;
   if (categoryParam && categoryParam !== "all") {
-    filters.push(eq(newsPosts.categoryId, Number.parseInt(categoryParam, 10)));
+    const numeric = Number.parseInt(categoryParam, 10);
+    if (Number.isInteger(numeric)) {
+      resolvedCategoryId =
+        allCategories.find((c) => c.id === numeric)?.id ??
+        allCategories.find((c) => c.sourceId === numeric)?.id;
+    }
+  }
+
+  const filters: SQL[] = [];
+  if (resolvedCategoryId !== undefined) {
+    filters.push(eq(newsPosts.categoryId, resolvedCategoryId));
   }
   if (keyword) {
     const term = `%${keyword}%`;
@@ -49,15 +71,12 @@ export async function GET(request: Request) {
     .limit(perPage)
     .offset((page - 1) * perPage);
 
-  const categories = await db
-    .select()
-    .from(newsCategories)
-    .orderBy(asc(newsCategories.sortOrder), asc(newsCategories.id));
-
   return Response.json({
     ok: true,
     items,
-    categories,
+    categories: allCategories,
+    /** The DB id the requested column resolved to (null when "all"/unknown). */
+    resolvedCategoryId: resolvedCategoryId ?? null,
     total,
     page,
     perPage,
