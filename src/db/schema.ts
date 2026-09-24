@@ -211,12 +211,27 @@ export const inquiries = pgTable(
     company: text("company").notNull().default(""),
     contact: text("contact").notNull(),
     email: text("email").notNull(),
+    /** Tel / mobile supplied by the customer. Kept — it used to be dropped. */
+    phone: text("phone").notNull().default(""),
     message: text("message").notNull(),
     language: text("language").notNull().default("en"),
+    /** Which front-end page the message arrived from ("/" or "/contact"). */
+    sourcePage: text("source_page").notNull().default("/contact"),
+    /** "new" | "processing" | "replied" | "archived" */
     status: text("status").notNull().default("new"),
+    /** Operator reply, mirrored to the customer by e-mail out of band. */
+    reply: text("reply").notNull().default(""),
+    repliedBy: text("replied_by").notNull().default(""),
+    repliedAt: timestamp("replied_at", { withTimezone: true }),
+    /** Approved for display on the public message wall. Off until reviewed. */
+    isPublic: boolean("is_public").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index("inquiries_created_at_idx").on(table.createdAt)],
+  (table) => [
+    index("inquiries_created_at_idx").on(table.createdAt),
+    index("inquiries_status_idx").on(table.status),
+    index("inquiries_public_idx").on(table.isPublic),
+  ],
 );
 
 export type NewsCategory = typeof newsCategories.$inferSelect;

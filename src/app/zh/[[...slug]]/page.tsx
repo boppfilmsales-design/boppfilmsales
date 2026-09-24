@@ -123,22 +123,28 @@ export default async function ZhPage({
       </div>
     );
   } else if (first === "contact") {
+    const { default: InquiryForm } = await import("@/components/InquiryForm");
     content = (
-      <div className="py-16 text-center text-[14px] leading-[30px] text-[#555]">
-        <h1 className="text-[24px] font-bold text-[#22262e]">联系我们</h1>
-        <p className="mt-4">{SITE.nameZh}</p>
-        <p>地址：{SITE.address}</p>
-        <p>电话：{SITE.tel}</p>
-        <p>手机 / WhatsApp：{SITE.mobile}</p>
-        <p>
-          邮箱：
-          <a className="text-[#c8102e] underline" href={`mailto:${SITE.email}`}>
-            {SITE.email}
-          </a>
-        </p>
-        <a className="mt-6 inline-block bg-[#c8102e] px-6 py-[11px] text-[13px] font-bold text-white" href="/contact">
-          在线询盘（英文表单）
-        </a>
+      <div className="mx-auto w-full max-w-[1200px] px-3 py-14">
+        <h1 className="text-center text-[24px] font-bold text-[#22262e]">联系我们</h1>
+        <i className="mx-auto mt-3 block h-[4px] w-[70px] bg-[#c8102e]" />
+        <div className="mt-10 grid gap-10 lg:grid-cols-12 items-start">
+          <div className="lg:col-span-5 space-y-[6px] text-[14px] leading-[30px] text-[#555]">
+            <p className="font-bold text-[#333]">{SITE.nameZh}</p>
+            <p>地址：{SITE.address}</p>
+            <p>电话：{SITE.tel}</p>
+            <p>手机 / WhatsApp：{SITE.mobile}</p>
+            <p>
+              邮箱：
+              <a className="text-[#c8102e] underline" href={`mailto:${SITE.email}`}>
+                {SITE.email}
+              </a>
+            </p>
+          </div>
+          <div className="lg:col-span-7">
+            <InquiryForm lang="zh" sourcePage="/zh/contact" />
+          </div>
+        </div>
       </div>
     );
   } else {

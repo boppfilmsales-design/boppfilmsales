@@ -80,9 +80,15 @@ type InquiryRow = {
   company: string;
   contact: string;
   email: string;
+  phone: string;
   message: string;
   language: string;
+  sourcePage: string;
   status: string;
+  reply: string;
+  repliedBy: string;
+  repliedAt: string | null;
+  isPublic: boolean;
   createdAt: string;
 };
 
@@ -575,23 +581,61 @@ export default function Dashboard({ username }: { username: string }) {
             <div className="py-16 text-center text-[14px] text-[#888]">Loading...</div>
           ) : activeColumn.dataSource === "inquiries" ? (
             <div className="overflow-x-auto border border-[#e3e3e3] bg-white">
-              <div className="flex items-center justify-between border-b border-[#eee] p-4">
-                <div><h2 className="text-[16px] font-bold text-[#333]">客户询盘</h2><p className="mt-1 text-[12px] text-[#888]">共 {inquiryRows.length} 条记录</p></div>
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#eee] p-4">
+                <div>
+                  <h2 className="text-[16px] font-bold text-[#333]">客户询盘</h2>
+                  <p className="mt-1 text-[12px] text-[#888]">
+                    共 {inquiryRows.length} 条记录 · 回复与公开审核请到
+                    <button
+                      className="ml-1 text-[#1c6dd0] hover:underline"
+                      onClick={() => { setMode("advanced"); setAdvancedTab("messages"); }}
+                      type="button"
+                    >
+                      高级管理 → 留言板
+                    </button>
+                  </p>
+                </div>
               </div>
-              <table className="w-full min-w-[980px] text-left text-[13px]">
-                <thead className="bg-[#fafafa] text-[12px] text-[#888]"><tr><th className="px-3 py-3">时间</th><th className="px-3 py-3">客户</th><th className="px-3 py-3">联系方式</th><th className="px-3 py-3">留言</th><th className="px-3 py-3">状态</th><th className="px-3 py-3">操作</th></tr></thead>
+              <table className="w-full min-w-[1080px] text-left text-[13px]">
+                <thead className="bg-[#fafafa] text-[12px] text-[#888]">
+                  <tr>
+                    <th className="px-3 py-3">时间</th>
+                    <th className="px-3 py-3">客户</th>
+                    <th className="px-3 py-3">电话</th>
+                    <th className="px-3 py-3">邮箱</th>
+                    <th className="px-3 py-3">留言</th>
+                    <th className="px-3 py-3">状态</th>
+                    <th className="px-3 py-3">公开</th>
+                    <th className="px-3 py-3">操作</th>
+                  </tr>
+                </thead>
                 <tbody className="divide-y divide-[#eee]">
                   {inquiryRows.map((row) => (
                     <tr className="align-top" key={row.id}>
                       <td className="whitespace-nowrap px-3 py-3 text-[#888]">{new Date(row.createdAt).toLocaleString()}</td>
-                      <td className="px-3 py-3"><strong>{row.contact}</strong><div className="text-[11px] text-[#888]">{row.company || "未填写公司"}</div></td>
+                      <td className="px-3 py-3"><strong>{row.contact || "（未填写）"}</strong>{row.company && row.company !== row.contact ? <div className="text-[11px] text-[#888]">{row.company}</div> : null}</td>
+                      <td className="whitespace-nowrap px-3 py-3">
+                        {row.phone ? <a className="text-[#1c6dd0]" href={`tel:${row.phone.replace(/[^\d+]/g, "")}`}>{row.phone}</a> : <span className="text-[#bbb]">—</span>}
+                      </td>
                       <td className="px-3 py-3"><a className="text-[#1c6dd0]" href={`mailto:${row.email}`}>{row.email}</a></td>
                       <td className="max-w-[360px] whitespace-pre-wrap px-3 py-3 text-[#555]">{row.message}</td>
-                      <td className="px-3 py-3"><select className="border border-[#ddd] px-2 py-1 text-[12px]" onChange={(event) => void updateInquiry(row.id, event.target.value)} value={row.status}><option value="new">新询盘</option><option value="processing">处理中</option><option value="replied">已回复</option><option value="archived">已归档</option></select></td>
-                      <td className="px-3 py-3"><button className="text-[12px] text-[#e61d39] hover:underline" onClick={() => void removeInquiry(row.id)} type="button">删除</button></td>
+                      <td className="px-3 py-3">
+                        <select className="border border-[#ddd] px-2 py-1 text-[12px]" onChange={(event) => void updateInquiry(row.id, event.target.value)} value={row.status}>
+                          <option value="new">新询盘</option>
+                          <option value="processing">处理中</option>
+                          <option value="replied">已回复</option>
+                          <option value="archived">已归档</option>
+                        </select>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-3">
+                        {row.isPublic ? <span className="bg-[#e6f6ea] px-2 py-[2px] text-[10px] font-bold text-[#1c7c39]">公开中</span> : <span className="text-[11px] text-[#bbb]">未公开</span>}
+                      </td>
+                      <td className="px-3 py-3">
+                        <button className="text-[12px] text-[#e61d39] hover:underline" onClick={() => void removeInquiry(row.id)} type="button">删除</button>
+                      </td>
                     </tr>
                   ))}
-                  {inquiryRows.length === 0 ? <tr><td className="py-10 text-center text-[#888]" colSpan={6}>暂无客户询盘</td></tr> : null}
+                  {inquiryRows.length === 0 ? <tr><td className="py-10 text-center text-[#888]" colSpan={8}>暂无客户询盘</td></tr> : null}
                 </tbody>
               </table>
             </div>

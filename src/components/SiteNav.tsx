@@ -29,6 +29,10 @@ const DOWNLOAD_SUBS = [
   { slug: "msds-download", name: "MSDS Download", nameZh: "MSDS下载" },
 ];
 
+const CONTACT_SUBS = [
+  { href: "/message-wall", name: "Message Wall", nameZh: "客户留言墙" },
+];
+
 const LINES_SUBS = [
   { id: 45, name: "Packing Film Lines", nameZh: "包装薄膜生产线" },
   { id: 142, name: "BOPP Film Lines", nameZh: "BOPP薄膜生产线" },
@@ -84,7 +88,7 @@ export default function SiteNav({ lang = "en" }: Props) {
   const simple = (
     label: string, 
     href: string, 
-    subs?: { id?: number; slug?: string; name: string; nameZh?: string }[]
+    subs?: { id?: number; slug?: string; href?: string; name: string; nameZh?: string }[]
   ) => (
     <li className="relative group" key={label}>
       <Link
@@ -98,11 +102,13 @@ export default function SiteNav({ lang = "en" }: Props) {
       {subs && (
         <ul className="invisible absolute left-0 top-full z-40 w-[270px] border-t-[3px] border-[#c8102e] bg-white opacity-0 shadow-xl transition-all duration-200 group-hover:visible group-hover:opacity-100">
           {subs.map((sub) => {
-            const subHref = sub.slug
-              ? `${lang === "zh" ? "/zh" : ""}${href}?category=${sub.slug}`
-              : `${lang === "zh" ? "/zh" : ""}${href}?id=${sub.id}`;
+            const subHref = sub.href
+              ? `${lang === "zh" ? "/zh" : ""}${sub.href}`
+              : sub.slug
+                ? `${lang === "zh" ? "/zh" : ""}${href}?category=${sub.slug}`
+                : `${lang === "zh" ? "/zh" : ""}${href}?id=${sub.id}`;
             return (
-              <li key={sub.slug || sub.id}>
+              <li key={sub.href || sub.slug || sub.id}>
                 <Link
                   className="block border-b border-[#f1f1f1] px-4 py-[11px] text-[14px] text-[#444] hover:bg-[#f8f8f8] hover:text-[#c8102e]"
                   href={subHref}
@@ -188,7 +194,7 @@ export default function SiteNav({ lang = "en" }: Props) {
             {simple(lang === "zh" ? "荣誉资质" : "Honor", "/honor", HONOR_SUBS)}
             {simple(lang === "zh" ? "服务中心" : "Service", "/service", SERVICE_SUBS)}
             {simple(lang === "zh" ? "经典案例" : "Cases", "/cases", CASES_SUBS)}
-            {simple(lang === "zh" ? "联系我们" : "Contact", "/contact")}
+            {simple(lang === "zh" ? "联系我们" : "Contact", "/contact", CONTACT_SUBS)}
           </ul>
 
           <div className="hidden items-center gap-3 lg:flex">

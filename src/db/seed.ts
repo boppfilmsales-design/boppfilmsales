@@ -196,6 +196,40 @@ async function ensureSchema() {
       updated_at timestamptz not null default now()
     )`);
   await db.execute(sql`create index if not exists admin_contents_kind_idx on admin_contents (kind)`);
+
+  /* ----- Customer inquiries (front-end message form → admin inbox) -----
+     Created here as well as in drizzle-kit so a fresh database is usable
+     without a manual `drizzle-kit push`. */
+  await db.execute(sql`
+    create table if not exists inquiries (
+      id serial primary key,
+      company text not null default '',
+      contact text not null,
+      email text not null,
+      phone text not null default '',
+      message text not null,
+      language text not null default 'en',
+      source_page text not null default '/contact',
+      status text not null default 'new',
+      reply text not null default '',
+      replied_by text not null default '',
+      replied_at timestamptz,
+      is_public boolean not null default false,
+      created_at timestamptz not null default now()
+    )`);
+  for (const column of [
+    ["phone", "text not null default ''"],
+    ["source_page", "text not null default '/contact'"],
+    ["reply", "text not null default ''"],
+    ["replied_by", "text not null default ''"],
+    ["replied_at", "timestamptz"],
+    ["is_public", "boolean not null default false"],
+  ] as const) {
+    await db.execute(sql.raw(`alter table inquiries add column if not exists ${column[0]} ${column[1]}`));
+  }
+  await db.execute(sql`create index if not exists inquiries_created_at_idx on inquiries (created_at)`);
+  await db.execute(sql`create index if not exists inquiries_status_idx on inquiries (status)`);
+  await db.execute(sql`create index if not exists inquiries_public_idx on inquiries (is_public)`);
 }
 
 export function parseSortDate(listDate: string, newsDate: string): Date | null {

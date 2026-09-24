@@ -1,18 +1,13 @@
 import type { Metadata } from "next";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
-import { submitInquiry } from "@/app/contact/actions";
+import InquiryForm from "@/components/InquiryForm";
 
 export const metadata: Metadata = {
   title: "Contact - Asia Pacific Industry Group Co., Limited",
 };
 
-export default async function ContactPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ status?: string }>;
-}) {
-  const { status } = await searchParams;
+export default async function ContactPage() {
   return (
     <div className="min-h-screen bg-white relative">
       <SiteHeader active="Contact" />
@@ -105,78 +100,7 @@ export default async function ContactPage({
 
             {/* 右侧：还原源站布局的表单区 (占约 7 列) */}
             <div className="lg:col-span-7 bg-white p-2">
-              <form action={submitInquiry} className="space-y-4">
-                {status === "sent" && (
-                  <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-[13px] font-bold text-emerald-700" role="status">
-                    Thank you. Your inquiry has been saved and our sales team will contact you shortly.
-                  </p>
-                )}
-                {status === "invalid" && (
-                  <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800" role="alert">
-                    Please provide a valid email and your message.
-                  </p>
-                )}
-
-                {/* Email * 独占一行 */}
-                <div>
-                  <label className="block text-[13px] text-[#666] mb-1">
-                    Email <span className="text-[#c8102e]">*</span>
-                  </label>
-                  <input 
-                    autoComplete="email" 
-                    className="w-full rounded border border-[#dfdfdf] bg-white px-3 py-[10px] text-[14px] focus:border-[#c8102e] focus:outline-none" 
-                    maxLength={254} 
-                    name="email" 
-                    required 
-                    type="email" 
-                  />
-                </div>
-
-                {/* 第二行：Company or Name (左) 和 Tel or Mobile (右) 左右排布 */}
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="block text-[13px] text-[#666] mb-1">Company or Name</label>
-                    <input 
-                      autoComplete="name" 
-                      className="w-full rounded border border-[#dfdfdf] bg-white px-3 py-[10px] text-[14px] focus:border-[#c8102e] focus:outline-none" 
-                      maxLength={120} 
-                      name="contact" 
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[13px] text-[#666] mb-1">Tel or Mobile</label>
-                    <input 
-                      autoComplete="tel" 
-                      className="w-full rounded border border-[#dfdfdf] bg-white px-3 py-[10px] text-[14px] focus:border-[#c8102e] focus:outline-none" 
-                      maxLength={50} 
-                      name="phone" 
-                    />
-                  </div>
-                </div>
-
-                {/* 第三行：Leave a message */}
-                <div>
-                  <label className="block text-[13px] text-[#666] mb-1">
-                    Leave a message <span className="text-[#888] font-normal">(Please send us your idea or plan)</span>
-                  </label>
-                  <textarea 
-                    className="h-[140px] w-full rounded border border-[#dfdfdf] bg-white px-3 py-[10px] text-[14px] focus:border-[#c8102e] focus:outline-none" 
-                    maxLength={5000} 
-                    name="message" 
-                    required 
-                  />
-                </div>
-
-                {/* 仿源站红框白底 Send Message 按钮 */}
-                <div>
-                  <button 
-                    className="rounded border border-[#c8102e] bg-white px-7 py-2.5 text-[14px] font-medium text-[#c8102e] transition hover:bg-[#c8102e] hover:text-white" 
-                    type="submit"
-                  >
-                    Send Message
-                  </button>
-                </div>
-              </form>
+              <InquiryForm lang="en" sourcePage="/contact" />
             </div>
 
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import InquiryForm from "@/components/InquiryForm";
 import Link from "next/link";
 import { categoryNameZh, SITE } from "@/lib/site-helpers";
 import { AllPdfsSection } from "@/components/pages/Sections";
@@ -501,56 +502,7 @@ export default function HomeContent({
             </div>
 
             <div className="lg:col-span-7 bg-white">
-              <form action="/contact" method="POST" className="space-y-4">
-                <div>
-                  <label className="block text-[13px] text-[#666] mb-1">
-                    Email <span className="text-[#c8102e]">*</span>
-                  </label>
-                  <input 
-                    className="w-full rounded border border-[#dfdfdf] bg-white px-3 py-[10px] text-[14px] focus:border-[#c8102e] focus:outline-none" 
-                    name="email" 
-                    required 
-                    type="email" 
-                  />
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="block text-[13px] text-[#666] mb-1">Company or Name</label>
-                    <input 
-                      className="w-full rounded border border-[#dfdfdf] bg-white px-3 py-[10px] text-[14px] focus:border-[#c8102e] focus:outline-none" 
-                      name="contact" 
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[13px] text-[#666] mb-1">Tel or Mobile</label>
-                    <input 
-                      className="w-full rounded border border-[#dfdfdf] bg-white px-3 py-[10px] text-[14px] focus:border-[#c8102e] focus:outline-none" 
-                      name="phone" 
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[13px] text-[#666] mb-1">
-                    Leave a message <span className="text-[#888] font-normal">(Please send us your idea or plan)</span>
-                  </label>
-                  <textarea 
-                    className="h-[140px] w-full rounded border border-[#dfdfdf] bg-white px-3 py-[10px] text-[14px] focus:border-[#c8102e] focus:outline-none" 
-                    name="message" 
-                    required 
-                  />
-                </div>
-
-                <div>
-                  <button 
-                    className="rounded border border-[#c8102e] bg-white px-7 py-2.5 text-[14px] font-medium text-[#c8102e] transition hover:bg-[#c8102e] hover:text-white" 
-                    type="submit"
-                  >
-                    Send Message
-                  </button>
-                </div>
-              </form>
+              <InquiryForm compact lang={lang} sourcePage={lang === "zh" ? "/zh" : "/"} />
             </div>
           </div>
         </div>
