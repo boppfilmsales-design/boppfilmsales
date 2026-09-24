@@ -56,8 +56,8 @@ export async function getCategoryForSite(catId: string | number): Promise<Produc
       const product = productFromRow(row, knownItems.get(row.sourceId));
       const sub = subMap.get(row.categoryId) ?? {
         sourceId: row.categoryId,
-        name: "Other Products",
-        nameZh: "其他产品",
+        name: `Products ${row.categoryId}`,
+        nameZh: `产品分类 ${row.categoryId}`,
         itemIds: [],
         items: [],
       };
@@ -65,9 +65,13 @@ export async function getCategoryForSite(catId: string | number): Promise<Produc
       sub.itemIds.push(product.sourceId);
       subMap.set(row.categoryId, sub);
     }
+    // Keep every declared sub-category, even one whose products were all moved
+    // away. Dropping empties made `/products/<cat>/list/<sub>` 404 for a
+    // category the admin had just re-filed, and also hid the sub from the
+    // family strip so it could not be navigated to at all.
     return {
       ...fallback,
-      subs: Array.from(subMap.values()).filter((sub) => sub.items.length > 0),
+      subs: Array.from(subMap.values()),
       itemIds: rows.map((row) => row.sourceId),
     };
   } catch (error) {

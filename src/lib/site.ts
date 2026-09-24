@@ -157,15 +157,43 @@ export function familyProducts(family: ProductFamily): ProductItem[] {
   return family.subs.flatMap((sub) => sub.items);
 }
 
+/**
+ * Products of one sub-category, in list order.
+ *
+ * `sub.items` wins whenever it is populated, because that is the authoritative
+ * list: `catalogue-db.ts` builds it from `admin_products`, and the static seed
+ * carries it too. Only when it is empty do we resolve `sub.itemIds` through
+ * `itemsById`, which is keyed `<subId>:<itemId>` exactly as the seed wrote it.
+ *
+ * The previous implementation was the other way round — it preferred the
+ * `itemsById` lookups and fell back to `sub.items` *only* when every lookup
+ * missed. That index only contains products that shipped in that sub-category
+ * in `site-seed.json`, so anything the admin panel adds or re-files (which
+ * lives in `admin_products`) missed the lookup. Whenever at least one seeded
+ * product was present the function returned that partial list and silently
+ * dropped the re-filed ones, which is why a sub-category could render products
+ * belonging to a completely different sub-category.
+ */
 export function subProducts(sub: ProductSub): ProductItem[] {
-  const ordered = (sub.itemIds ?? [])
+  const items = sub.items ?? [];
+  if (items.length > 0) return items;
+
+  return (sub.itemIds ?? [])
     .map((id) => itemsById[itemKey(sub.sourceId, id)])
     .filter(Boolean) as ProductItem[];
-  return ordered.length ? ordered : sub.items;
 }
 
 export function getSub(category: ProductFamily, subId: string | number): ProductSub | undefined {
-  return category.subs.find((sub) => String(sub.sourceId) === String(subId));
+  const direct = category.subs.find((sub) => String(sub.sourceId) === String(subId));
+  if (direct) return direct;
+  // The admin panel can re-file products into a sub-category that the static
+  // seed never declared. `catalogue-db.ts` materialises such a sub on the fly,
+  // but if every one of its products was moved away again it would carry no
+  // items — synthesise an empty shell so the page renders instead of 404ing.
+  if (/^\d+$/.test(String(subId))) {
+    return { sourceId: Number(subId), name: `Products ${subId}`, nameZh: `产品分类 ${subId}`, itemIds: [], items: [] };
+  }
+  return undefined;
 }
 
 export function subOfItem(item: ProductItem): ProductSub | undefined {
