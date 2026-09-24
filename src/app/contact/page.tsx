@@ -265,8 +265,23 @@ export default function ContactPage() {
           </p>
         </div>
 
+        {/* World map */}
+        <div
+          className="relative mt-10 min-h-[450px] bg-contain bg-right bg-no-repeat lg:min-h-[550px]"
+          style={{ backgroundImage: "url(/images/ct_map.png)" }}
+        >
+          <div className="pt-16 text-center lg:pt-32">
+            <h2 className="text-[22px] font-bold uppercase leading-[32px] text-[#c8102e]">
+              Our Products sell
+              <br />
+              to all over the world
+            </h2>
+            <i className="mx-auto mt-3 block h-[3px] w-[50px] bg-[#c8102e]" />
+          </div>
+        </div>
+
         {/* Message form */}
-        <div className="mt-10 border-t border-[#eee] pt-10">
+        <div className="mt-10 border-t border-[#eee] pt-10" id="contact_meg">
           <div className="text-center">
             <h2 className="text-[20px] font-bold uppercase text-[#c8102e]">
               I need leave a message to the seller
@@ -274,7 +289,7 @@ export default function ContactPage() {
             <i className="mx-auto mt-3 block h-[3px] w-[50px] bg-[#c8102e]" />
             <p className="mt-3 text-[14px] text-[#888]">I need send an email to the seller</p>
           </div>
-          <div className="mx-auto mt-8 max-w-[720px] rounded border border-[#eee] bg-[#fafafa] p-6 md:p-8">
+          <div className="mx-auto mt-8 max-w-[900px]">
             <InquiryForm lang="en" sourcePage="/contact" variant="source" />
           </div>
         </div>

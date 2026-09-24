@@ -64,65 +64,68 @@ export default function InquiryForm({
 
   if (variant === "source") {
     return (
-      <form action={formAction} className="space-y-4">
+      <form action={formAction}>
         <input name="lang" type="hidden" value={lang} />
         <input name="sourcePage" type="hidden" value={sourcePage} />
 
         {banner ? (
-          <p className={`rounded border px-4 py-3 text-[13px] ${banner.cls}`} role="status">
+          <p className={`mb-5 rounded border px-4 py-3 text-[13px] ${banner.cls}`} role="status">
             {banner.text}
           </p>
         ) : null}
 
-        <p className="flex flex-col gap-2 text-[14px]">
-          <span className="text-[#333]">
-            {t.email} <span className="text-[#c8102e]">*</span>
-          </span>
-          <input
-            autoComplete="email"
-            className="w-full rounded border border-[#ddd] px-3 py-[10px] text-[14px] text-[#555] outline-none focus:border-[#c8102e]"
-            maxLength={254}
-            name="email"
-            required
-            type="email"
-          />
-        </p>
+        {/* Three inline fields matching the source contact.php layout. */}
+        <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-3">
+          <p className="flex flex-col gap-2 text-[14px]">
+            <span className="text-[#333]">
+              {t.email} <span className="text-[#c8102e]">*</span>
+            </span>
+            <input
+              autoComplete="email"
+              className="h-[36px] w-full rounded border border-[#dadada] px-3 text-[14px] text-[#555] outline-none focus:border-[#c8102e]"
+              maxLength={254}
+              name="email"
+              required
+              type="email"
+            />
+          </p>
 
-        <p className="flex flex-col gap-2 text-[14px]">
-          <span className="text-[#333]">{t.contact}</span>
-          <input
-            autoComplete="name"
-            className="w-full rounded border border-[#ddd] px-3 py-[10px] text-[14px] text-[#555] outline-none focus:border-[#c8102e]"
-            maxLength={120}
-            name="contact"
-          />
-        </p>
+          <p className="flex flex-col gap-2 text-[14px]">
+            <span className="text-[#333]">{t.contact}</span>
+            <input
+              autoComplete="name"
+              className="h-[36px] w-full rounded border border-[#dadada] px-3 text-[14px] text-[#555] outline-none focus:border-[#c8102e]"
+              maxLength={120}
+              name="contact"
+            />
+          </p>
 
-        <p className="flex flex-col gap-2 text-[14px]">
-          <span className="text-[#333]">{t.phone}</span>
-          <input
-            autoComplete="tel"
-            className="w-full rounded border border-[#ddd] px-3 py-[10px] text-[14px] text-[#555] outline-none focus:border-[#c8102e]"
-            maxLength={50}
-            name="phone"
-          />
-        </p>
+          <p className="flex flex-col gap-2 text-[14px]">
+            <span className="text-[#333]">{t.phone}</span>
+            <input
+              autoComplete="tel"
+              className="h-[36px] w-full rounded border border-[#dadada] px-3 text-[14px] text-[#555] outline-none focus:border-[#c8102e]"
+              maxLength={50}
+              name="phone"
+            />
+          </p>
+        </div>
 
-        <p className="flex flex-col gap-2 text-[14px]">
+        <p className="mt-4 flex flex-col gap-2 text-[14px]">
           <span className="text-[#333]">
             {t.message} <span className="text-[#888]">({t.hint})</span>
           </span>
           <textarea
-            className="h-[140px] w-full rounded border border-[#ddd] px-3 py-[10px] text-[14px] text-[#555] outline-none focus:border-[#c8102e]"
+            className="h-[140px] w-full rounded border border-[#dadada] px-3 py-[10px] text-[14px] text-[#555] outline-none focus:border-[#c8102e]"
             maxLength={5000}
             name="message"
             required
           />
         </p>
 
-        <p>
+        <p className="mt-5">
           <button
-            className="rounded border border-[#c8102e] bg-white px-8 py-2.5 text-[14px] font-medium text-[#c8102e] transition hover:bg-[#c8102e] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="h-[45px] rounded border border-[#c8102e] bg-white px-10 text-[14px] font-medium text-[#c8102e] transition hover:bg-[#c8102e] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
             disabled={pending}
             type="submit"
           >

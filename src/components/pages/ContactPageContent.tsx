@@ -40,6 +40,7 @@ const COPY = {
     officialZh: "In Chinese (中文): 亚太工业集团有限公司 安徽省合肥市包河区庐州大道3399号",
     officialContactPerson: "联系人：蒋先生 电话 0551-64687285 手机：18919654871",
     onlineInfo: "On-line contact information: teams: asiapacificsale QQ: 840715367",
+    worldMapTitle: "Our Products sell\nto all over the world",
     formTitle: "I need leave a message to the seller",
     formSubtitle: "I need send an email to the seller",
     labels: {
@@ -83,6 +84,7 @@ const COPY = {
     officialZh: "中文：亚太工业集团有限公司 安徽省合肥市包河区庐州大道3399号",
     officialContactPerson: "联系人：蒋先生 电话 0551-64687285 手机：18919654871",
     onlineInfo: "在线联系：teams: asiapacificsale QQ: 840715367",
+    worldMapTitle: "我们的产品销往\n世界各地",
     formTitle: "给我们留言",
     formSubtitle: "发送邮件给卖家",
     labels: {
@@ -328,14 +330,27 @@ export default function ContactPageContent({
         <p className="mt-2">{t.onlineInfo}</p>
       </div>
 
+      {/* World map */}
+      <div
+        className="relative mt-10 min-h-[450px] bg-contain bg-right bg-no-repeat lg:min-h-[550px]"
+        style={{ backgroundImage: "url(/images/ct_map.png)" }}
+      >
+        <div className="pt-16 text-center lg:pt-32">
+          <h2 className="whitespace-pre-line text-[22px] font-bold uppercase leading-[32px] text-[#c8102e]">
+            {t.worldMapTitle}
+          </h2>
+          <i className="mx-auto mt-3 block h-[3px] w-[50px] bg-[#c8102e]" />
+        </div>
+      </div>
+
       {/* Message form */}
-      <div className="mt-10 border-t border-[#eee] pt-10">
+      <div className="mt-10 border-t border-[#eee] pt-10" id="contact_meg">
         <div className="text-center">
           <h2 className="text-[20px] font-bold uppercase text-[#c8102e]">{t.formTitle}</h2>
           <i className="mx-auto mt-3 block h-[3px] w-[50px] bg-[#c8102e]" />
           <p className="mt-3 text-[14px] text-[#888]">{t.formSubtitle}</p>
         </div>
-        <div className="mx-auto mt-8 max-w-[720px] rounded border border-[#eee] bg-[#fafafa] p-6 md:p-8">
+        <div className="mx-auto mt-8 max-w-[900px]">
           <InquiryForm lang={lang} sourcePage={sourcePage} variant="source" />
         </div>
       </div>
