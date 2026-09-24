@@ -11,9 +11,30 @@ type ContentRow = {
   id: number;
   sort: number;
   title: string;
+  titleZh: string;
+  /** Cover image (first gallery image / leading image), already URL-resolved. */
   image: string;
+  /** Number of gallery images attached to this row. */
+  imageCount: number;
+  /** Plain-text preview of the body, for the admin table. */
+  excerpt: string;
   status: string;
 };
+
+/** Strips tags so the admin table gets a readable one-line preview. */
+function plainText(html: string | undefined, max = 160): string {
+  const text = (html ?? "")
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, " ")
+    .trim();
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+}
 
 /**
  * Local copy of `contentImageUrl` from `@/lib/site-helpers`.
@@ -28,51 +49,103 @@ function contentImageUrl(value: string): string {
   return `/uploads/content/${source}`;
 }
 
-function extractRows(content: SiteContent | undefined, sourceId: number): ContentRow[] {
+/**
+ * Turns a stored content column into the flat rows the admin table renders.
+ *
+ * IMPORTANT — dispatch order matters. `parseData()` normalises a missing
+ * `entries` key to `[]`, so a naive `Array.isArray(content.entries)` guard
+ * matches *every* row and short-circuits before the single-page ("about")
+ * branch. That is why the About Us columns (13 / 55 / 56 / 169 / 171 / 172)
+ * used to render an empty table even though `data_json` held a full body.
+ * Dispatch on `kind` first, and only treat `entries` as a list when it is
+ * actually populated.
+ */
+function extractRows(content: SiteContent | undefined): ContentRow[] {
   if (!content) return [];
 
-  if (content.kind === "honor" && Array.isArray(content.items)) {
-    const items = content.items as Array<{ image?: string; title?: string }>;
-    return items.map((item, i) => ({
-      id: i + 1,
-      sort: (i + 1) * 10,
-      title: item.title || `Item ${i + 1}`,
-      image: item.image ? contentImageUrl(item.image) : "",
-      status: "正常",
-    }));
+  const items = content.items;
+  const entries = content.entries ?? [];
+  const itemsZh = content.itemsZh as { bodyHtml?: string } | undefined;
+
+  // --- Image galleries: honor / cases / lines / service (items is an array) ---
+  if (["honor", "cases", "lines", "service"].includes(content.kind) && Array.isArray(items)) {
+    const cards = items as Array<{
+      sourceId?: number;
+      title?: string;
+      titleZh?: string;
+      image?: string;
+      externalUrl?: string;
+    }>;
+    return cards
+      .filter((card) => card && (card.title || card.image))
+      .map((card, i) => {
+        const entry = entries.find((item) => String(item.sourceId) === String(card.sourceId));
+        const image = card.image ? contentImageUrl(card.image) : "";
+        return {
+          id: card.sourceId ?? i + 1,
+          sort: (i + 1) * 10,
+          title: card.title || `Item ${i + 1}`,
+          titleZh: card.titleZh || "",
+          image,
+          imageCount: image ? 1 : 0,
+          excerpt: plainText(entry?.bodyHtml ?? card.externalUrl ?? ""),
+          status: "正常",
+        };
+      });
   }
 
-  if (content.kind === "down" && Array.isArray(content.items)) {
-    const items = content.items as Array<{ name?: string; title?: string; file?: string; image?: string }>;
-    return items.map((item, i) => ({
-      id: i + 1,
-      sort: (i + 1) * 10,
-      title: item.name || item.title || `Download ${i + 1}`,
-      image: item.image ? contentImageUrl(item.image) : "",
-      status: "正常",
-    }));
+  // --- Download lists (items is an array of file rows) ---
+  if (content.kind === "down" && Array.isArray(items)) {
+    const rows = items as Array<{ name?: string; title?: string; file?: string; image?: string }>;
+    return rows.map((row, i) => {
+      const image = row.image ? contentImageUrl(row.image) : "";
+      return {
+        id: i + 1,
+        sort: (i + 1) * 10,
+        title: row.name || row.title || `Download ${i + 1}`,
+        titleZh: "",
+        image,
+        imageCount: image ? 1 : 0,
+        excerpt: plainText(row.file ?? ""),
+        status: "正常",
+      };
+    });
   }
 
-  if (Array.isArray(content.entries)) {
-    const entries = content.entries as Array<{ title?: string; image?: string; images?: string[]; externalUrl?: string; url?: string }>;
-    return entries.map((entry, i) => ({
-      id: i + 1,
-      sort: (i + 1) * 10,
-      title: entry.title || entry.externalUrl || entry.url || `Entry ${i + 1}`,
-      image: entry.image ? contentImageUrl(entry.image) : (entry.images?.[0] ? contentImageUrl(entry.images[0]) : ""),
-      status: "正常",
-    }));
-  }
-
-  if (content.items && typeof content.items === "object" && !Array.isArray(content.items)) {
-    const items = content.items as { bodyHtml?: string; images?: string[]; bodyHtmlZh?: string };
+  // --- Single-page columns ("about"): one row describing the whole column ---
+  if (items && typeof items === "object" && !Array.isArray(items)) {
+    const block = items as { bodyHtml?: string; images?: string[] };
+    const images = Array.isArray(block.images) ? block.images : [];
+    const first = images[0] ? contentImageUrl(images[0]) : "";
     return [{
       id: 1,
       sort: 10,
       title: content.name,
-      image: items.images?.[0] ? contentImageUrl(items.images[0]) : "",
+      titleZh: content.nameZh,
+      image: first,
+      imageCount: images.length,
+      excerpt: plainText(block.bodyHtml || itemsZh?.bodyHtml),
       status: "正常",
     }];
+  }
+
+  // --- Fallback: a populated entries list with no card array ---
+  if (entries.length > 0) {
+    return entries.map((entry, i) => {
+      const image = entry.image
+        ? contentImageUrl(entry.image)
+        : (entry.images?.[0] ? contentImageUrl(entry.images[0]) : "");
+      return {
+        id: entry.sourceId ?? i + 1,
+        sort: (i + 1) * 10,
+        title: entry.title || entry.name || `Entry ${i + 1}`,
+        titleZh: entry.titleZh || "",
+        image,
+        imageCount: entry.images?.length ?? (image ? 1 : 0),
+        excerpt: plainText(entry.bodyHtml),
+        status: "正常",
+      };
+    });
   }
 
   return [];
@@ -107,19 +180,25 @@ export async function GET(
       : undefined;
 
     if (!content) {
-      // Fallback to the static seed. Imported lazily because `@/lib/site`
-      // eagerly loads the 14 MB site-seed.json — a static import would put that
-      // payload into this route's bundle even when the DB row exists.
-      const { getContentBySourceId, getContents } = await import("@/lib/site");
+      // Fallback to the static seed, for a column that exists in the seed file
+      // but has no DB row yet. The 14 MB `site-seed.json` must not be pulled
+      // into this route's bundle, so the reader is resolved through a
+      // non-analysable specifier (a literal `import("@/db/site-seed-reader")`
+      // would still be statically traced and re-inflate the chunk).
+      const specifier = ["@/db", "site-seed-reader"].join("/");
+      const { readSiteSeed } = (await import(
+        /* webpackIgnore: true */ specifier
+      )) as typeof import("@/db/site-seed-reader");
+      const seed = readSiteSeed();
       content =
-        (getContentBySourceId(sourceId) as SiteContent | undefined) ??
-        (getContents() as unknown as SiteContent[]).find((c) => c.sourceId === sourceId);
+        (seed.getContents().find((c) => String(c.sourceId) === String(sourceId)) as SiteContent | undefined) ??
+        (seed.getContents().find((c) => c.sourceId === sourceId) as SiteContent | undefined);
       if (!content) {
         return Response.json({ ok: false, error: "Content not found" }, { status: 404 });
       }
     }
 
-    return Response.json({ ok: true, content, rows: extractRows(content, sourceId) });
+    return Response.json({ ok: true, content, rows: extractRows(content) });
   } catch (error) {
     console.error("[api/admin/content] failed", error);
     return Response.json({ ok: false, error: String(error) }, { status: 500 });
@@ -136,10 +215,29 @@ export async function PUT(
   const sourceId = Number.parseInt((await params).sourceId, 10);
   if (!Number.isInteger(sourceId)) return Response.json({ ok: false, error: "Invalid sourceId" }, { status: 400 });
   const body = await request.json().catch(() => ({})) as Record<string, unknown>;
+
+  // Merge-safe write: only overwrite the keys the client actually sent, so a
+  // partial save (e.g. editing only the English body of an "about" column)
+  // never silently wipes `images`, `itemsZh` or `entries`.
+  const [existing] = await db
+    .select({ dataJson: adminContents.dataJson, name: adminContents.name, nameZh: adminContents.nameZh })
+    .from(adminContents)
+    .where(eq(adminContents.sourceId, sourceId))
+    .limit(1);
+  const previous = existing ? JSON.parse(existing.dataJson || "{}") as Record<string, unknown> : {};
+
+  const has = (key: string) => Object.prototype.hasOwnProperty.call(body, key);
+  const merged = {
+    ...previous,
+    ...(has("items") ? { items: body.items } : {}),
+    ...(has("itemsZh") ? { itemsZh: body.itemsZh } : {}),
+    ...(has("entries") ? { entries: body.entries } : {}),
+  };
+
   const [updated] = await db.update(adminContents).set({
-    name: String(body.name ?? ""),
-    nameZh: String(body.nameZh ?? ""),
-    dataJson: JSON.stringify({ items: body.items ?? {}, itemsZh: body.itemsZh, entries: body.entries ?? [] }),
+    name: has("name") ? String(body.name ?? "") : (existing?.name ?? ""),
+    nameZh: has("nameZh") ? String(body.nameZh ?? "") : (existing?.nameZh ?? ""),
+    dataJson: JSON.stringify(merged),
     updatedAt: new Date(),
   }).where(eq(adminContents.sourceId, sourceId)).returning({ id: adminContents.sourceId });
   if (!updated) return Response.json({ ok: false, error: "Content not found" }, { status: 404 });

@@ -49,6 +49,16 @@ function isAboutBlock(v: unknown): v is AboutBlock {
   return !!v && typeof v === "object" && !Array.isArray(v);
 }
 
+/** Plain-text length of an HTML fragment, for the editor's char counter. */
+function stripTags(html: string): string {
+  return (html ?? "")
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function ImageListEditor({
   images,
   onChange,
@@ -60,6 +70,14 @@ function ImageListEditor({
     <div className="space-y-2">
       {images.map((img, i) => (
         <div className="flex items-center gap-2" key={i}>
+          {img ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img alt="" className="h-[44px] w-[64px] shrink-0 border border-[#eee] object-cover" src={img} />
+          ) : (
+            <span className="flex h-[44px] w-[64px] shrink-0 items-center justify-center bg-[#fafafa] text-[10px] text-[#ccc]">
+              预览
+            </span>
+          )}
           <input
             className={inputCls}
             value={img}
@@ -86,6 +104,24 @@ function ImageListEditor({
       >
         + 添加图片
       </button>
+    </div>
+  );
+}
+
+/** Live preview of an HTML fragment, matching the front-end body styling. */
+function BodyPreview({ html }: { html: string }) {
+  const hasContent = html.replace(/<[^>]+>/g, "").trim().length > 0;
+  return (
+    <div className="mt-2 border border-[#eee] bg-[#fcfcfc] p-4">
+      <p className="mb-2 text-[11px] font-bold text-[#999]">前台效果预览</p>
+      {hasContent ? (
+        <div
+          className="news-body max-h-[300px] overflow-y-auto text-[13px] leading-[190%] text-[#3d3d3d]"
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      ) : (
+        <p className="text-[12px] text-[#bbb]">（暂无内容，前台将显示“此栏目暂无内容”）</p>
+      )}
     </div>
   );
 }
@@ -198,24 +234,36 @@ export default function ContentForm({
       {/* ABOUT */}
       {isAbout && (
         <div className="mt-4 space-y-4">
+          <div className="rounded border border-[#e8e8e8] bg-[#fafafa] px-3 py-2 text-[11px] text-[#777]">
+            该栏目在前台渲染为<b>单页内容</b>：正文（支持 HTML）+ 图库。前台标题取「中文栏目名称」，
+            正文按语言切换中/英文，图片以画廊网格展示（每行 1–3 张）。
+          </div>
           <label className="block text-[12px] font-bold text-[#555]">
             英文正文（支持 HTML）
+            <span className="ml-2 font-normal text-[#aaa]">
+              纯文本 {stripTags(bodyEn).length} 字
+            </span>
             <textarea
               className={`${inputCls} h-48 font-mono text-[12px]`}
               onChange={(e) => setBodyEn(e.target.value)}
               value={bodyEn}
             />
           </label>
+          <BodyPreview html={bodyEn} />
           <label className="block text-[12px] font-bold text-[#555]">
             中文正文（支持 HTML）
+            <span className="ml-2 font-normal text-[#aaa]">
+              纯文本 {stripTags(bodyZh).length} 字
+            </span>
             <textarea
               className={`${inputCls} h-48 font-mono text-[12px]`}
               onChange={(e) => setBodyZh(e.target.value)}
               value={bodyZh}
             />
           </label>
+          <BodyPreview html={bodyZh} />
           <div>
-            <p className="mb-2 text-[12px] font-bold text-[#555]">图片（{images.length}）</p>
+            <p className="mb-2 text-[12px] font-bold text-[#555]">图片（{images.length} 张，前后台共用）</p>
             <ImageListEditor images={images} onChange={setImages} />
           </div>
         </div>

@@ -50,7 +50,10 @@ type StaticRow = {
   id: number;
   sort: number;
   title: string;
+  titleZh: string;
   image: string;
+  imageCount: number;
+  excerpt: string;
   status: string;
 };
 
@@ -292,6 +295,22 @@ export default function Dashboard({ username }: { username: string }) {
   }
 
   const totalItems = sections.reduce((sum, s) => sum + s.columns.reduce((sub, c) => sub + c.itemCount, 0), 0);
+
+  /* Summary badge for the currently open column — mirrors what the front end
+     actually renders, so an editor can see at a glance whether the column has
+     a body / gallery / list before opening the form. */
+  const columnPreview = selectedContent ?? null;
+  const columnPreviewLabel = (() => {
+    if (!columnPreview) return "";
+    const items = columnPreview.items;
+    if (Array.isArray(items)) {
+      return `${items.length} 个列表条目 · ${columnPreview.entries?.length ?? 0} 条详情`;
+    }
+    const block = (items ?? {}) as { bodyHtml?: string; images?: string[] };
+    const chars = (block.bodyHtml ?? "").replace(/<[^>]+>/g, "").trim().length;
+    const images = block.images?.length ?? 0;
+    return `正文 ${chars} 字 · 配图 ${images} 张`;
+  })();
 
   return (
     <div className="flex min-h-screen bg-[#f4f5f7]">
@@ -637,7 +656,8 @@ export default function Dashboard({ username }: { username: string }) {
               </div>
             </div>
           ) : (
-            /* Database-backed content management */
+            /* Database-backed content management (About Us / About, Honor,
+               Download, Product lines, Cases, Service columns) */
             <div>
               {selectedContent && contentEditing ? (
                 <ContentForm
@@ -650,21 +670,37 @@ export default function Dashboard({ username }: { username: string }) {
                   }}
                 />
               ) : null}
-              <div className="mb-3 flex items-center gap-3 border border-[#e3e3e3] bg-white p-3">
-                {selectedContent ? <button className="bg-[#e61d39] px-4 py-[8px] text-[12px] font-bold text-white" onClick={() => setContentEditing(true)} type="button">编辑栏目内容</button> : null}
-                <span className="text-[12px] text-[#888]">{contentRows.length} items</span>
-                <span className="rounded bg-[#f4f4f4] px-2 py-[3px] text-[11px] font-bold text-[#888]">{displayTypeName(activeColumn.displayType)}</span>
+              <div className="mb-3 flex flex-wrap items-center gap-3 border border-[#e3e3e3] bg-white p-3">
+                {selectedContent ? (
+                  <button
+                    className="bg-[#e61d39] px-4 py-[8px] text-[12px] font-bold text-white"
+                    onClick={() => setContentEditing(true)}
+                    type="button"
+                  >
+                    编辑栏目内容
+                  </button>
+                ) : null}
+                <span className="text-[12px] text-[#888]">{contentRows.length} 条记录</span>
+                <span className="rounded bg-[#f4f4f4] px-2 py-[3px] text-[11px] font-bold text-[#888]">
+                  {displayTypeName(activeColumn.displayType)}
+                </span>
+                {columnPreview ? (
+                  <span className="rounded bg-[#fff5d6] px-2 py-[3px] text-[11px] text-[#9a6b00]">
+                    {columnPreviewLabel}
+                  </span>
+                ) : null}
                 <span className="text-[11px] text-[#aaa]">sourceId: {activeColumn.sourceId}</span>
                 {notice ? <span className="text-[12px] text-[#e61d39]">{notice}</span> : null}
               </div>
               <div className="overflow-x-auto border border-[#e3e3e3] bg-white">
-                <table className="w-full min-w-[800px] text-left text-[13px]">
+                <table className="w-full min-w-[940px] text-left text-[13px]">
                   <thead className="bg-[#fafafa] text-[12px] text-[#888]">
                     <tr>
                       <th className="px-3 py-3">编号</th>
                       <th className="px-3 py-3">排序</th>
-                      <th className="px-3 py-3">标题</th>
-                      <th className="px-3 py-3">封面图片</th>
+                      <th className="px-3 py-3">栏目名称</th>
+                      <th className="px-3 py-3">正文摘要</th>
+                      <th className="px-3 py-3">配图</th>
                       <th className="px-3 py-3">状态</th>
                       <th className="px-3 py-3">操作</th>
                     </tr>
@@ -674,19 +710,47 @@ export default function Dashboard({ username }: { username: string }) {
                       <tr key={row.id} className="align-top">
                         <td className="px-3 py-3 text-[#999]">{row.id}</td>
                         <td className="px-3 py-3 text-[#666]">{row.sort}</td>
-                        <td className="max-w-[300px] px-3 py-3 font-bold text-[#333]">{row.title}</td>
-                        <td className="px-3 py-3">
-                          {row.image ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img alt="" className="h-[40px] w-[60px] object-cover" src={row.image} />
+                        <td className="max-w-[220px] px-3 py-3">
+                          <span className="font-bold text-[#333]">{row.title}</span>
+                          {row.titleZh ? (
+                            <p className="mt-1 text-[11px] text-[#888]">{row.titleZh}</p>
+                          ) : null}
+                        </td>
+                        <td className="max-w-[380px] px-3 py-3 text-[12px] leading-[20px] text-[#666]">
+                          {row.excerpt ? (
+                            <span className="line-clamp-2">{row.excerpt}</span>
                           ) : (
-                            <span className="text-[11px] text-[#ccc]">NO PHOTO</span>
+                            <span className="text-[#ccc]">（暂无正文）</span>
                           )}
+                        </td>
+                        <td className="px-3 py-3">
+                          <div className="flex items-center gap-2">
+                            {row.image ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img alt="" className="h-[40px] w-[60px] object-cover" src={row.image} />
+                            ) : (
+                              <span className="text-[11px] text-[#ccc]">NO PHOTO</span>
+                            )}
+                            {row.imageCount > 0 ? (
+                              <span className="rounded bg-[#f4f4f4] px-1.5 py-[2px] text-[10px] font-bold text-[#888]">
+                                ×{row.imageCount}
+                              </span>
+                            ) : null}
+                          </div>
                         </td>
                         <td className="px-3 py-3">
                           <span className="bg-[#e6f6ea] px-2 py-[3px] text-[11px] font-bold text-[#1c7c39]">{row.status}</span>
                         </td>
-                        <td className="px-3 py-3">
+                        <td className="whitespace-nowrap px-3 py-3">
+                          {selectedContent ? (
+                            <button
+                              className="mr-3 text-[12px] text-[#1c6dd0] hover:underline"
+                              onClick={() => setContentEditing(true)}
+                              type="button"
+                            >
+                              编辑
+                            </button>
+                          ) : null}
                           {activeColumn.parentId === 1 && (
                             <Link className="text-[12px] text-[#1c6dd0] hover:underline" href={`/about?id=${activeColumn.sourceId}`} target="_blank">查看</Link>
                           )}
@@ -712,7 +776,7 @@ export default function Dashboard({ username }: { username: string }) {
                       </tr>
                     ))}
                     {contentRows.length === 0 && (
-                      <tr><td className="py-8 text-center text-[13px] text-[#888]" colSpan={6}>No content found for this section.</td></tr>
+                      <tr><td className="py-8 text-center text-[13px] text-[#888]" colSpan={7}>此栏目暂无内容。</td></tr>
                     )}
                   </tbody>
                 </table>

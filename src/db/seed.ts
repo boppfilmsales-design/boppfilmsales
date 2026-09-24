@@ -4,6 +4,21 @@ import { db } from "@/db";
 import { adminContents, adminProducts, adminUsers, newsCategories, newsPosts } from "@/db/schema";
 import { hashPassword } from "@/lib/password";
 
+/**
+ * Loads the heavy site-seed reader at runtime.
+ *
+ * The specifier is deliberately split so the bundler cannot statically resolve
+ * it: a literal `import("@/db/site-seed-reader")` is still traced and would
+ * drag the 14 MB `site-seed.json` into every admin route that imports this
+ * module. See the header of `site-seed-reader.ts` for the full story.
+ */
+async function loadSiteSeedReader(): Promise<
+  typeof import("@/db/site-seed-reader")
+> {
+  const specifier = ["@/db", "site-seed-reader"].join("/");
+  return (await import(/* webpackIgnore: true */ specifier)) as typeof import("@/db/site-seed-reader");
+}
+
 export type SeedItem = {
   categoryId: string;
   categorySlug: string;
@@ -194,11 +209,13 @@ async function seedProducts() {
   const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(adminProducts);
   if (total > 0) return;
 
-  // Load the (14 MB) product seed lazily — only when the table is actually
-  // empty. Static imports would otherwise inline the whole JSON into every
-  // admin API route's server bundle and make each request crawl.
-  const { allProducts } = await import("@/lib/site");
-  const values = allProducts().map(({ category, product }, index) => ({
+  // Read the seed file directly instead of going through `@/lib/site`.
+  // Even a *dynamic* `import("@/lib/site")` is statically traced by the
+  // bundler, so it re-attached the 14 MB site-seed.json to every admin route
+  // that imports this module (via `ensureSeedData`). Reading the JSON here
+  // keeps the module graph free of that edge on the admin side.
+  const { readSiteSeed } = await loadSiteSeedReader();
+  const values = readSiteSeed().allProducts().map(({ category, product }, index) => ({
     sourceId: product.sourceId,
     familyId: category.sourceId,
     categoryId: product.catId,
@@ -234,9 +251,8 @@ async function seedContents() {
   const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(adminContents);
   if (total > 0) return;
 
-  // Lazily load the 14 MB content seed only when the table is empty.
-  const { getContents } = await import("@/lib/site");
-  const contents = getContents();
+  const { readSiteSeed } = await loadSiteSeedReader();
+  const contents = readSiteSeed().getContents();
   for (const content of contents) {
     await db.insert(adminContents).values({
       sourceId: content.sourceId,
