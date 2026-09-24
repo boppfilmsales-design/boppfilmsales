@@ -180,6 +180,29 @@ export default function InfoTransfer() {
     setCopy(false);
   }
 
+  async function syncNav() {
+    setBusy(true);
+    setNotice("");
+    try {
+      const res = await fetch("/api/admin/advanced/transfer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "sync" }),
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+      setNotice(
+        `前台产品导航已重建：${data.families} 个大类、${data.products} 个产品${
+          data.synced ? "" : "（数据库写入失败，请重试）"
+        }。`,
+      );
+    } catch (err) {
+      setNotice(`同步失败：${(err as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function run() {
     if (mode === "products") {
       if (selectedIds.size === 0) {
@@ -220,7 +243,11 @@ export default function InfoTransfer() {
         });
         const data = await res.json();
         if (!data.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
-        setNotice(`${copy ? "复制" : "转移"}完成：共处理 ${data.moved} 个产品。`);
+        setNotice(
+          `${copy ? "复制" : "转移"}完成：共处理 ${data.moved} 个产品。${
+            data.navSynced ? "前台产品导航已同步。" : "⚠️ 前台导航同步失败，请点上方「同步前台产品导航」重试。"
+          }`,
+        );
         if (data.snapshot) setResult(data.snapshot);
         setSelectedIds(new Set());
         void load();
@@ -276,7 +303,20 @@ export default function InfoTransfer() {
   return (
     <div>
       <div className="border border-[#e3e3e3] bg-white p-5">
-        <h2 className="text-[16px] font-bold text-[#333]">信息转移</h2>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <h2 className="text-[16px] font-bold text-[#333]">信息转移</h2>
+          <button
+            className="border border-[#ddd] bg-white px-3 py-[5px] text-[12px] text-[#666] hover:border-[#bbb] disabled:opacity-50"
+            disabled={busy}
+            onClick={syncNav}
+            type="button"
+          >
+            ↻ 同步前台产品导航
+          </button>
+          <span className="text-[11px] text-[#999]">
+            产品转移会自动同步；此处用于手动重建（例如在「产品管理」里改过分类之后）。
+          </span>
+        </div>
         <p className="mt-1 text-[12px] leading-[20px] text-[#888]">
           把一个栏目/分类的内容转移到另一个栏目/分类。每次转移都会在「留言板」留下一条带快照的记录，便于回溯。
           <br />

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { categoryNameZh, SITE } from "@/lib/site-helpers";
-import { getNavCategories } from "@/lib/site-summary";
+import { getNavCategories, type NavCategory } from "@/lib/site-summary";
 
 const NEWS_TABS = [
   { slug: "industry-news", name: "Industry News", nameZh: "行业新闻" },
@@ -66,13 +66,16 @@ const CASES_SUBS = [
   { id: 147, name: "To Ourselves", nameZh: "致自己" },
 ];
 
-type Props = { lang?: "en" | "zh" };
+type Props = { lang?: "en" | "zh"; categories?: NavCategory[] };
 
-export default function SiteNav({ lang = "en" }: Props) {
+export default function SiteNav({ lang = "en", categories: liveCategories }: Props) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<string>("");
-  const categories = getNavCategories();
+  // The server passes the live tree (rebuilt from `admin_products` after a
+  // product transfer). The seeded tree is only a fallback for the rare caller
+  // that renders this without the prop.
+  const categories = liveCategories ?? getNavCategories();
   const normalizedPath = pathname.replace(/^\/zh(?=\/|$)/, "") || "/";
   const englishPath = normalizedPath;
   const chinesePath = normalizedPath === "/" ? "/zh" : `/zh${normalizedPath}`;

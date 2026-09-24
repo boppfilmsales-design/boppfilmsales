@@ -1,8 +1,12 @@
 import Link from "next/link";
 import SiteNav from "@/components/SiteNav";
 import { SITE } from "@/lib/site";
+import { getNavCategoriesLive } from "@/lib/site-summary";
 
-export default function SiteHeader({ active, lang = "en" }: { active?: string; lang?: "en" | "zh" }) {
+export default async function SiteHeader({ active, lang = "en" }: { active?: string; lang?: "en" | "zh" }) {
+  // Read the live product tree so the mega-menu reflects products moved by
+  // 信息转移. Falls back to the seeded tree on any DB hiccup.
+  const categories = await getNavCategoriesLive();
   return (
     <header className="bg-white">
       {/* utility strip */}
@@ -70,7 +74,7 @@ export default function SiteHeader({ active, lang = "en" }: { active?: string; l
         </form>
       </div>
 
-      <SiteNav lang={lang} />
+      <SiteNav categories={categories} lang={lang} />
       {active ? null : null}
     </header>
   );

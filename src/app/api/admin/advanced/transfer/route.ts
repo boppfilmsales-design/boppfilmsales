@@ -5,6 +5,7 @@ import { ensureSeedData } from "@/db/seed";
 import { requireAdmin } from "@/lib/api-auth";
 import { getAdminSession } from "@/lib/auth";
 import { getAdminSections } from "@/lib/admin-columns";
+import { rebuildNavFromDb, saveNavOverride } from "@/lib/nav-sync";
 import type { SiteContent } from "@/lib/site-types";
 import siteNavJson from "@/data/site-nav.json";
 
@@ -105,6 +106,25 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   const mode = String(body.mode ?? "content");
   const session = await getAdminSession();
+
+  // "sync" — rebuild the cached mega-menu tree from `admin_products` on demand.
+  // Product transfers do this automatically; this entry point exists so an
+  // operator can repair the cache after editing products through the normal
+  // 产品管理 screens (which do not go through a transfer).
+  if (mode === "sync") {
+    const tree = await rebuildNavFromDb();
+    if (!tree) {
+      return Response.json({ ok: false, error: "数据库中没有产品数据" }, { status: 404 });
+    }
+    const saved = await saveNavOverride(tree);
+    const total = tree.reduce((n, fam) => n + fam.count, 0);
+    await db.insert(adminAuditLog).values({
+      actor: session?.username ?? "",
+      action: "nav.sync",
+      detail: `重建前台产品导航：${tree.length} 个大类、${total} 个产品${saved ? "" : "（写入失败）"}`,
+    });
+    return Response.json({ ok: true, synced: saved, families: tree.length, products: total, tree });
+  }
 
   if (mode === "news") {
     const fromSourceId = Number(body.fromSourceId);
@@ -230,10 +250,22 @@ export async function POST(request: Request) {
       titles: beforeRows.map((r) => r.title),
     });
 
+    // Refresh the cached mega-menu tree so the front end stops advertising the
+    // moved product under its old sub-category. The product *pages* already read
+    // `admin_products` at request time, but the mega-menu renders from a cached
+    // tree — without this it kept deep-linking to a product that had moved.
+    let navSynced = false;
+    try {
+      const tree = await rebuildNavFromDb();
+      if (tree) navSynced = await saveNavOverride(tree);
+    } catch {
+      /* the transfer itself already succeeded — never fail it over the cache */
+    }
+
     await db.insert(adminAuditLog).values({
       actor: session?.username ?? "",
       action: isCopy ? "transfer.products.copy" : "transfer.products.move",
-      detail: `${isCopy ? "复制" : "转移"}产品 ${summaryTitles.slice(0, 200)} → ${targetFamily.name} / ${targetSub.name}，共 ${moved} 条`,
+      detail: `${isCopy ? "复制" : "转移"}产品 ${summaryTitles.slice(0, 200)} → ${targetFamily.name} / ${targetSub.name}，共 ${moved} 条${navSynced ? "（前台导航已同步）" : "（前台导航同步失败）"}`,
     });
     await db.insert(adminMessages).values({
       author: session?.username ?? "system",
@@ -245,7 +277,7 @@ export async function POST(request: Request) {
       isPinned: false,
     });
 
-    return Response.json({ ok: true, moved, copied: isCopy, snapshot: snapshot.slice(0, 4000) });
+    return Response.json({ ok: true, moved, copied: isCopy, navSynced, snapshot: snapshot.slice(0, 4000) });
   }
 
   // --- mode === "content": move a whole admin_contents column's items ---
