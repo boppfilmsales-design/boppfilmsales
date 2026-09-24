@@ -1,9 +1,9 @@
-import { getContentBySourceId, getContents, contentImageUrl, type SiteContent } from "@/lib/site";
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/db";
 import { adminContents } from "@/db/schema";
 import { ensureSeedData } from "@/db/seed";
 import { eq } from "drizzle-orm";
+import type { SiteContent } from "@/lib/site-types";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +14,19 @@ type ContentRow = {
   image: string;
   status: string;
 };
+
+/**
+ * Local copy of `contentImageUrl` from `@/lib/site-helpers`.
+ * Kept inline so this route never statically imports the site module (which
+ * would pull the 14 MB site-seed.json into the bundle).
+ */
+function contentImageUrl(value: string): string {
+  const source = (value ?? "").trim();
+  if (!source) return "";
+  if (source.startsWith("/")) return source;
+  if (/^https?:\/\//i.test(source)) return source;
+  return `/uploads/content/${source}`;
+}
 
 function extractRows(content: SiteContent | undefined, sourceId: number): ContentRow[] {
   if (!content) return [];
@@ -83,20 +96,27 @@ export async function GET(
     }
 
     const [stored] = await db.select().from(adminContents).where(eq(adminContents.sourceId, sourceId)).limit(1);
-    const content = stored ? {
-      sourceId: stored.sourceId,
-      kind: stored.kind as SiteContent["kind"],
-      name: stored.name,
-      nameZh: stored.nameZh,
-      ...parseData(stored.dataJson),
-    } satisfies SiteContent : getContentBySourceId(sourceId);
+    let content: SiteContent | undefined = stored
+      ? ({
+          sourceId: stored.sourceId,
+          kind: stored.kind as SiteContent["kind"],
+          name: stored.name,
+          nameZh: stored.nameZh,
+          ...parseData(stored.dataJson),
+        } as SiteContent)
+      : undefined;
+
     if (!content) {
-      const allContents = getContents();
-      const found = allContents.find((c) => c.sourceId === sourceId);
-      if (found) {
-        return Response.json({ ok: true, content: found, rows: extractRows(found, sourceId) });
+      // Fallback to the static seed. Imported lazily because `@/lib/site`
+      // eagerly loads the 14 MB site-seed.json — a static import would put that
+      // payload into this route's bundle even when the DB row exists.
+      const { getContentBySourceId, getContents } = await import("@/lib/site");
+      content =
+        (getContentBySourceId(sourceId) as SiteContent | undefined) ??
+        (getContents() as unknown as SiteContent[]).find((c) => c.sourceId === sourceId);
+      if (!content) {
+        return Response.json({ ok: false, error: "Content not found" }, { status: 404 });
       }
-      return Response.json({ ok: false, error: "Content not found" }, { status: 404 });
     }
 
     return Response.json({ ok: true, content, rows: extractRows(content, sourceId) });

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import NewsForm, { type AdminCategory, type AdminPostDetail } from "@/components/admin/NewsForm";
 import ProductForm, { type AdminProductDetail } from "@/components/admin/ProductForm";
 import ContentForm from "@/components/admin/ContentForm";
-import type { SiteContent } from "@/lib/site";
+import type { SiteContent } from "@/lib/site-types";
 
 /* ---------- Types ---------- */
 

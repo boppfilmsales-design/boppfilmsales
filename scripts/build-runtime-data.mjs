@@ -124,6 +124,18 @@ function categoryProductNamesZh(category, limit = 3) {
     .filter(Boolean);
 }
 
+/** Mirrors `staticItemCount()` in src/lib/admin-columns.ts. */
+function staticContentCount(content) {
+  if (!content) return 0;
+  if (Array.isArray(content.entries)) return content.entries.length;
+  if (Array.isArray(content.items)) return content.items.length;
+  if (content.items && typeof content.items === "object") {
+    const items = content.items;
+    return (items.images?.length ?? 0) || (items.bodyHtml ? 1 : 0);
+  }
+  return 0;
+}
+
 function contentBody(content, lang) {
   if (!content) return "";
   const items = content.items ?? {};
@@ -155,6 +167,33 @@ const navCategories = families.map((family) => ({
   })),
 }));
 
+/**
+ * Admin sidebar structure: only what `getAdminSections()` needs.
+ *
+ * The admin panel previously called `getCategories()` / `getContents()`, which
+ * load the 14 MB site-seed.json into every admin route bundle. This tiny file
+ * (~3 KB) carries just the ids, names and counts instead.
+ *
+ * NOTE: `itemCount` is intentionally absent — the admin API computes counts
+ * from the DB, and the static column counts are provided via `contentCounts`.
+ */
+const adminColumnsMeta = {
+  categories: families.map((family) => ({
+    sourceId: family.sourceId,
+    name: family.name,
+    itemCount: familyCount(family),
+  })),
+  subNameZh: Object.fromEntries(
+    families.flatMap((family) => [
+      [String(family.sourceId), family.nameZh || ""],
+      ...(family.subs ?? []).map((sub) => [String(sub.sourceId), sub.nameZh || ""]),
+    ]),
+  ),
+  contentCounts: Object.fromEntries(
+    contents.map((content) => [String(content.sourceId), staticContentCount(content)]),
+  ),
+};
+
 const homeSummary = {
   categories: navCategories,
   featured: featuredProducts(10).map(({ category, product }) => ({
@@ -180,9 +219,12 @@ fs.writeFileSync(
   path.join(dataDir, "site-nav.json"),
   JSON.stringify({ categories: navCategories }),
 );
+fs.writeFileSync(path.join(dataDir, "admin-columns-meta.json"), JSON.stringify(adminColumnsMeta));
 fs.writeFileSync(path.join(dataDir, "home-summary.json"), JSON.stringify(homeSummary));
 
 const navSize = (fs.statSync(path.join(dataDir, "site-nav.json")).size / 1024).toFixed(1);
+const adminMetaSize = (fs.statSync(path.join(dataDir, "admin-columns-meta.json")).size / 1024).toFixed(1);
 const homeSize = (fs.statSync(path.join(dataDir, "home-summary.json")).size / 1024).toFixed(1);
 console.log(`Generated src/data/site-nav.json (${navSize} KB)`);
+console.log(`Generated src/data/admin-columns-meta.json (${adminMetaSize} KB)`);
 console.log(`Generated src/data/home-summary.json (${homeSize} KB)`);

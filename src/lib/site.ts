@@ -93,6 +93,12 @@ export type SiteContent = {
   entries?: ContentEntry[];
 };
 
+/**
+ * NOTE: the admin UI and admin API routes must NOT import these types from here
+ * — doing so drags the 14 MB `site-seed.json` into their bundle. Use
+ * `@/lib/site-types` instead (same concept, looser shape, zero large imports).
+ */
+
 /* Legacy aliases so existing components keep compiling. */
 export type SiteProduct = ProductItem;
 export type SiteSubCategory = ProductSub;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { SiteContent } from "@/lib/site";
+import type { SiteContent } from "@/lib/site-types";
 
 /* ---------------- types ---------------- */
 

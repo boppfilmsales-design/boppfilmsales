@@ -2,7 +2,6 @@
 import seedRaw from "@/data/news-seed.json";
 import { db } from "@/db";
 import { adminContents, adminProducts, adminUsers, newsCategories, newsPosts } from "@/db/schema";
-import { allProducts, getContents } from "@/lib/site";
 import { hashPassword } from "@/lib/password";
 
 export type SeedItem = {
@@ -193,6 +192,12 @@ async function seedAdmin() {
 
 async function seedProducts() {
   const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(adminProducts);
+  if (total > 0) return;
+
+  // Load the (14 MB) product seed lazily — only when the table is actually
+  // empty. Static imports would otherwise inline the whole JSON into every
+  // admin API route's server bundle and make each request crawl.
+  const { allProducts } = await import("@/lib/site");
   const values = allProducts().map(({ category, product }, index) => ({
     sourceId: product.sourceId,
     familyId: category.sourceId,
@@ -219,13 +224,6 @@ async function seedProducts() {
     status: "正常",
   }));
 
-  if (total > 0) {
-    for (const value of values) {
-      await db.update(adminProducts).set(value).where(eq(adminProducts.sourceId, value.sourceId));
-    }
-    return;
-  }
-
   const chunkSize = 20;
   for (let i = 0; i < values.length; i += chunkSize) {
     await db.insert(adminProducts).values(values.slice(i, i + chunkSize));
@@ -233,9 +231,12 @@ async function seedProducts() {
 }
 
 async function seedContents() {
-  const contents = getContents();
   const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(adminContents);
   if (total > 0) return;
+
+  // Lazily load the 14 MB content seed only when the table is empty.
+  const { getContents } = await import("@/lib/site");
+  const contents = getContents();
   for (const content of contents) {
     await db.insert(adminContents).values({
       sourceId: content.sourceId,
@@ -256,19 +257,53 @@ async function init() {
   await seedContents();
 }
 
+/**
+ * Cheap probe: is the database already populated?
+ *
+ * Runs one `count(*)` on the small `admin_users` table. When rows exist we know
+ * a previous boot completed the full seed, so we can skip the expensive
+ * `init()` entirely.
+ */
+async function isDatabasePopulated(): Promise<boolean> {
+  const [row] = await db.select({ total: sql<number>`count(*)::int` }).from(adminUsers);
+  return (row?.total ?? 0) > 0;
+}
+
+/**
+ * Ensures the schema exists and seed data is present.
+ *
+ * IMPORTANT (performance): the previous implementation re-ran the *entire*
+ * seed (`ensureSchema` + upserts over 33 contents / 159 products / 92 posts)
+ * on the first request of every 8-second window and on every cold lambda boot.
+ * With Neon over the network each such run cost tens of seconds and blocked
+ * every admin page/API call.
+ *
+ * New behaviour:
+ *  - one cheap `count(*)` probe decides whether seeding is needed at all;
+ *  - the full seed runs at most ONCE per process lifetime;
+ *  - once seeded successfully the result is cached for the life of the process,
+ *    so steady-state requests pay nothing.
+ */
 let readyPromise: Promise<void> | null = null;
-let readyStartedAt = 0;
-const STALE_MS = 8000;
+let seeded = false;
 
 export function ensureSeedData(): Promise<void> {
-  const now = Date.now();
-  if (!readyPromise || now - readyStartedAt > STALE_MS) {
-    readyStartedAt = now;
-    readyPromise = init().catch((error) => {
-      readyPromise = null;
-      console.error("[seed] failed", error);
-      throw error;
-    });
-  }
+  if (seeded) return Promise.resolve();
+  if (readyPromise) return readyPromise;
+
+  readyPromise = (async () => {
+    if (await isDatabasePopulated()) {
+      seeded = true;
+      return;
+    }
+    await init();
+    seeded = true;
+  })().catch((error) => {
+    // Allow a later request to retry after a transient failure.
+    readyPromise = null;
+    console.error("[seed] failed", error);
+    throw error;
+  });
+
   return readyPromise;
 }
