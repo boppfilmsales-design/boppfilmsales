@@ -41,12 +41,15 @@ export default function InquiryForm({
   lang = "en",
   sourcePage = "/contact",
   compact = false,
+  variant = "default",
 }: {
   lang?: "en" | "zh";
   /** Recorded with the inquiry so the admin knows which page it came from. */
   sourcePage?: string;
   /** Tighter vertical rhythm for the home-page block. */
   compact?: boolean;
+  /** "source" matches the legacy apigcl.com/contact.php inline form style. */
+  variant?: "default" | "source";
 }) {
   const t = COPY[lang];
   const [state, formAction, pending] = useActionState<InquiryState, FormData>(submitInquiry, {});
@@ -58,6 +61,77 @@ export default function InquiryForm({
         ? { cls: "border-amber-200 bg-amber-50 text-amber-800", text: t.invalid }
         : { cls: "border-red-200 bg-red-50 text-red-700", text: t.failed }
     : null;
+
+  if (variant === "source") {
+    return (
+      <form action={formAction} className="space-y-4">
+        <input name="lang" type="hidden" value={lang} />
+        <input name="sourcePage" type="hidden" value={sourcePage} />
+
+        {banner ? (
+          <p className={`rounded border px-4 py-3 text-[13px] ${banner.cls}`} role="status">
+            {banner.text}
+          </p>
+        ) : null}
+
+        <p className="flex flex-col gap-2 text-[14px]">
+          <span className="text-[#333]">
+            {t.email} <span className="text-[#c8102e]">*</span>
+          </span>
+          <input
+            autoComplete="email"
+            className="w-full rounded border border-[#ddd] px-3 py-[10px] text-[14px] text-[#555] outline-none focus:border-[#c8102e]"
+            maxLength={254}
+            name="email"
+            required
+            type="email"
+          />
+        </p>
+
+        <p className="flex flex-col gap-2 text-[14px]">
+          <span className="text-[#333]">{t.contact}</span>
+          <input
+            autoComplete="name"
+            className="w-full rounded border border-[#ddd] px-3 py-[10px] text-[14px] text-[#555] outline-none focus:border-[#c8102e]"
+            maxLength={120}
+            name="contact"
+          />
+        </p>
+
+        <p className="flex flex-col gap-2 text-[14px]">
+          <span className="text-[#333]">{t.phone}</span>
+          <input
+            autoComplete="tel"
+            className="w-full rounded border border-[#ddd] px-3 py-[10px] text-[14px] text-[#555] outline-none focus:border-[#c8102e]"
+            maxLength={50}
+            name="phone"
+          />
+        </p>
+
+        <p className="flex flex-col gap-2 text-[14px]">
+          <span className="text-[#333]">
+            {t.message} <span className="text-[#888]">({t.hint})</span>
+          </span>
+          <textarea
+            className="h-[140px] w-full rounded border border-[#ddd] px-3 py-[10px] text-[14px] text-[#555] outline-none focus:border-[#c8102e]"
+            maxLength={5000}
+            name="message"
+            required
+          />
+        </p>
+
+        <p>
+          <button
+            className="rounded border border-[#c8102e] bg-white px-8 py-2.5 text-[14px] font-medium text-[#c8102e] transition hover:bg-[#c8102e] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={pending}
+            type="submit"
+          >
+            {pending ? "…" : t.submit}
+          </button>
+        </p>
+      </form>
+    );
+  }
 
   return (
     <form action={formAction} className={compact ? "space-y-4" : "space-y-4"}>
