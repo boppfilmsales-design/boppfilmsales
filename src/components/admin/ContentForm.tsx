@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { SiteContent } from "@/lib/site-types";
+import RichEditor from "./RichEditor";
 
 /* ---------------- types ---------------- */
 
@@ -239,30 +240,26 @@ export default function ContentForm({
             该栏目在前台渲染为<b>单页内容</b>：正文（支持 HTML）+ 图库。前台标题取「中文栏目名称」，
             正文按语言切换中/英文，图片以画廊网格展示（每行 1–3 张）。
           </div>
-          <label className="block text-[12px] font-bold text-[#555]">
-            英文正文（支持 HTML）
-            <span className="ml-2 font-normal text-[#aaa]">
-              纯文本 {stripTags(bodyEn).length} 字
-            </span>
-            <textarea
-              className={`${inputCls} h-48 font-mono text-[12px]`}
-              onChange={(e) => setBodyEn(e.target.value)}
-              value={bodyEn}
-            />
-          </label>
-          <BodyPreview html={bodyEn} />
-          <label className="block text-[12px] font-bold text-[#555]">
-            中文正文（支持 HTML）
-            <span className="ml-2 font-normal text-[#aaa]">
-              纯文本 {stripTags(bodyZh).length} 字
-            </span>
-            <textarea
-              className={`${inputCls} h-48 font-mono text-[12px]`}
-              onChange={(e) => setBodyZh(e.target.value)}
-              value={bodyZh}
-            />
-          </label>
-          <BodyPreview html={bodyZh} />
+          <div>
+            <label className="block text-[12px] font-bold text-[#555]">
+              英文正文（富文本）
+              <span className="ml-2 font-normal text-[#aaa]">纯文本 {stripTags(bodyEn).length} 字</span>
+            </label>
+            <div className="mt-1">
+              <RichEditor value={bodyEn} onChange={setBodyEn} placeholder="编辑英文正文..." height={260} />
+            </div>
+            <BodyPreview html={bodyEn} />
+          </div>
+          <div>
+            <label className="block text-[12px] font-bold text-[#555]">
+              中文正文（富文本）
+              <span className="ml-2 font-normal text-[#aaa]">纯文本 {stripTags(bodyZh).length} 字</span>
+            </label>
+            <div className="mt-1">
+              <RichEditor value={bodyZh} onChange={setBodyZh} placeholder="编辑中文正文..." height={260} />
+            </div>
+            <BodyPreview html={bodyZh} />
+          </div>
           <div>
             <p className="mb-2 text-[12px] font-bold text-[#555]">图片（{images.length} 张，前后台共用）</p>
             <ImageListEditor images={images} onChange={setImages} />
@@ -359,18 +356,21 @@ export default function ContentForm({
                   />
                 </label>
               </div>
-              <label className="mt-2 block text-[11px] font-bold text-[#777]">
-                说明（支持 HTML，可留空）
-                <textarea
-                  className={`${inputCls} h-24 font-mono text-[11px]`}
-                  value={row.bodyHtml ?? ""}
-                  onChange={(e) => {
-                    const next = [...rows];
-                    next[i] = { ...next[i], bodyHtml: e.target.value };
-                    setRows(next);
-                  }}
-                />
-              </label>
+              <div className="mt-2">
+                <label className="block text-[11px] font-bold text-[#777]">说明（富文本，可留空）</label>
+                <div className="mt-1">
+                  <RichEditor
+                    value={row.bodyHtml ?? ""}
+                    onChange={(html) => {
+                      const next = [...rows];
+                      next[i] = { ...next[i], bodyHtml: html };
+                      setRows(next);
+                    }}
+                    placeholder="编辑下载项说明..."
+                    height={180}
+                  />
+                </div>
+              </div>
               <div className="mt-2 flex gap-2">
                 <button
                   className="rounded bg-[#f4f4f4] px-3 py-1 text-[12px] text-[#888] hover:bg-[#eee]"
@@ -551,30 +551,36 @@ export default function ContentForm({
                     />
                   </label>
                 </div>
-                <label className="mt-2 block text-[11px] font-bold text-[#777]">
-                  详情正文（英，支持 HTML）
-                  <textarea
-                    className={`${inputCls} h-28 font-mono text-[11px]`}
-                    value={entry.bodyHtml ?? ""}
-                    onChange={(e) => {
-                      const next = [...entries];
-                      next[i] = { ...next[i], bodyHtml: e.target.value };
-                      setEntries(next);
-                    }}
-                  />
-                </label>
-                <label className="mt-2 block text-[11px] font-bold text-[#777]">
-                  详情正文（中，支持 HTML）
-                  <textarea
-                    className={`${inputCls} h-28 font-mono text-[11px]`}
-                    value={entry.bodyHtmlZh ?? ""}
-                    onChange={(e) => {
-                      const next = [...entries];
-                      next[i] = { ...next[i], bodyHtmlZh: e.target.value };
-                      setEntries(next);
-                    }}
-                  />
-                </label>
+                <div className="mt-2">
+                  <label className="block text-[11px] font-bold text-[#777]">详情正文（英，富文本）</label>
+                  <div className="mt-1">
+                    <RichEditor
+                      value={entry.bodyHtml ?? ""}
+                      onChange={(html) => {
+                        const next = [...entries];
+                        next[i] = { ...next[i], bodyHtml: html };
+                        setEntries(next);
+                      }}
+                      placeholder="编辑英文详情正文..."
+                      height={220}
+                    />
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <label className="block text-[11px] font-bold text-[#777]">详情正文（中，富文本）</label>
+                  <div className="mt-1">
+                    <RichEditor
+                      value={entry.bodyHtmlZh ?? ""}
+                      onChange={(html) => {
+                        const next = [...entries];
+                        next[i] = { ...next[i], bodyHtmlZh: html };
+                        setEntries(next);
+                      }}
+                      placeholder="编辑中文详情正文..."
+                      height={220}
+                    />
+                  </div>
+                </div>
                 <div className="mt-2 flex gap-2">
                   <button
                     className="rounded bg-[#f4f4f4] px-2 py-1 text-[11px] text-[#e61d39] hover:bg-[#eee]"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import RichEditor from "./RichEditor";
 
 export type AdminCategory = { id: number; slug: string; name: string; sourceId?: number };
 
@@ -48,8 +49,6 @@ export default function NewsForm({
   const [image, setImage] = useState(post?.image ?? "");
   const [excerpt, setExcerpt] = useState(post?.excerpt ?? "");
   const [bodyHtml, setBodyHtml] = useState(post?.bodyHtml ?? "");
-  const [bodyText, setBodyText] = useState(post?.bodyText ?? "");
-  const [mode, setMode] = useState<"text" | "html">(post?.bodyHtml?.includes("<") ? "html" : "text");
   const [isPublished, setIsPublished] = useState(post?.isPublished ?? true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -57,8 +56,6 @@ export default function NewsForm({
   useEffect(() => {
     if (post) {
       setBodyHtml(post.bodyHtml);
-      setBodyText(post.bodyText);
-      setMode(post.bodyHtml.includes("<") ? "html" : "text");
     }
   }, [post]);
 
@@ -74,8 +71,8 @@ export default function NewsForm({
       excerpt,
       image,
       isPublished,
-      bodyHtml: mode === "html" ? bodyHtml : "",
-      bodyText: mode === "text" ? bodyText : "",
+      bodyHtml,
+      bodyText: "",
     };
     const response = await fetch(post ? `/api/admin/posts/${post.id}` : "/api/admin/posts", {
       method: post ? "PUT" : "POST",
@@ -149,38 +146,16 @@ export default function NewsForm({
         </label>
       </div>
 
-      <div className="mt-4 flex items-center gap-3 text-[12px]">
-        <span className="font-bold text-[#555]">Content type:</span>
-        {(["text", "html"] as const).map((value) => (
-          <button
-            className={`border px-3 py-1 ${
-              mode === value ? "border-[#e61d39] bg-[#e61d39] text-white" : "border-[#ddd] text-[#666]"
-            }`}
-            key={value}
-            onClick={() => setMode(value)}
-            type="button"
-          >
-            {value === "text" ? "Plain text" : "HTML source"}
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-3">
-        {mode === "text" ? (
-          <textarea
-            className="h-[260px] w-full border border-[#ddd] p-3 text-[13px] leading-[22px] outline-none focus:border-[#e61d39]"
-            onChange={(event) => setBodyText(event.target.value)}
-            placeholder={"Paste the article body here.\nBlank lines become separate paragraphs."}
-            value={bodyText}
-          />
-        ) : (
-          <textarea
-            className="h-[260px] w-full border border-[#ddd] p-3 font-mono text-[12px] leading-[20px] outline-none focus:border-[#e61d39]"
-            onChange={(event) => setBodyHtml(event.target.value)}
-            placeholder={'<p>HTML source, e.g. <strong>bold</strong> text and <img src="/uploads/news/xxx.jpg" /></p>'}
+      <div className="mt-4">
+        <label className={labelClass}>Article body (rich text / 富文本)</label>
+        <div className="mt-1">
+          <RichEditor
             value={bodyHtml}
+            onChange={setBodyHtml}
+            placeholder="在此编辑文章内容，支持加粗、列表、链接、图片、表格、上传等..."
+            height={320}
           />
-        )}
+        </div>
       </div>
 
       <label className="mt-4 flex items-center gap-2 text-[13px] text-[#555]">

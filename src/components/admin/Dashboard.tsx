@@ -901,15 +901,13 @@ export default function Dashboard({ username }: { username: string }) {
                           <span className="bg-[#e6f6ea] px-2 py-[3px] text-[11px] font-bold text-[#1c7c39]">{row.status}</span>
                         </td>
                         <td className="whitespace-nowrap px-3 py-3">
-                          {selectedContent ? (
-                            <button
-                              className="mr-3 text-[12px] text-[#1c6dd0] hover:underline"
-                              onClick={() => setContentEditing(true)}
-                              type="button"
-                            >
-                              编辑
-                            </button>
-                          ) : null}
+                          <button
+                            className="mr-3 text-[12px] text-[#1c6dd0] hover:underline"
+                            onClick={() => setContentEditing(true)}
+                            type="button"
+                          >
+                            编辑
+                          </button>
                           {activeColumn.parentId === 1 && (
                             <Link className="text-[12px] text-[#1c6dd0] hover:underline" href={`/about?id=${activeColumn.sourceId}`} target="_blank">查看</Link>
                           )}
