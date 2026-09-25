@@ -19,9 +19,12 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as {
     username?: string;
     password?: string;
+    remember?: boolean;
   };
   const username = (body.username ?? "").trim();
   const password = body.password ?? "";
+  // "记住密码": only a strict true counts, so a missing/garbage field keeps the 12h session.
+  const remember = body.remember === true;
 
   if (!username || !password) {
     return Response.json({ ok: false, error: "Username and password are required." }, { status: 400 });
@@ -71,6 +74,6 @@ export async function POST(request: Request) {
   }
 
   const store = await cookies();
-  store.set(SESSION_COOKIE, createSessionToken(username), sessionCookieOptions);
+  store.set(SESSION_COOKIE, createSessionToken(username, remember), sessionCookieOptions(remember));
   return Response.json({ ok: true, username });
 }
