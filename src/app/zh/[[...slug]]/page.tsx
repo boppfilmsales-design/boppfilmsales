@@ -52,12 +52,12 @@ export default async function ZhPage({
     const news = await getLatestPostsSafe(6).catch(() => []);
     content = <HomeContent lang="zh" initialData={{ ...summary, news }} />;
   } else if (first === "products" && second && third === "list" && fourth) {
-    const [{ getCategory, getSub }, { ProductSubPage }] = await Promise.all([
-      import("@/lib/site"),
+    const [{ getCategoryForSite }, { ProductSubPage }] = await Promise.all([
+      import("@/lib/catalogue-db"),
       import("@/components/pages/Sections"),
     ]);
-    const category = getCategory(second);
-    const sub = category ? getSub(category, fourth) : undefined;
+    const category = await getCategoryForSite(second);
+    const sub = category?.subs.find((s) => String(s.sourceId) === String(fourth));
     if (!category || !sub) notFound();
     content = <ProductSubPage category={category} lang="zh" sub={sub} />;
   } else if (first === "entry" && second && third && fourth) {
@@ -71,19 +71,19 @@ export default async function ZhPage({
       />
     );
   } else if (first === "products" && second && third) {
-    const [{ findProduct }, { ProductDetail }] = await Promise.all([
-      import("@/lib/site"),
+    const [{ getProductForSite }, { ProductDetail }] = await Promise.all([
+      import("@/lib/catalogue-db"),
       import("@/components/pages/Sections"),
     ]);
-    const found = findProduct(second, third);
+    const found = await getProductForSite(second, third);
     if (!found) notFound();
     content = <ProductDetail category={found.category} product={found.product} lang="zh" />;
   } else if (first === "products" && second) {
-    const [{ getCategory }, { ProductCategoryPage }] = await Promise.all([
-      import("@/lib/site"),
+    const [{ getCategoryForSite }, { ProductCategoryPage }] = await Promise.all([
+      import("@/lib/catalogue-db"),
       import("@/components/pages/Sections"),
     ]);
-    const category = getCategory(second);
+    const category = await getCategoryForSite(second);
     if (!category) notFound();
     content = <ProductCategoryPage category={category} lang="zh" />;
   } else if (first === "downloads") {

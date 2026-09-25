@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import RichEditor from "./RichEditor";
 
-export type AdminCategory = { id: number; slug: string; name: string; sourceId?: number };
+export type AdminCategory = { id: number; slug: string; name: string; nameZh?: string; sourceId?: number };
 
 export type AdminPostDetail = {
   id: number;
