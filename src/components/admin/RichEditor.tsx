@@ -1,6 +1,58 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+
+/**
+ * execCommand("fontSize") only accepts the legacy 1-7 scale, so we map each
+ * wanted px size to a distinct legacy value, then immediately rewrite the
+ * resulting <font size="n"> into <span style="font-size:Npx">. That keeps the
+ * saved HTML clean and gives exact pixel control.
+ */
+const FONT_SIZES: { label: string; px: number; legacy: string }[] = [
+  { label: "12px", px: 12, legacy: "1" },
+  { label: "14px", px: 14, legacy: "2" },
+  { label: "16px", px: 16, legacy: "3" },
+  { label: "18px", px: 18, legacy: "4" },
+  { label: "20px", px: 20, legacy: "5" },
+  { label: "24px", px: 24, legacy: "6" },
+  { label: "32px", px: 32, legacy: "7" },
+];
+
+const LEGACY_TO_PX: Record<string, number> = {
+  "1": 12,
+  "2": 14,
+  "3": 16,
+  "4": 18,
+  "5": 20,
+  "6": 24,
+  "7": 32,
+};
+
+const FONT_FAMILIES: { label: string; value: string }[] = [
+  { label: "微软雅黑", value: "'Microsoft YaHei', 'PingFang SC', sans-serif" },
+  { label: "宋体", value: "SimSun, 'Songti SC', serif" },
+  { label: "黑体", value: "SimHei, sans-serif" },
+  { label: "Arial", value: "Arial, Helvetica, sans-serif" },
+  { label: "Times New Roman", value: "'Times New Roman', Times, serif" },
+  { label: "Verdana", value: "Verdana, Geneva, sans-serif" },
+  { label: "Georgia", value: "Georgia, 'Times New Roman', serif" },
+  { label: "Courier New", value: "'Courier New', Courier, monospace" },
+];
+
+/** Rewrite the deprecated <font size>/<font face> tags execCommand emits into inline-styled spans. */
+function normalizeFontTags(root: HTMLElement) {
+  root.querySelectorAll("font").forEach((node) => {
+    const fontEl = node as HTMLFontElement;
+    const size = fontEl.getAttribute("size");
+    const face = fontEl.getAttribute("face");
+    if (!size && !face) return;
+    const span = document.createElement("span");
+    if (size) span.style.fontSize = `${LEGACY_TO_PX[size] ?? 16}px`;
+    if (face) span.style.fontFamily = face;
+    span.innerHTML = fontEl.innerHTML;
+    fontEl.replaceWith(span);
+  });
+}
 
 export default function RichEditor({
   value,
@@ -14,17 +66,16 @@ export default function RichEditor({
   height?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [mounted, setMounted] = useState(false);
+  const savedRange = useRef<Range | null>(null);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
+  // The editable div has no React-managed children, so the server-rendered
+  // markup is an empty div on both sides (no hydration mismatch) and we can
+  // safely fill it imperatively after mount and on external value changes.
   useEffect(() => {
     if (ref.current && ref.current.innerHTML !== value) {
       ref.current.innerHTML = value;
     }
-  }, [value, mounted]);
+  }, [value]);
 
   const exec = (command: string, valueArg?: string) => {
     if (typeof document === "undefined") return;
@@ -35,6 +86,58 @@ export default function RichEditor({
 
   const handleInput = () => {
     if (ref.current) onChange(ref.current.innerHTML);
+  };
+
+  const handleBlur = () => {
+    // Remember where the caret/selection was, so toolbar widgets that steal
+    // focus (native <select> dropdowns) can put it back before formatting.
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && ref.current?.contains(sel.anchorNode)) {
+      savedRange.current = sel.getRangeAt(0).cloneRange();
+    }
+    handleInput();
+  };
+
+  const restoreSelection = () => {
+    const sel = window.getSelection();
+    if (!sel || !savedRange.current || !ref.current) return;
+    if (sel.rangeCount > 0 && ref.current.contains(sel.anchorNode)) return; // already inside
+    sel.removeAllRanges();
+    sel.addRange(savedRange.current);
+  };
+
+  const requireSelection = (): boolean => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+      window.alert("请先用鼠标选中要设置的文字，再选择字号 / 字体。");
+      return false;
+    }
+    return true;
+  };
+
+  const applyFontSize = (px: number) => {
+    if (typeof document === "undefined" || !ref.current) return;
+    restoreSelection();
+    if (!requireSelection()) return;
+    const legacy = FONT_SIZES.find((item) => item.px === px)?.legacy ?? "3";
+    // Force the legacy <font> output so we always have something predictable
+    // to normalize into an exact px span.
+    document.execCommand("styleWithCSS", false, "false");
+    document.execCommand("fontSize", false, legacy);
+    normalizeFontTags(ref.current);
+    onChange(ref.current.innerHTML);
+    ref.current?.focus();
+  };
+
+  const applyFontFamily = (family: string) => {
+    if (typeof document === "undefined" || !ref.current) return;
+    restoreSelection();
+    if (!requireSelection()) return;
+    document.execCommand("styleWithCSS", false, "false");
+    document.execCommand("fontName", false, family);
+    normalizeFontTags(ref.current);
+    onChange(ref.current.innerHTML);
+    ref.current?.focus();
   };
 
   const insertHtml = (html: string) => {
@@ -133,13 +236,12 @@ export default function RichEditor({
     input.click();
   };
 
-  if (!mounted) {
-    return <div className="h-[200px] animate-pulse rounded border border-[#ddd] bg-[#f9f9f9]" />;
-  }
-
   return (
     <div className="rounded border border-[#ddd] bg-white">
       <div className="flex flex-wrap gap-1 border-b border-[#eee] bg-[#fafafa] p-2">
+        <ToolbarButton onClick={() => exec("undo")} label="回退" title="回退（撤销上一步）" />
+        <ToolbarButton onClick={() => exec("redo")} label="重做" title="重做" />
+        <span className="mx-1 w-px bg-[#ddd]" />
         <ToolbarButton onClick={() => exec("bold")} label="B" title="加粗" />
         <ToolbarButton onClick={() => exec("italic")} label="I" title="斜体" italic />
         <ToolbarButton onClick={() => exec("underline")} label="U" title="下划线" underline />
@@ -148,6 +250,40 @@ export default function RichEditor({
         <ToolbarButton onClick={() => exec("formatBlock", "H2")} label="H2" title="二级标题" />
         <ToolbarButton onClick={() => exec("formatBlock", "H3")} label="H3" title="三级标题" />
         <ToolbarButton onClick={() => exec("formatBlock", "P")} label="P" title="段落" />
+        <select
+          className="rounded border border-[#ddd] bg-white px-1 py-1 text-[11px] text-[#555] outline-none hover:bg-[#f0f0f0]"
+          defaultValue=""
+          onChange={(event) => {
+            const px = Number(event.currentTarget.value);
+            event.currentTarget.value = "";
+            if (px) applyFontSize(px);
+          }}
+          title="字号（先选中文字）"
+        >
+          <option value="">字号</option>
+          {FONT_SIZES.map((item) => (
+            <option key={item.px} value={item.px}>
+              {item.label}
+            </option>
+          ))}
+        </select>
+        <select
+          className="rounded border border-[#ddd] bg-white px-1 py-1 text-[11px] text-[#555] outline-none hover:bg-[#f0f0f0]"
+          defaultValue=""
+          onChange={(event) => {
+            const family = event.currentTarget.value;
+            event.currentTarget.value = "";
+            if (family) applyFontFamily(family);
+          }}
+          title="字体（先选中文字）"
+        >
+          <option value="">字体</option>
+          {FONT_FAMILIES.map((item) => (
+            <option key={item.value} value={item.value}>
+              {item.label}
+            </option>
+          ))}
+        </select>
         <span className="mx-1 w-px bg-[#ddd]" />
         <ToolbarButton onClick={() => exec("insertUnorderedList")} label="• 列表" title="无序列表" />
         <ToolbarButton onClick={() => exec("insertOrderedList")} label="1. 列表" title="有序列表" />
@@ -167,8 +303,6 @@ export default function RichEditor({
         <ToolbarButton onClick={insertQuoteTable} label="报价表" title="插入报价表格模板" />
         <span className="mx-1 w-px bg-[#ddd]" />
         <ToolbarButton onClick={() => exec("removeFormat")} label="清除格式" title="清除格式" />
-        <ToolbarButton onClick={() => exec("undo")} label="撤销" title="撤销" />
-        <ToolbarButton onClick={() => exec("redo")} label="重做" title="重做" />
       </div>
       <div
         ref={ref}
@@ -177,7 +311,7 @@ export default function RichEditor({
         contentEditable
         suppressContentEditableWarning
         onInput={handleInput}
-        onBlur={handleInput}
+        onBlur={handleBlur}
         data-placeholder={placeholder}
       />
     </div>
