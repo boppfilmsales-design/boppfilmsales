@@ -10,6 +10,32 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const denied = await requireAdmin();
   if (denied) return denied;
+
+  // Never let a database outage look like "the column is empty": surface the
+  // real error (e.g. Neon 402 quota exceeded) so the admin can act on it.
+  try {
+    return await listPostsForAdmin(request);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("[admin/posts GET]", message);
+    return Response.json(
+      {
+        ok: false,
+        error: message,
+        items: [],
+        categories: [],
+        resolvedCategoryId: null,
+        total: 0,
+        page: 1,
+        perPage: 20,
+        pages: 1,
+      },
+      { status: 500 },
+    );
+  }
+}
+
+async function listPostsForAdmin(request: Request) {
   await ensureSeedData();
 
   const url = new URL(request.url);

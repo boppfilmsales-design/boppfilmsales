@@ -35,6 +35,8 @@ type ListResponse = {
   total: number;
   page: number;
   pages: number;
+  /** Present when the query failed (e.g. Neon quota exceeded). */
+  error?: string;
 };
 
 type AdminColumn = {
@@ -246,6 +248,12 @@ export default function Dashboard({ username }: { username: string }) {
       setNewsPage(1);
       setNewsCatId(String(data.resolvedCategoryId ?? data.categories?.[0]?.id ?? col.sourceId));
       setNewsColumnId(data.resolvedCategoryId ?? data.categories?.[0]?.id ?? 0);
+      // A DB outage (e.g. Neon quota exceeded) must not silently look empty.
+      if (!res.ok || data.ok === false) {
+        setNotice(
+          `数据库读取失败：${data.error ?? `HTTP ${res.status}`}。请到 Neon 控制台检查项目配额（Usage / Limits）。`,
+        );
+      }
     } else if (col.dataSource === "products") {
       const res = await fetch(`/api/admin/products/${col.sourceId}`, { cache: "no-store" });
       const data = await res.json();
