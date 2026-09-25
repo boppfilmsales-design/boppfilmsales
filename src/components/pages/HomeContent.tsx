@@ -156,8 +156,11 @@ export default function HomeContent({
   return (
     <>
       {/* 顶部 Hero 区 */}
-      <section className="relative isolate overflow-hidden bg-[#101722] text-white">
-        <div className="pointer-events-none absolute -left-40 top-0 h-[520px] w-[520px] rounded-full bg-[#c8102e]/20 blur-[130px]" />
+      <section className="relative isolate overflow-hidden bg-[linear-gradient(118deg,#2c3d56_0%,#22304a_34%,#1b2537_62%,#161f2e_100%)] text-white">
+        <div className="pointer-events-none absolute -left-40 top-0 h-[520px] w-[520px] rounded-full bg-[#c8102e]/25 blur-[130px]" />
+        <div className="pointer-events-none absolute right-[20%] top-[-180px] h-[520px] w-[520px] rounded-full bg-[#5b7aa6]/25 blur-[150px]" />
+        {/* 顶部一层极淡的高光，让整块背景有“钢蓝”层次而不是纯黑 */}
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(900px_420px_at_18%_8%,rgba(255,255,255,0.07),transparent_65%)]" />
         
         <div className="relative mx-auto grid min-h-[680px] w-full max-w-[1560px] items-center gap-14 px-4 py-20 lg:grid-cols-[1.08fr_.92fr] lg:py-24">
           
@@ -212,7 +215,7 @@ export default function HomeContent({
           {/* 右侧：11张实景轮播图区域 */}
           <div className="relative hidden lg:block">
             <div className="absolute -inset-5 rounded-[36px] border border-white/10" />
-            <div className="relative overflow-hidden rounded-[30px] border border-white/10 bg-slate-900 shadow-2xl backdrop-blur h-[520px]">
+            <div className="relative overflow-hidden rounded-[30px] border border-white/15 bg-slate-800/80 shadow-2xl backdrop-blur h-[520px]">
               
               {/* 11张工厂实景图片轮播层 */}
               {HERO_SLIDES.map((slide, index) => (
@@ -229,12 +232,12 @@ export default function HomeContent({
                     className="absolute inset-0 h-full w-full object-contain object-center p-2"
                   />
                   {/* 底部渐变遮罩，确保悬浮标语清晰可读 */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                 </div>
               ))}
 
               {/* 悬浮在图片上方的白色字体标语卡片 */}
-              <div className="absolute inset-x-7 bottom-7 z-25 rounded-2xl border border-white/15 bg-black/60 p-5 backdrop-blur-xl space-y-2">
+              <div className="absolute inset-x-7 bottom-7 z-25 rounded-2xl border border-white/20 bg-[#101722]/72 p-5 backdrop-blur-xl space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[#ff6b82]">
                     {lang === "zh" ? `工厂实景 ${currentSlide + 1} / ${HERO_SLIDES.length}` : `FACTORY VIEW ${currentSlide + 1} / ${HERO_SLIDES.length}`}
@@ -360,7 +363,7 @@ export default function HomeContent({
       </section>
 
       {/* Featured Products */}
-      <section className="bg-[#101722] py-20 text-white">
+      <section className="bg-[#1b2536] py-20 text-white">
         <div className="mx-auto w-full max-w-[1560px] px-4">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div>
