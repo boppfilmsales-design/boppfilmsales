@@ -1,32 +1,68 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Image from "@tiptap/extension-image";
+import Link from "@tiptap/extension-link";
+import { Table } from "@tiptap/extension-table";
+import TableRow from "@tiptap/extension-table-row";
+import TableCell from "@tiptap/extension-table-cell";
+import TableHeader from "@tiptap/extension-table-header";
+import { TextStyle } from "@tiptap/extension-text-style";
+import type { CommandProps } from "@tiptap/core";
+import { Color } from "@tiptap/extension-color";
+import Highlight from "@tiptap/extension-highlight";
+import TextAlign from "@tiptap/extension-text-align";
+import CharacterCount from "@tiptap/extension-character-count";
+import Underline from "@tiptap/extension-underline";
+import { FontFamily } from "@tiptap/extension-font-family";
+import { sanitizeRichHtml } from "@/lib/rich-text";
+
+declare module "@tiptap/core" {
+  interface Commands<ReturnType> {
+    fontSize: {
+      setFontSize: (px: string) => ReturnType;
+      unsetFontSize: () => ReturnType;
+    };
+  }
+}
 
 /**
- * execCommand("fontSize") only accepts the legacy 1-7 scale, so we map each
- * wanted px size to a distinct legacy value, then immediately rewrite the
- * resulting <font size="n"> into <span style="font-size:Npx">. That keeps the
- * saved HTML clean and gives exact pixel control.
+ * `font-size` is not a built-in TipTap mark, so we extend `TextStyle` with an
+ * extra `fontSize` attribute and a `setFontSize` command. Registering this one
+ * also registers the underlying `textStyle` mark, which `@tiptap/extension-color`
+ * depends on — so do NOT add plain `TextStyle` to the extension list as well
+ * (that would be a duplicate-registration error).
  */
-const FONT_SIZES: { label: string; px: number; legacy: string }[] = [
-  { label: "12px", px: 12, legacy: "1" },
-  { label: "14px", px: 14, legacy: "2" },
-  { label: "16px", px: 16, legacy: "3" },
-  { label: "18px", px: 18, legacy: "4" },
-  { label: "20px", px: 20, legacy: "5" },
-  { label: "24px", px: 24, legacy: "6" },
-  { label: "32px", px: 32, legacy: "7" },
-];
+const FontSize = TextStyle.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      fontSize: {
+        default: null,
+        parseHTML: (el: HTMLElement) => el.style.fontSize?.replace("px", "") || null,
+        renderHTML: (attrs: Record<string, string | null>) =>
+          attrs.fontSize ? { style: `font-size: ${attrs.fontSize}px` } : {},
+      },
+    };
+  },
+  addCommands() {
+    return {
+      ...this.parent?.(),
+      setFontSize:
+        (px: string) =>
+        ({ chain }: CommandProps) =>
+          chain().setMark("textStyle", { fontSize: px }).run(),
+      unsetFontSize:
+        () =>
+        ({ chain }: CommandProps) =>
+          chain().unsetMark("textStyle").run(),
+    };
+  },
+});
 
-const LEGACY_TO_PX: Record<string, number> = {
-  "1": 12,
-  "2": 14,
-  "3": 16,
-  "4": 18,
-  "5": 20,
-  "6": 24,
-  "7": 32,
-};
+const FONT_SIZES = [12, 14, 16, 18, 20, 24, 28, 32, 40, 48];
 
 const FONT_FAMILIES: { label: string; value: string }[] = [
   { label: "微软雅黑", value: "'Microsoft YaHei', 'PingFang SC', sans-serif" },
@@ -39,21 +75,40 @@ const FONT_FAMILIES: { label: string; value: string }[] = [
   { label: "Courier New", value: "'Courier New', Courier, monospace" },
 ];
 
-/** Rewrite the deprecated <font size>/<font face>/<font color> tags execCommand emits into inline-styled spans. */
-function normalizeFontTags(root: HTMLElement) {
-  root.querySelectorAll("font").forEach((node) => {
-    const fontEl = node as HTMLFontElement;
-    const size = fontEl.getAttribute("size");
-    const face = fontEl.getAttribute("face");
-    const color = fontEl.getAttribute("color");
-    if (!size && !face && !color) return;
-    const span = document.createElement("span");
-    if (size) span.style.fontSize = `${LEGACY_TO_PX[size] ?? 16}px`;
-    if (face) span.style.fontFamily = face;
-    if (color) span.style.color = color;
-    span.innerHTML = fontEl.innerHTML;
-    fontEl.replaceWith(span);
-  });
+/** A single toolbar button. `type="button"` is mandatory: every admin field is
+ *  wrapped in a <form>, so a default-type button would submit the form. */
+function TB({
+  onClick,
+  active = false,
+  disabled = false,
+  title,
+  children,
+}: {
+  onClick: () => void;
+  active?: boolean;
+  disabled?: boolean;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      className={`flex h-[28px] min-w-[28px] items-center justify-center rounded border px-[7px] text-[12px] leading-none transition ${
+        active
+          ? "border-[#c8102e] bg-[#c8102e] text-white"
+          : "border-[#d9dde3] bg-white text-[#444] hover:border-[#c8102e] hover:text-[#c8102e]"
+      } ${disabled ? "cursor-not-allowed opacity-40" : ""}`}
+      disabled={disabled}
+      onClick={onClick}
+      title={title}
+      type="button"
+    >
+      {children}
+    </button>
+  );
+}
+
+function Divider() {
+  return <span className="mx-1 h-[20px] w-px shrink-0 bg-[#e3e6ea]" />;
 }
 
 export default function RichEditor({
@@ -67,174 +122,89 @@ export default function RichEditor({
   placeholder?: string;
   height?: number;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const savedRange = useRef<Range | null>(null);
   const [foreColor, setForeColor] = useState("#e61d39");
   const [hiliteColor, setHiliteColor] = useState("#fff799");
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showSource, setShowSource] = useState(false);
+  const [sourceHtml, setSourceHtml] = useState(value || "");
+  const [charCount, setCharCount] = useState(0);
+  const [fontSize, setFontSizeState] = useState("16");
+  const [fontFamily, setFontFamilyState] = useState(FONT_FAMILIES[0].value);
+  const imageInput = useRef<HTMLInputElement>(null);
+  const docInput = useRef<HTMLInputElement>(null);
 
-  // The editable div has no React-managed children, so the server-rendered
-  // markup is an empty div on both sides (no hydration mismatch) and we can
-  // safely fill it imperatively after mount and on external value changes.
+  // Keep the latest callbacks in refs so the editor is never torn down and
+  // rebuilt just because the parent re-rendered with a new inline arrow.
+  const onChangeRef = useRef(onChange);
   useEffect(() => {
-    if (ref.current && ref.current.innerHTML !== value) {
-      ref.current.innerHTML = value;
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: { levels: [2, 3] },
+        // StarterKit v3 already ships Link + Underline; registering them again
+        // would be a duplicate-extension error.
+        link: false,
+        underline: false,
+      }),
+      Underline,
+      FontSize,
+      FontFamily,
+      Color,
+      Highlight.configure({ multicolor: true }),
+      TextAlign.configure({ types: ["heading", "paragraph"] }),
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: { target: "_blank", rel: "noopener noreferrer" },
+      }),
+      Image.configure({ inline: false, allowBase64: false }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableCell,
+      TableHeader,
+      CharacterCount,
+    ],
+    content: value || "",
+    editorProps: {
+      attributes: {
+        class: "rich-editor-content",
+        style: `min-height:${height}px;padding:12px;outline:none;`,
+      },
+      // Word / legacy-site pastes carry fixed heights, /qzone/ background
+      // images and absolute positioning — strip them on the way in.
+      transformPastedHTML: (html) => sanitizeRichHtml(html),
+    },
+    onUpdate: ({ editor: ed }) => {
+      const html = ed.getHTML();
+      onChangeRef.current(html);
+      setCharCount(ed.storage.characterCount.characters());
+    },
+    immediatelyRender: false,
+  });
+
+  // Re-sync when the parent swaps in a different record (e.g. opening another
+  // product in the same mounted form).
+  useEffect(() => {
+    if (!editor) return;
+    if (typeof value === "string" && value !== editor.getHTML()) {
+      // `emitUpdate: false` keeps this from echoing back through onUpdate →
+      // onChange → parent state → this effect (an infinite loop).
+      editor.commands.setContent(value, { emitUpdate: false });
     }
-  }, [value]);
+  }, [value, editor]);
 
-  const exec = (command: string, valueArg?: string) => {
-    if (typeof document === "undefined") return;
-    document.execCommand(command, false, valueArg);
-    if (ref.current) onChange(ref.current.innerHTML);
-    ref.current?.focus();
-  };
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFullscreen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [isFullscreen]);
 
-  const handleInput = () => {
-    if (ref.current) onChange(ref.current.innerHTML);
-  };
-
-  const handleBlur = () => {
-    // Remember where the caret/selection was, so toolbar widgets that steal
-    // focus (native <select> dropdowns) can put it back before formatting.
-    const sel = window.getSelection();
-    if (sel && sel.rangeCount > 0 && ref.current?.contains(sel.anchorNode)) {
-      savedRange.current = sel.getRangeAt(0).cloneRange();
-    }
-    handleInput();
-  };
-
-  const restoreSelection = () => {
-    const sel = window.getSelection();
-    if (!sel || !savedRange.current || !ref.current) return;
-    if (sel.rangeCount > 0 && ref.current.contains(sel.anchorNode)) return; // already inside
-    sel.removeAllRanges();
-    sel.addRange(savedRange.current);
-  };
-
-  const requireSelection = (): boolean => {
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
-      window.alert("请先用鼠标选中要设置的文字，再选择字号 / 字体 / 颜色。");
-      return false;
-    }
-    return true;
-  };
-
-  const applyColor = (command: "foreColor" | "hiliteColor", color: string) => {
-    if (typeof document === "undefined" || !ref.current) return;
-    restoreSelection();
-    if (!requireSelection()) return;
-    // styleWithCSS=true makes the browser emit clean
-    // <span style="color:..."> / style="background-color:..." instead of
-    // deprecated <font> tags.
-    document.execCommand("styleWithCSS", false, "true");
-    document.execCommand(command, false, color);
-    document.execCommand("styleWithCSS", false, "false");
-    normalizeFontTags(ref.current);
-    onChange(ref.current.innerHTML);
-    ref.current?.focus();
-  };
-
-  const applyFontSize = (px: number) => {
-    if (typeof document === "undefined" || !ref.current) return;
-    restoreSelection();
-    if (!requireSelection()) return;
-    const legacy = FONT_SIZES.find((item) => item.px === px)?.legacy ?? "3";
-    // Force the legacy <font> output so we always have something predictable
-    // to normalize into an exact px span.
-    document.execCommand("styleWithCSS", false, "false");
-    document.execCommand("fontSize", false, legacy);
-    normalizeFontTags(ref.current);
-    onChange(ref.current.innerHTML);
-    ref.current?.focus();
-  };
-
-  const applyFontFamily = (family: string) => {
-    if (typeof document === "undefined" || !ref.current) return;
-    restoreSelection();
-    if (!requireSelection()) return;
-    document.execCommand("styleWithCSS", false, "false");
-    document.execCommand("fontName", false, family);
-    normalizeFontTags(ref.current);
-    onChange(ref.current.innerHTML);
-    ref.current?.focus();
-  };
-
-  const insertHtml = (html: string) => {
-    if (typeof document === "undefined") return;
-    document.execCommand("insertHTML", false, html);
-    if (ref.current) onChange(ref.current.innerHTML);
-    ref.current?.focus();
-  };
-
-  const promptLink = () => {
-    const url = window.prompt("输入链接地址（http:// 或 /path）:", "https://");
-    if (!url) return;
-    const text = document.getSelection()?.toString() || url;
-    insertHtml(`<a href="${url}" target="_blank" rel="noopener">${escapeHtml(text)}</a>`);
-  };
-
-  const promptImage = () => {
-    const url = window.prompt(
-      "输入图片地址（可直接粘贴图床链接 https://...，不占网站空间）:",
-      "https://",
-    );
-    if (!url) return;
-    insertHtml(`<img src="${escapeHtml(url)}" alt="" style="max-width:100%;height:auto;" />`);
-  };
-
-  // Same as 上传文件 but the file stays on an external image host, so the
-  // site's own storage does not grow.
-  const promptRemoteFile = () => {
-    const url = window.prompt(
-      "输入图床文件地址（https://... 的 PDF / Word / Excel 链接）:",
-      "https://",
-    );
-    if (!url) return;
-    insertHtml(
-      `<p><a href="${escapeHtml(url)}" target="_blank" rel="noopener">📎 ${escapeHtml(url)}</a></p>`,
-    );
-  };
-
-  const insertQuoteTable = () => {
-    const html = `
-      <table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;width:100%;max-width:700px;">
-        <thead>
-          <tr style="background:#f9f9f9;">
-            <th style="border:1px solid #ccc;text-align:left;">Specification / 规格</th>
-            <th style="border:1px solid #ccc;text-align:left;">Unit / 单位</th>
-            <th style="border:1px solid #ccc;text-align:left;">FOB Price / 参考价</th>
-            <th style="border:1px solid #ccc;text-align:left;">Action / 操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style="border:1px solid #ccc;"> </td>
-            <td style="border:1px solid #ccc;"> </td>
-            <td style="border:1px solid #ccc;"> </td>
-            <td style="border:1px solid #ccc;"><a href="/contact" target="_blank" rel="noopener" style="color:#e61d39;font-weight:bold;">Request Quote / 索取报价</a></td>
-          </tr>
-        </tbody>
-      </table>
-      <p><br></p>
-    `;
-    insertHtml(html);
-  };
-
-  const promptTable = () => {
-    const rows = Number(window.prompt("行数:", "3"));
-    const cols = Number(window.prompt("列数:", "3"));
-    if (!rows || !cols) return;
-    let html = "<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;width:100%;'><tbody>";
-    for (let r = 0; r < rows; r++) {
-      html += "<tr>";
-      for (let c = 0; c < cols; c++) html += "<td style='border:1px solid #ccc;'> </td>";
-      html += "</tr>";
-    }
-    html += "</tbody></table><p><br></p>";
-    insertHtml(html);
-  };
-
-  const uploadFile = async (file: File, type: "image" | "doc") => {
+  const uploadFile = useCallback(async (file: File, type: "image" | "doc") => {
     const folder = type === "image" ? "uploads/products" : "downloads";
     const form = new FormData();
     form.append("file", file);
@@ -243,175 +213,329 @@ export default function RichEditor({
     const data = (await res.json()) as { ok?: boolean; url?: string; error?: string };
     if (!data.ok) throw new Error(data.error || "上传失败");
     return data.url as string;
+  }, []);
+
+  const onPickImage = async (file: File) => {
+    if (!editor) return;
+    try {
+      const url = await uploadFile(file, "image");
+      editor.chain().focus().setImage({ src: url, alt: file.name }).run();
+    } catch (err) {
+      window.alert((err as Error).message || "图片上传失败");
+    }
   };
 
-  const handleFileUpload = async (type: "image" | "doc") => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = type === "image" ? "image/*" : ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx";
-    input.onchange = async () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      try {
-        const url = await uploadFile(file, type);
-        if (type === "image") {
-          insertHtml(`<img src="${url}" alt="" style="max-width:100%;height:auto;" />`);
-        } else {
-          insertHtml(`<p><a href="${url}" target="_blank" rel="noopener">📎 ${escapeHtml(file.name)}</a></p>`);
-        }
-      } catch (e: any) {
-        window.alert(e.message);
-      }
-    };
-    input.click();
+  const onPickDoc = async (file: File) => {
+    if (!editor) return;
+    try {
+      const url = await uploadFile(file, "doc");
+      editor
+        .chain()
+        .focus()
+        .insertContent(`<p><a href="${url}" target="_blank" rel="noopener">${file.name}</a></p>`)
+        .run();
+    } catch (err) {
+      window.alert((err as Error).message || "文件上传失败");
+    }
   };
 
-  return (
-    <div className="rounded border border-[#ddd] bg-white">
-      <div className="flex flex-wrap gap-1 border-b border-[#eee] bg-[#fafafa] p-2">
-        <ToolbarButton onClick={() => exec("undo")} label="回退" title="回退（撤销上一步）" />
-        <ToolbarButton onClick={() => exec("redo")} label="重做" title="重做" />
-        <span className="mx-1 w-px bg-[#ddd]" />
-        <ToolbarButton onClick={() => exec("bold")} label="B" title="加粗" />
-        <ToolbarButton onClick={() => exec("italic")} label="I" title="斜体" italic />
-        <ToolbarButton onClick={() => exec("underline")} label="U" title="下划线" underline />
-        <ToolbarButton onClick={() => exec("strikeThrough")} label="S" title="删除线" />
-        <span className="mx-1 w-px bg-[#ddd]" />
-        <ToolbarButton onClick={() => exec("formatBlock", "H2")} label="H2" title="二级标题" />
-        <ToolbarButton onClick={() => exec("formatBlock", "H3")} label="H3" title="三级标题" />
-        <ToolbarButton onClick={() => exec("formatBlock", "P")} label="P" title="段落" />
-        <select
-          className="rounded border border-[#ddd] bg-white px-1 py-1 text-[11px] text-[#555] outline-none hover:bg-[#f0f0f0]"
-          defaultValue=""
-          onChange={(event) => {
-            const px = Number(event.currentTarget.value);
-            event.currentTarget.value = "";
-            if (px) applyFontSize(px);
-          }}
-          title="字号（先选中文字）"
+  const insertRemoteLink = () => {
+    if (!editor) return;
+    const url = window.prompt("请输入图床 / 文件链接地址（http 或 https 开头）");
+    if (!url) return;
+    if (!/^https?:\/\//i.test(url)) {
+      window.alert("链接必须以 http:// 或 https:// 开头");
+      return;
+    }
+    const isImage = /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(url);
+    if (isImage) {
+      editor.chain().focus().setImage({ src: url }).run();
+    } else {
+      editor
+        .chain()
+        .focus()
+        .insertContent(`<p><a href="${url}" target="_blank" rel="noopener">${url}</a></p>`)
+        .run();
+    }
+  };
+
+  const insertLink = () => {
+    if (!editor) return;
+    const previous = editor.getAttributes("link").href as string | undefined;
+    const url = window.prompt("链接地址（留空则移除链接）", previous || "https://");
+    if (url === null) return;
+    if (url === "") {
+      editor.chain().focus().extendMarkRange("link").unsetLink().run();
+      return;
+    }
+    editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+  };
+
+  const applySource = () => {
+    if (!editor) return;
+    editor.commands.setContent(sourceHtml || "", { emitUpdate: false });
+    onChangeRef.current(sourceHtml || "");
+    setShowSource(false);
+  };
+
+  const openSource = () => {
+    if (!editor) return;
+    setSourceHtml(editor.getHTML());
+    setShowSource(true);
+  };
+
+  const body = (
+    <div
+      className={`rounded border border-[#d9dde3] bg-white ${
+        isFullscreen ? "fixed inset-0 z-[999] flex flex-col overflow-auto p-4" : ""
+      }`}
+      ref={undefined}
+    >
+      {/* ── Toolbar ───────────────────────────────────────────── */}
+      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-1 border-b border-[#e6e9ed] bg-[#fafbfc] px-2 py-[6px]">
+        <TB disabled={!editor?.can().undo()} onClick={() => editor?.chain().focus().undo().run()} title="回退">
+          回退
+        </TB>
+        <TB disabled={!editor?.can().redo()} onClick={() => editor?.chain().focus().redo().run()} title="重做">
+          重做
+        </TB>
+        <Divider />
+
+        <TB active={editor?.isActive("bold")} onClick={() => editor?.chain().focus().toggleBold().run()} title="加粗">
+          <b>B</b>
+        </TB>
+        <TB active={editor?.isActive("italic")} onClick={() => editor?.chain().focus().toggleItalic().run()} title="斜体">
+          <i>I</i>
+        </TB>
+        <TB active={editor?.isActive("underline")} onClick={() => editor?.chain().focus().toggleUnderline().run()} title="下划线">
+          <u>U</u>
+        </TB>
+        <TB active={editor?.isActive("strike")} onClick={() => editor?.chain().focus().toggleStrike().run()} title="删除线">
+          <s>S</s>
+        </TB>
+        <Divider />
+
+        <TB active={editor?.isActive("paragraph")} onClick={() => editor?.chain().focus().setParagraph().run()} title="正文">
+          正文
+        </TB>
+        <TB
+          active={editor?.isActive("heading", { level: 2 })}
+          onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
+          title="标题 H2"
         >
-          <option value="">字号</option>
-          {FONT_SIZES.map((item) => (
-            <option key={item.px} value={item.px}>
-              {item.label}
+          H2
+        </TB>
+        <TB
+          active={editor?.isActive("heading", { level: 3 })}
+          onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}
+          title="标题 H3"
+        >
+          H3
+        </TB>
+        <Divider />
+
+        <TB
+          active={editor?.isActive({ textAlign: "left" })}
+          onClick={() => editor?.chain().focus().setTextAlign("left").run()}
+          title="左对齐"
+        >
+          ⇤
+        </TB>
+        <TB
+          active={editor?.isActive({ textAlign: "center" })}
+          onClick={() => editor?.chain().focus().setTextAlign("center").run()}
+          title="居中"
+        >
+          ↔
+        </TB>
+        <TB
+          active={editor?.isActive({ textAlign: "right" })}
+          onClick={() => editor?.chain().focus().setTextAlign("right").run()}
+          title="右对齐"
+        >
+          ⇥
+        </TB>
+        <Divider />
+
+        <TB
+          active={editor?.isActive("bulletList")}
+          onClick={() => editor?.chain().focus().toggleBulletList().run()}
+          title="无序列表"
+        >
+          • 列表
+        </TB>
+        <TB
+          active={editor?.isActive("orderedList")}
+          onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+          title="有序列表"
+        >
+          1. 列表
+        </TB>
+        <TB active={editor?.isActive("blockquote")} onClick={() => editor?.chain().focus().toggleBlockquote().run()} title="引用">
+          ❝
+        </TB>
+        <Divider />
+
+        <TB onClick={insertLink} title="插入 / 编辑链接">
+          🔗 链接
+        </TB>
+        <TB onClick={() => imageInput.current?.click()} title="上传图片">
+          🖼 图片
+        </TB>
+        <TB onClick={() => docInput.current?.click()} title="上传 PDF / 文档">
+          📎 文档
+        </TB>
+        <TB onClick={insertRemoteLink} title="图床链接地址">
+          ☁ 图床
+        </TB>
+        <TB
+          onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+          title="插入表格"
+        >
+          ▦ 表格
+        </TB>
+        <Divider />
+
+        {/* 字号 */}
+        <select
+          className="h-[28px] rounded border border-[#d9dde3] bg-white px-1 text-[12px]"
+          onChange={(e) => {
+            const px = e.target.value;
+            setFontSizeState(px);
+            editor?.chain().focus().setFontSize(px).run();
+          }}
+          title="字号"
+          value={fontSize}
+        >
+          {FONT_SIZES.map((px) => (
+            <option key={px} value={String(px)}>
+              {px}px
             </option>
           ))}
         </select>
+
+        {/* 字体 */}
         <select
-          className="rounded border border-[#ddd] bg-white px-1 py-1 text-[11px] text-[#555] outline-none hover:bg-[#f0f0f0]"
-          defaultValue=""
-          onChange={(event) => {
-            const family = event.currentTarget.value;
-            event.currentTarget.value = "";
-            if (family) applyFontFamily(family);
+          className="h-[28px] max-w-[130px] rounded border border-[#d9dde3] bg-white px-1 text-[12px]"
+          onChange={(e) => {
+            const v = e.target.value;
+            setFontFamilyState(v);
+            editor?.chain().focus().setFontFamily(v).run();
           }}
-          title="字体（先选中文字）"
+          title="字体"
+          value={fontFamily}
         >
-          <option value="">字体</option>
-          {FONT_FAMILIES.map((item) => (
-            <option key={item.value} value={item.value}>
-              {item.label}
+          {FONT_FAMILIES.map((f) => (
+            <option key={f.value} value={f.value}>
+              {f.label}
             </option>
           ))}
         </select>
-        <span className="mx-1 w-px bg-[#ddd]" />
-        <ToolbarButton onClick={() => exec("insertUnorderedList")} label="• 列表" title="无序列表" />
-        <ToolbarButton onClick={() => exec("insertOrderedList")} label="1. 列表" title="有序列表" />
-        <span className="mx-1 w-px bg-[#ddd]" />
-        <ToolbarButton onClick={() => exec("justifyLeft")} label="左" title="左对齐" />
-        <ToolbarButton onClick={() => exec("justifyCenter")} label="中" title="居中" />
-        <ToolbarButton onClick={() => exec("justifyRight")} label="右" title="右对齐" />
-        <span className="mx-1 w-px bg-[#ddd]" />
-        <label
-          className="relative cursor-pointer rounded border border-[#ddd] bg-white px-2 py-1 text-[11px] hover:bg-[#f0f0f0]"
-          title="文字颜色（先选中文字）"
-        >
-          <span className="font-bold" style={{ color: foreColor }}>
-            A
-          </span>
+        <Divider />
+
+        {/* 字体颜色 / 背景颜色 */}
+        <label className="flex h-[28px] items-center gap-1 rounded border border-[#d9dde3] bg-white px-[6px] text-[12px]" title="字体颜色">
+          A
           <input
+            className="h-[20px] w-[26px] cursor-pointer border-0 bg-transparent p-0"
+            onChange={(e) => {
+              setForeColor(e.target.value);
+              editor?.chain().focus().setColor(e.target.value).run();
+            }}
             type="color"
             value={foreColor}
-            onChange={(event) => {
-              setForeColor(event.currentTarget.value);
-              applyColor("foreColor", event.currentTarget.value);
-            }}
-            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
           />
         </label>
-        <label
-          className="relative cursor-pointer rounded border border-[#ddd] bg-white px-2 py-1 text-[11px] text-[#555] hover:bg-[#f0f0f0]"
-          title="背景颜色（先选中文字）"
-        >
-          <span className="rounded-sm px-1" style={{ backgroundColor: hiliteColor }}>
-            底
-          </span>
+        <label className="flex h-[28px] items-center gap-1 rounded border border-[#d9dde3] bg-white px-[6px] text-[12px]" title="背景颜色">
+          底
           <input
+            className="h-[20px] w-[26px] cursor-pointer border-0 bg-transparent p-0"
+            onChange={(e) => {
+              setHiliteColor(e.target.value);
+              editor?.chain().focus().setHighlight({ color: e.target.value }).run();
+            }}
             type="color"
             value={hiliteColor}
-            onChange={(event) => {
-              setHiliteColor(event.currentTarget.value);
-              applyColor("hiliteColor", event.currentTarget.value);
-            }}
-            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
           />
         </label>
-        <span className="mx-1 w-px bg-[#ddd]" />
-        <ToolbarButton onClick={promptLink} label="链接" title="插入链接" />
-        <ToolbarButton onClick={promptImage} label="图片" title="插入图片 URL" />
-        <ToolbarButton onClick={() => handleFileUpload("image")} label="上传图" title="上传并插入图片" />
-        <ToolbarButton onClick={() => handleFileUpload("doc")} label="上传文件" title="上传 PDF/Word 等并插入链接" />
-        <ToolbarButton onClick={promptRemoteFile} label="图床文件" title="粘贴图床上的 PDF/Word 链接（不占网站空间）" />
-        <ToolbarButton onClick={promptTable} label="表格" title="插入表格" />
-        <ToolbarButton onClick={insertQuoteTable} label="报价表" title="插入报价表格模板" />
-        <span className="mx-1 w-px bg-[#ddd]" />
-        <ToolbarButton onClick={() => exec("removeFormat")} label="清除格式" title="清除格式" />
+        <TB onClick={() => editor?.chain().focus().unsetColor().run()} title="清除字体颜色">
+          ✕色
+        </TB>
+        <TB onClick={() => editor?.chain().focus().unsetHighlight().run()} title="清除背景颜色">
+          ✕底
+        </TB>
+        <TB onClick={() => editor?.chain().focus().unsetAllMarks().clearNodes().run()} title="清除格式">
+          清除格式
+        </TB>
+        <Divider />
+
+        <TB active={showSource} onClick={() => (showSource ? applySource() : openSource())} title="HTML 源码">
+          &lt;/&gt; 源码
+        </TB>
+        <TB active={isFullscreen} onClick={() => setIsFullscreen((v) => !v)} title="全屏（Esc 退出）">
+          {isFullscreen ? "退出全屏" : "全屏"}
+        </TB>
       </div>
-      <div
-        ref={ref}
-        className="w-full min-w-0 overflow-auto p-3 text-[13px] leading-[22px] outline-none"
-        style={{ height, minHeight: height }}
-        contentEditable
-        suppressContentEditableWarning
-        onInput={handleInput}
-        onBlur={handleBlur}
-        data-placeholder={placeholder}
+
+      {/* ── Editing area ──────────────────────────────────────── */}
+      {showSource ? (
+        <div className="p-2">
+          <textarea
+            className="h-[320px] w-full resize-y rounded border border-[#d9dde3] p-3 font-mono text-[12px] leading-[20px] outline-none focus:border-[#c8102e]"
+            onChange={(e) => setSourceHtml(e.target.value)}
+            placeholder={placeholder || "请输入内容…"}
+            value={sourceHtml}
+          />
+          <div className="mt-2 flex gap-2">
+            <button
+              className="rounded bg-[#c8102e] px-4 py-[6px] text-[12px] font-bold text-white hover:bg-[#a30d25]"
+              onClick={applySource}
+              type="button"
+            >
+              应用源码
+            </button>
+            <button
+              className="rounded border border-[#d9dde3] px-4 py-[6px] text-[12px] text-[#444] hover:border-[#c8102e] hover:text-[#c8102e]"
+              onClick={() => setShowSource(false)}
+              type="button"
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      ) : (
+        <EditorContent editor={editor} />
+      )}
+
+      <div className="flex items-center justify-between border-t border-[#eef0f3] px-3 py-[5px] text-[11px] text-[#8a8a8a]">
+        <span>{charCount} 字符</span>
+        <span>支持 Word 粘贴自动清理 · Esc 退出全屏</span>
+      </div>
+
+      <input
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) void onPickImage(f);
+          e.target.value = "";
+        }}
+        ref={imageInput}
+        type="file"
+      />
+      <input
+        accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.rar"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) void onPickDoc(f);
+          e.target.value = "";
+        }}
+        ref={docInput}
+        type="file"
       />
     </div>
   );
-}
 
-function ToolbarButton({
-  onClick,
-  label,
-  title,
-  italic,
-  underline,
-}: {
-  onClick: () => void;
-  label: string;
-  title: string;
-  italic?: boolean;
-  underline?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      className="rounded border border-[#ddd] bg-white px-2 py-1 text-[11px] text-[#555] hover:bg-[#f0f0f0]"
-    >
-      <span style={{ fontStyle: italic ? "italic" : undefined, textDecoration: underline ? "underline" : undefined }}>
-        {label}
-      </span>
-    </button>
-  );
-}
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  return body;
 }
