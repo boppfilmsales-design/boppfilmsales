@@ -1,6 +1,7 @@
 "use client";
 
 import { UploadButton } from "./FileUpload";
+import RemoteLinkField from "./RemoteLinkField";
 
 export default function ImageListField({
   images,
@@ -90,6 +91,10 @@ export default function ImageListField({
           </div>
         </div>
       ))}
+      <RemoteLinkField
+        applyLabel="添加到图集"
+        onApply={(url) => onChange([...images, url])}
+      />
       <button
         type="button"
         onClick={addEmpty}

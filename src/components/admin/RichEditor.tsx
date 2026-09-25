@@ -155,9 +155,25 @@ export default function RichEditor({
   };
 
   const promptImage = () => {
-    const url = window.prompt("输入图片地址（http:// 或 /uploads/...）:", "/uploads/products/");
+    const url = window.prompt(
+      "输入图片地址（可直接粘贴图床链接 https://...，不占网站空间）:",
+      "https://",
+    );
     if (!url) return;
-    insertHtml(`<img src="${url}" alt="" style="max-width:100%;height:auto;" />`);
+    insertHtml(`<img src="${escapeHtml(url)}" alt="" style="max-width:100%;height:auto;" />`);
+  };
+
+  // Same as 上传文件 but the file stays on an external image host, so the
+  // site's own storage does not grow.
+  const promptRemoteFile = () => {
+    const url = window.prompt(
+      "输入图床文件地址（https://... 的 PDF / Word / Excel 链接）:",
+      "https://",
+    );
+    if (!url) return;
+    insertHtml(
+      `<p><a href="${escapeHtml(url)}" target="_blank" rel="noopener">📎 ${escapeHtml(url)}</a></p>`,
+    );
   };
 
   const insertQuoteTable = () => {
@@ -299,6 +315,7 @@ export default function RichEditor({
         <ToolbarButton onClick={promptImage} label="图片" title="插入图片 URL" />
         <ToolbarButton onClick={() => handleFileUpload("image")} label="上传图" title="上传并插入图片" />
         <ToolbarButton onClick={() => handleFileUpload("doc")} label="上传文件" title="上传 PDF/Word 等并插入链接" />
+        <ToolbarButton onClick={promptRemoteFile} label="图床文件" title="粘贴图床上的 PDF/Word 链接（不占网站空间）" />
         <ToolbarButton onClick={promptTable} label="表格" title="插入表格" />
         <ToolbarButton onClick={insertQuoteTable} label="报价表" title="插入报价表格模板" />
         <span className="mx-1 w-px bg-[#ddd]" />

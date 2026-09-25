@@ -1,6 +1,7 @@
 "use client";
 
 import { UploadButton } from "./FileUpload";
+import RemoteLinkField from "./RemoteLinkField";
 
 export default function ImageField({
   value,
@@ -32,6 +33,7 @@ export default function ImageField({
           onUploaded={(url) => onChange(url)}
         />
       </div>
+      <RemoteLinkField applyLabel="填入封面" onApply={(url) => onChange(url)} />
       {value ? (
         <div className="relative inline-block max-w-full rounded border border-[#eee] bg-[#fafafa] p-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -1,6 +1,7 @@
 "use client";
 
 import { UploadButton } from "./FileUpload";
+import RemoteLinkField from "./RemoteLinkField";
 
 export default function PdfListField({
   pdfs,
@@ -100,6 +101,11 @@ export default function PdfListField({
           </div>
         </div>
       ))}
+      <RemoteLinkField
+        applyLabel="添加为 PDF 文档"
+        onApply={(url) => onChange([...pdfs, { label: "", file: url }])}
+        placeholder="https://图床域名/xxx.pdf"
+      />
       <button
         type="button"
         onClick={addEmpty}

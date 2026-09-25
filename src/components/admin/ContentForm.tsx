@@ -272,7 +272,7 @@ export default function ContentForm({
         <div className="mt-4 space-y-3">
           <div className="rounded border border-[#e8e8e8] bg-[#fafafa] px-3 py-2 text-[11px] text-[#777]">
             该栏目在前台渲染为<b>下载表格</b>：名称 / 编号 / 格式 / 日期 / 下载按钮。
-            <b>文件地址</b>留空时前台显示「Coming Soon」；填写后会直接出现可点击的下载按钮。
+            <b>文件地址</b>留空时前台显示「Coming Soon」；填写后会直接出现可点击的下载按钮。支持直接粘贴图床链接 https://…（文件存图床，不占网站空间）。
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-[12px] font-bold text-[#555]">下载文件列表（{rows.length} 条）</p>
@@ -305,7 +305,7 @@ export default function ContentForm({
                   />
                 </label>
                 <label className="text-[11px] font-bold text-[#777]">
-                  文件地址（PDF 链接或 /downloads/xxx.pdf）
+                  文件地址（PDF 链接 / /downloads/xxx.pdf / 图床链接 https://…）
                   <input
                     className={inputCls}
                     value={row.file ?? ""}
@@ -314,7 +314,7 @@ export default function ContentForm({
                       next[i] = { ...next[i], file: e.target.value };
                       setRows(next);
                     }}
-                    placeholder="/downloads/20180921141713_83602.pdf"
+                    placeholder="/downloads/20180921141713_83602.pdf 或 https://图床/xxx.pdf"
                   />
                 </label>
                 <label className="text-[11px] font-bold text-[#777]">
