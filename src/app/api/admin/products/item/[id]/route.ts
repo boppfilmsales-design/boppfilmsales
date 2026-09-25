@@ -1,9 +1,9 @@
+import { guardDb } from "@/lib/api-db-error";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { adminProducts } from "@/db/schema";
-import { ensureSeedData } from "@/db/seed";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +14,8 @@ export async function GET(
 ) {
   const denied = await requireAdmin();
   if (denied) return denied;
-  await ensureSeedData();
+  const dbUnavailable = await guardDb("产品");
+  if (dbUnavailable) return dbUnavailable;
 
   try {
     const { id } = await params;
@@ -48,7 +49,8 @@ export async function PUT(
 ) {
   const denied = await requireAdmin();
   if (denied) return denied;
-  await ensureSeedData();
+  const dbUnavailable = await guardDb("产品");
+  if (dbUnavailable) return dbUnavailable;
 
   try {
     const { id } = await params;
@@ -82,7 +84,8 @@ export async function DELETE(
 ) {
   const denied = await requireAdmin();
   if (denied) return denied;
-  await ensureSeedData();
+  const dbUnavailable = await guardDb("产品");
+  if (dbUnavailable) return dbUnavailable;
 
   try {
     const { id } = await params;

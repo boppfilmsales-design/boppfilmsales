@@ -1,9 +1,9 @@
+import { guardDb } from "@/lib/api-db-error";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 import { inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { adminProducts } from "@/db/schema";
-import { ensureSeedData } from "@/db/seed";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +11,8 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   const denied = await requireAdmin();
   if (denied) return denied;
-  await ensureSeedData();
+  const dbUnavailable = await guardDb("产品");
+  if (dbUnavailable) return dbUnavailable;
 
   try {
     const body = await request.json() as Record<string, unknown>;
@@ -48,7 +49,8 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   const denied = await requireAdmin();
   if (denied) return denied;
-  await ensureSeedData();
+  const dbUnavailable = await guardDb("产品");
+  if (dbUnavailable) return dbUnavailable;
   const body = await request.json().catch(() => ({})) as { ids?: unknown; status?: unknown };
   const ids = Array.isArray(body.ids) ? body.ids.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0) : [];
   const status = String(body.status ?? "").trim();
@@ -62,7 +64,8 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   const denied = await requireAdmin();
   if (denied) return denied;
-  await ensureSeedData();
+  const dbUnavailable = await guardDb("产品");
+  if (dbUnavailable) return dbUnavailable;
   const body = await request.json().catch(() => ({})) as { ids?: unknown };
   const ids = Array.isArray(body.ids) ? body.ids.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0) : [];
   if (ids.length === 0) return NextResponse.json({ ok: false, error: "请选择要删除的产品" }, { status: 400 });

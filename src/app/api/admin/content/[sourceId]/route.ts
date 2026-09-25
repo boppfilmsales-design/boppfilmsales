@@ -1,8 +1,8 @@
+import { guardDb } from "@/lib/api-db-error";
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/db";
 import { adminContents } from "@/db/schema";
 import { readSiteSeed } from "@/db/site-seed-reader";
-import { ensureSeedData } from "@/db/seed";
 import { eq } from "drizzle-orm";
 import type { SiteContent } from "@/lib/site-types";
 
@@ -163,7 +163,8 @@ export async function GET(
 ) {
   const denied = await requireAdmin();
   if (denied) return denied;
-  await ensureSeedData();
+  const dbUnavailable = await guardDb("栏目内容");
+  if (dbUnavailable) return dbUnavailable;
 
   try {
     const resolvedParams = await params;
@@ -220,7 +221,8 @@ export async function PUT(
 ) {
   const denied = await requireAdmin();
   if (denied) return denied;
-  await ensureSeedData();
+  const dbUnavailable = await guardDb("栏目内容");
+  if (dbUnavailable) return dbUnavailable;
   const sourceId = Number.parseInt((await params).sourceId, 10);
   if (!Number.isInteger(sourceId)) return Response.json({ ok: false, error: "Invalid sourceId" }, { status: 400 });
   const body = await request.json().catch(() => ({})) as Record<string, unknown>;

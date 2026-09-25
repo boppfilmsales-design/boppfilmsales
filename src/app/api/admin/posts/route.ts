@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { newsCategories, newsPosts } from "@/db/schema";
 import { ensureSeedData } from "@/db/seed";
 import { requireAdmin } from "@/lib/api-auth";
+import { guardDb } from "@/lib/api-db-error";
 import { buildPostValues, type PostPayload } from "@/lib/post-payload";
 
 export const dynamic = "force-dynamic";
@@ -113,9 +114,11 @@ async function listPostsForAdmin(request: Request) {
 export async function POST(request: Request) {
   const denied = await requireAdmin();
   if (denied) return denied;
-  await ensureSeedData();
 
   const payload = (await request.json().catch(() => ({}))) as PostPayload;
+  const unavailable = await guardDb("新建文章");
+  if (unavailable) return unavailable;
+
   try {
     const values = buildPostValues(payload, true);
     const [created] = await db

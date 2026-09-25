@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { newsPosts } from "@/db/schema";
-import { ensureSeedData } from "@/db/seed";
 import { requireAdmin } from "@/lib/api-auth";
+import { guardDb } from "@/lib/api-db-error";
 import { buildPostValues, type PostPayload } from "@/lib/post-payload";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,8 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function GET(_request: Request, context: RouteContext) {
   const denied = await requireAdmin();
   if (denied) return denied;
-  await ensureSeedData();
+  const unavailable = await guardDb("读取文章");
+  if (unavailable) return unavailable;
 
   const { id } = await context.params;
   const [post] = await db
@@ -27,7 +28,8 @@ export async function GET(_request: Request, context: RouteContext) {
 export async function PUT(request: Request, context: RouteContext) {
   const denied = await requireAdmin();
   if (denied) return denied;
-  await ensureSeedData();
+  const unavailable = await guardDb("保存文章");
+  if (unavailable) return unavailable;
 
   const { id } = await context.params;
   const postId = Number.parseInt(id, 10);
@@ -53,7 +55,8 @@ export async function PUT(request: Request, context: RouteContext) {
 export async function DELETE(_request: Request, context: RouteContext) {
   const denied = await requireAdmin();
   if (denied) return denied;
-  await ensureSeedData();
+  const unavailable = await guardDb("删除文章");
+  if (unavailable) return unavailable;
 
   const { id } = await context.params;
   const postId = Number.parseInt(id, 10);
