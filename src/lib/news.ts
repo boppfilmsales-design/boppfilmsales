@@ -11,6 +11,13 @@ export type PostRow = typeof newsPosts.$inferSelect;
 
 // ---- Static fallback data (used when DB is unavailable) ----
 const SEED_ITEMS = newsSeedRaw as unknown as SeedItem[];
+/**
+ * Slugs that belong on the public /news tabs. `development-cases` reuses the
+ * news tables (so 案例 → Development Cases gets the rich-text article editor)
+ * but is surfaced on /cases instead, so it must not appear as a news tab.
+ */
+export const PUBLIC_NEWS_SLUGS = ["industry-news", "company-news", "employees-literary"];
+
 const STATIC_CATEGORIES: CategoryRow[] = CATEGORY_DEFS.map((c, i) => ({
   id: i + 1,
   slug: c.slug,

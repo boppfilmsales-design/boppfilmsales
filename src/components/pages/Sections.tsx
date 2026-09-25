@@ -507,9 +507,9 @@ export function ProductDetail({
   );
 }
 
-type ContentKind = "about" | "lines" | "honor" | "service" | "cases";
+export type ContentKind = "about" | "lines" | "honor" | "service" | "cases";
 
-function ColumnStrip({ kind, activeId, lang }: { kind: ContentKind; activeId: number; lang: Lang }) {
+export function ColumnStrip({ kind, activeId, lang }: { kind: ContentKind; activeId: number; lang: Lang }) {
   const base = baseOf(lang);
   const href = COLUMN_HREF[kind] ?? "/";
   const columns = getContents(kind);

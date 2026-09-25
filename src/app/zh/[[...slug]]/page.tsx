@@ -93,9 +93,15 @@ export default async function ZhPage({
     const { ContentColumnPage } = await import("@/components/pages/Sections");
     const kind = first === "product-lines" ? "lines" : (first as "about" | "honor" | "service" | "cases");
     const id = Number(query.id ?? query.c_id ?? second);
-    content = (
-      <ContentColumnPage kind={kind} lang="zh" sourceId={Number.isFinite(id) && id > 0 ? id : undefined} />
-    );
+    const sourceId = Number.isFinite(id) && id > 0 ? id : kind === "cases" ? 54 : undefined;
+    if (kind === "cases" && sourceId === 54) {
+      // Development Cases is a rich-text article column (news-backed) — the same
+      // editor as 新闻中心 → Employees Literary.
+      const { default: DevelopmentCasesPage } = await import("@/components/pages/DevelopmentCases");
+      content = <DevelopmentCasesPage lang="zh" page={Number.parseInt(query.p ?? "1", 10) || 1} />;
+    } else {
+      content = <ContentColumnPage kind={kind} lang="zh" sourceId={sourceId} />;
+    }
   } else if (first === "news") {
     const posts = await getLatestPostsSafe(30);
     content = (

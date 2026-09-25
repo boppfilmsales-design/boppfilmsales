@@ -3,7 +3,7 @@ import Link from "next/link";
 import Pagination from "@/components/Pagination";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
-import { PER_PAGE, formatListDate, getCategories, getCategoryCounts, listPosts, resolveCategory, toPlainExcerpt } from "@/lib/news";
+import { PER_PAGE, PUBLIC_NEWS_SLUGS, formatListDate, getCategories, getCategoryCounts, listPosts, resolveCategory, toPlainExcerpt } from "@/lib/news";
 
 export const metadata: Metadata = {
   title: "News - Asia Pacific Industry Group Co., Limited",
@@ -26,7 +26,7 @@ function NoPhoto() {
 
 export default async function NewsPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
-  const categories = await getCategories();
+  const categories = (await getCategories()).filter((c) => PUBLIC_NEWS_SLUGS.includes(c.slug));
   const requested = sp.category ?? sp.c_id ?? null;
   const active = await resolveCategory(requested);
   const page = Number.parseInt(sp.p ?? sp.page ?? "1", 10) || 1;

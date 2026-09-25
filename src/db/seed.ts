@@ -47,7 +47,17 @@ export const CATEGORY_DEFS = [
   { slug: "industry-news", name: "Industry News", sourceId: 41, sortOrder: 1 },
   { slug: "company-news", name: "Company News", sourceId: 49, sortOrder: 2 },
   { slug: "employees-literary", name: "Employees Literary", sourceId: 52, sortOrder: 3 },
+  // 案例 → Development Cases is managed with the same rich-text article
+  // editor as the news columns (admin 内容管理 → 案例 → Development Cases).
+  // It lives in news_posts so operators get "+ 添加信息" + the TipTap editor.
+  { slug: "development-cases", name: "Development Cases", sourceId: 54, sortOrder: 90 },
 ];
+
+/**
+ * Categories that are real news columns. `development-cases` reuses the news
+ * tables but must not show up in the public /news category tabs.
+ */
+export const PUBLIC_NEWS_SLUGS = ["industry-news", "company-news", "employees-literary"];
 
 export const ADMIN_USERNAME = process.env.ADMIN_USERNAME ?? "xgxadmin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "xgxadmin";

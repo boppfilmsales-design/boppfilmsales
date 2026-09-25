@@ -150,7 +150,9 @@ export function getAdminSections(): AdminSection[] {
       name: "案例",
       nameEn: "Cases",
       columns: [
-        { sourceId: 54, name: "Development Cases", displayType: "image-list", dataSource: "static", parentId: 53, itemCount: count(54) },
+        // Managed as rich-text articles (same editor as 新闻中心), so operators
+        // get "+ 添加信息" + the TipTap editor instead of the static card form.
+        { sourceId: 54, name: "Development Cases", displayType: "news-list", dataSource: "news-db", parentId: 53, itemCount: 0 },
         { sourceId: 145, name: "To Buyers", displayType: "image-list", dataSource: "static", parentId: 53, itemCount: count(145) },
         { sourceId: 146, name: "To Markets", displayType: "image-list", dataSource: "static", parentId: 53, itemCount: count(146) },
         { sourceId: 147, name: "To Ourselves", displayType: "image-list", dataSource: "static", parentId: 53, itemCount: count(147) },

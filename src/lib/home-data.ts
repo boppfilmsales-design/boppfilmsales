@@ -13,13 +13,17 @@ export async function getLatestPostsSafe(limit = 6) {
     const categories = await import("@/lib/news").then((m) => m.getCategories());
     const names = new Map(categories.map((c) => [c.id, c.name]));
     const slugs = new Map(categories.map((c) => [c.id, c.slug]));
-    return rows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      listDate: row.listDate,
-      category: names.get(row.categoryId) ?? "News",
-      slug: slugs.get(row.categoryId) ?? "industry-news",
-    }));
+    // `development-cases` reuses the news tables but belongs to 案例, not 新闻,
+    // so keep it out of the home page / news feeds.
+    return rows
+      .filter((row) => slugs.get(row.categoryId) !== "development-cases")
+      .map((row) => ({
+        id: row.id,
+        title: row.title,
+        listDate: row.listDate,
+        category: names.get(row.categoryId) ?? "News",
+        slug: slugs.get(row.categoryId) ?? "industry-news",
+      }));
   } catch (error) {
     console.warn("⚠️ [Home News Fallback] Using mock news data due to DB status:", error);
     
