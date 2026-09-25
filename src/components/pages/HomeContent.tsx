@@ -5,6 +5,7 @@ import InquiryForm from "@/components/InquiryForm";
 import Link from "next/link";
 import { categoryNameZh, SITE } from "@/lib/site-helpers";
 import { sanitizeRichHtml } from "@/lib/rich-text";
+import ExpandableRichText from "@/components/ExpandableRichText";
 import { AllPdfsSection } from "@/components/pages/Sections";
 
 const COPY = {
@@ -283,9 +284,12 @@ export default function HomeContent({
               {t.aboutTitle}
             </h2>
             {lang === "zh" && aboutZh ? (
-              <div
-                className="news-body mt-6 text-[15px] leading-[30px] text-[#5b6472]"
-                dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(aboutZh) }}
+              <ExpandableRichText
+                className="mt-6"
+                html={aboutZh}
+                maxHeight={240}
+                expandLabel="展开更多"
+                collapseLabel="收起"
               />
             ) : (
               t.aboutBody.map((para, i) => (
