@@ -1,4 +1,5 @@
 import ProductDetailSection from "@/components/ProductDetailSection";
+import ProductGallery from "@/components/ProductGallery";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -104,30 +105,7 @@ export default async function Page({
           
           {/* 左侧：产品大图区 */}
           <div className="lg:col-span-5 space-y-3">
-            <div className="border border-gray-300 bg-white p-2 shadow-sm">
-              <div className="aspect-square relative flex items-center justify-center bg-[#fdfdfd]">
-                {gallery.length > 0 ? (
-                  <img
-                    src={productImageUrl(gallery[0])}
-                    alt={found.product.title}
-                    className="max-h-full max-w-full object-contain p-2"
-                  />
-                ) : (
-                  <div className="text-gray-400 text-xs">No Image</div>
-                )}
-              </div>
-            </div>
-
-            {/* 缩略图列表 */}
-            {gallery.length > 1 && (
-              <div className="grid grid-cols-5 gap-2">
-                {gallery.map((img, idx) => (
-                  <div key={idx} className="border border-gray-300 p-1 bg-white cursor-pointer hover:border-red-600">
-                    <img src={productImageUrl(img)} alt="" className="w-full h-12 object-contain" />
-                  </div>
-                ))}
-              </div>
-            )}
+            <ProductGallery images={gallery} noImageLabel="No Image" title={found.product.title} />
           </div>
 
           {/* 右侧：产品大标题、货号、价格及询盘按钮区 */}

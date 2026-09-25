@@ -43,7 +43,7 @@ export default function ProductGallery({ images = [], title, noImageLabel = "Ima
           </span>
         )}
       </div>
-      {available.length > 1 && (
+      {available.length > 0 && (
         <div className="mt-4 flex gap-3 overflow-x-auto pb-1" aria-label="Product gallery thumbnails">
           {available.map(({ src, index }) => (
             <button
