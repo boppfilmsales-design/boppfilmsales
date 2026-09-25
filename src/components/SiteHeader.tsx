@@ -52,7 +52,7 @@ export default async function SiteHeader({ active, lang = "en" }: { active?: str
             <span className="block text-[17px] font-black tracking-[-0.2px] text-[#22262e] md:text-[20px]">
               {lang === "zh" ? SITE.nameZh : SITE.name}
             </span>
-            <span className="mt-[3px] block text-[11px] tracking-[1px] text-[#8a8a8a]">
+            <span className="mt-[3px] block text-[11px] tracking-[1px] text-[#c9a227]">
               {lang === "zh"
                 ? "BOPP / BOPET / POF 薄膜 · 胶带母卷 · 预涂膜 制造与出口"
                 : "BOPP / BOPET / POF FILM · TAPE JUMBO ROLLS · THERMAL LAMINATION"}
