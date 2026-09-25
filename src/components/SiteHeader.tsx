@@ -20,7 +20,7 @@ export default async function SiteHeader({ active, lang = "en" }: { active?: str
             <span className="font-bold text-[#c8102e]">
               {lang === "zh" ? "欢迎光临" : "Welcome to our website"}
             </span>
-            <span className="text-[#c9a227]">www.boppfilmsales.com</span>
+            <span className="text-[#c9a227]">www.boppfilmsales.com & www.apigcl.com</span>
           </div>
           <div className="flex items-center gap-5">
             <a className="transition-colors hover:text-[#c8102e]" href={`tel:${SITE.tel}`}>
