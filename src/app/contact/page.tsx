@@ -17,7 +17,6 @@ const CONTACT = {
   fax: "86-551-64683490",
   mobiles: ["86-86-18919654871", "86-86-18919659471"],
   urls: [
-    { label: "http://www.apigcl.com", href: "http://www.apigcl.com" },
     { label: "http://www.boppfilmsales.com", href: "http://www.boppfilmsales.com" },
     { label: "http://www.boppfilmsale.com", href: "http://www.boppfilmsale.com" },
   ],
