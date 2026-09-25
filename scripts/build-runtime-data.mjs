@@ -182,6 +182,12 @@ const adminColumnsMeta = {
     sourceId: family.sourceId,
     name: family.name,
     itemCount: familyCount(family),
+    subs: (family.subs ?? []).map((sub) => ({
+      sourceId: sub.sourceId,
+      name: sub.name,
+      nameZh: sub.nameZh || "",
+      itemCount: sub.items?.length ?? 0,
+    })),
   })),
   subNameZh: Object.fromEntries(
     families.flatMap((family) => [

@@ -167,7 +167,7 @@ export default function ProductForm({
           >
             {categories.map((cat) => (
               <option key={cat.id} value={cat.id}>
-                {cat.name}
+                {cat.name}{cat.nameZh ? ` / ${cat.nameZh}` : ""}
               </option>
             ))}
           </select>

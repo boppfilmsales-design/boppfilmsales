@@ -10,7 +10,12 @@ import { CATEGORY_ZH } from "@/lib/site-helpers";
 export const dynamic = "force-dynamic";
 
 type AdminMeta = {
-  categories: { sourceId: number; name: string; itemCount: number }[];
+  categories: {
+    sourceId: number;
+    name: string;
+    itemCount: number;
+    subs?: { sourceId: number; name: string; nameZh: string; itemCount: number }[];
+  }[];
   subNameZh: Record<string, string>;
 };
 
@@ -42,17 +47,23 @@ export async function GET(
         sourceId: familyId,
         name: currentCategory.name,
         nameZh: CATEGORY_ZH[familyId] ?? "",
-        // Sub-categories for the "add product" dropdown. Names are resolved to
-        // Chinese via admin-columns-meta (populated by the data build script).
-        categories: rows.length
-          ? [...new Set(rows.map((row) => row.categoryId))].map((subId) => ({
-              id: subId,
-              slug: String(subId),
-              name: meta.subNameZh[String(subId)] ?? `Sub ${subId}`,
-            }))
-          : [],
+        // Include declared empty sub-categories too, so the admin can file
+        // products into every legacy sub-category instead of only those that
+        // currently contain rows.
+        categories: (currentCategory.subs ?? []).map((sub) => ({
+          id: sub.sourceId,
+          slug: String(sub.sourceId),
+          name: sub.name,
+          nameZh: sub.nameZh || meta.subNameZh[String(sub.sourceId)] || "",
+          itemCount: sub.itemCount,
+        })),
       },
-      rows,
+      rows: rows.map((row) => ({
+        ...row,
+        subCategory: currentCategory.subs?.find((sub) => sub.sourceId === row.categoryId)?.name
+          ?? meta.subNameZh[String(row.categoryId)]
+          ?? `Sub ${row.categoryId}`,
+      })),
     });
   } catch (error: any) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });

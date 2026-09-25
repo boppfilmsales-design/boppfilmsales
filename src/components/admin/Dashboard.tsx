@@ -75,6 +75,11 @@ type ProductRow = {
   status: string;
 };
 
+type ProductCategory = AdminCategory & {
+  nameZh?: string;
+  itemCount?: number;
+};
+
 type InquiryRow = {
   id: number;
   company: string;
@@ -160,7 +165,8 @@ export default function Dashboard({ username }: { username: string }) {
   const [selectedContent, setSelectedContent] = useState<SiteContent | null>(null);
   const [contentEditing, setContentEditing] = useState(false);
   const [productRows, setProductRows] = useState<ProductRow[]>([]);
-  const [productCats, setProductCats] = useState<AdminCategory[]>([]);
+  const [productCats, setProductCats] = useState<ProductCategory[]>([]);
+  const [productCatFilter, setProductCatFilter] = useState<number | null>(null);
   const [productEditing, setProductEditing] = useState<AdminProductDetail | null>(null);
   const [productCreating, setProductCreating] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
@@ -210,6 +216,7 @@ export default function Dashboard({ username }: { username: string }) {
     setProductEditing(null);
     setProductCreating(false);
     setSelectedProducts([]);
+    setProductCatFilter(null);
 
     if (col.dataSource === "inquiries") {
       const res = await fetch("/api/admin/inquiries", { cache: "no-store" });
@@ -233,6 +240,7 @@ export default function Dashboard({ username }: { username: string }) {
       const data = await res.json();
       if (data.rows) setProductRows(data.rows);
       setProductCats(data.category?.categories ?? []);
+      setProductCatFilter(null);
     } else {
       const res = await fetch(`/api/admin/content/${col.sourceId}`, { cache: "no-store" });
       const data = await res.json();
@@ -277,9 +285,11 @@ export default function Dashboard({ username }: { username: string }) {
   }
 
   function toggleAllProducts() {
-    setSelectedProducts((current) => current.length === productRows.length
-      ? []
-      : productRows.map((row) => row.id));
+    const visibleRows = productRows.filter((row) => productCatFilter === null || row.categoryId === productCatFilter);
+    const visibleIds = visibleRows.map((row) => row.id);
+    setSelectedProducts((current) => visibleIds.every((id) => current.includes(id))
+      ? current.filter((id) => !visibleIds.includes(id))
+      : [...new Set([...current, ...visibleIds])]);
   }
 
   async function bulkProductAction(action: "delete" | "status", status?: string) {
@@ -797,7 +807,11 @@ export default function Dashboard({ username }: { username: string }) {
                 >
                   + 添加产品
                 </button>
-                <span className="text-[12px] text-[#888]">{productRows.length} products in this category</span>
+                <span className="text-[12px] text-[#888]">
+                  {(productCatFilter === null
+                    ? productRows
+                    : productRows.filter((row) => row.categoryId === productCatFilter)).length} products in this category
+                </span>
                 <span className="rounded bg-[#f4f4f4] px-2 py-[3px] text-[11px] font-bold text-[#888]">{displayTypeName(activeColumn.displayType)}</span>
                 <button className="border border-[#ddd] px-3 py-[7px] text-[12px] text-[#666] disabled:opacity-40" disabled={selectedProducts.length === 0} onClick={() => void bulkProductAction("delete")} type="button">批量删除</button>
                 <select className="border border-[#ddd] px-2 py-[6px] text-[12px] text-[#666]" defaultValue="" onChange={(event) => { const value = event.target.value; event.target.value = ""; if (value) void bulkProductAction("status", value); }}>
@@ -808,11 +822,35 @@ export default function Dashboard({ username }: { username: string }) {
                 </select>
                 {notice ? <span className="text-[12px] text-[#e61d39]">{notice}</span> : null}
               </div>
+              {productCats.length > 0 ? (
+                <div className="mb-3 flex flex-wrap gap-1 border-b border-[#ddd] bg-white px-2 pt-2">
+                  <button
+                    className={`border-b-2 px-3 py-2 text-[12px] ${productCatFilter === null ? "border-[#e61d39] font-bold text-[#e61d39]" : "border-transparent text-[#666]"}`}
+                    onClick={() => { setProductCatFilter(null); setSelectedProducts([]); }}
+                    type="button"
+                  >
+                    全部产品 ({productRows.length})
+                  </button>
+                  {productCats.map((cat) => {
+                    const count = productRows.filter((row) => row.categoryId === cat.id).length;
+                    return (
+                      <button
+                        className={`border-b-2 px-3 py-2 text-left text-[12px] ${productCatFilter === cat.id ? "border-[#e61d39] font-bold text-[#e61d39]" : "border-transparent text-[#666]"}`}
+                        key={cat.id}
+                        onClick={() => { setProductCatFilter(cat.id); setSelectedProducts([]); }}
+                        type="button"
+                      >
+                        {cat.name} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
               <div className="overflow-x-auto border border-[#e3e3e3] bg-white">
                 <table className="w-full min-w-[900px] text-left text-[13px]">
                   <thead className="bg-[#fafafa] text-[12px] text-[#888]">
                     <tr>
-                      <th className="px-3 py-3"><input aria-label="全选产品" checked={productRows.length > 0 && selectedProducts.length === productRows.length} onChange={toggleAllProducts} type="checkbox" /></th>
+                      <th className="px-3 py-3"><input aria-label="全选产品" checked={productRows.filter((row) => productCatFilter === null || row.categoryId === productCatFilter).length > 0 && productRows.filter((row) => productCatFilter === null || row.categoryId === productCatFilter).every((row) => selectedProducts.includes(row.id))} onChange={toggleAllProducts} type="checkbox" /></th>
                       <th className="px-3 py-3">编号</th>
                       <th className="px-3 py-3">排序</th>
                       <th className="px-3 py-3">标题</th>
@@ -823,7 +861,7 @@ export default function Dashboard({ username }: { username: string }) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#eee]">
-                    {productRows.map((row) => (
+                    {productRows.filter((row) => productCatFilter === null || row.categoryId === productCatFilter).map((row) => (
                       <tr key={row.id} className="align-top">
                         <td className="px-3 py-3"><input aria-label={`选择产品 ${row.title}`} checked={selectedProducts.includes(row.id)} onChange={() => toggleProductSelection(row.id)} type="checkbox" /></td>
                         <td className="px-3 py-3 text-[#999]">{row.id}</td>
@@ -851,7 +889,7 @@ export default function Dashboard({ username }: { username: string }) {
                         </td>
                       </tr>
                     ))}
-                    {productRows.length === 0 && (
+                    {productRows.filter((row) => productCatFilter === null || row.categoryId === productCatFilter).length === 0 && (
                       <tr><td className="py-8 text-center text-[13px] text-[#888]" colSpan={8}>No products found.</td></tr>
                     )}
                   </tbody>
