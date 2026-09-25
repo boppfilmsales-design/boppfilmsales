@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * execCommand("fontSize") only accepts the legacy 1-7 scale, so we map each
@@ -39,16 +39,18 @@ const FONT_FAMILIES: { label: string; value: string }[] = [
   { label: "Courier New", value: "'Courier New', Courier, monospace" },
 ];
 
-/** Rewrite the deprecated <font size>/<font face> tags execCommand emits into inline-styled spans. */
+/** Rewrite the deprecated <font size>/<font face>/<font color> tags execCommand emits into inline-styled spans. */
 function normalizeFontTags(root: HTMLElement) {
   root.querySelectorAll("font").forEach((node) => {
     const fontEl = node as HTMLFontElement;
     const size = fontEl.getAttribute("size");
     const face = fontEl.getAttribute("face");
-    if (!size && !face) return;
+    const color = fontEl.getAttribute("color");
+    if (!size && !face && !color) return;
     const span = document.createElement("span");
     if (size) span.style.fontSize = `${LEGACY_TO_PX[size] ?? 16}px`;
     if (face) span.style.fontFamily = face;
+    if (color) span.style.color = color;
     span.innerHTML = fontEl.innerHTML;
     fontEl.replaceWith(span);
   });
@@ -67,6 +69,8 @@ export default function RichEditor({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const savedRange = useRef<Range | null>(null);
+  const [foreColor, setForeColor] = useState("#e61d39");
+  const [hiliteColor, setHiliteColor] = useState("#fff799");
 
   // The editable div has no React-managed children, so the server-rendered
   // markup is an empty div on both sides (no hydration mismatch) and we can
@@ -109,10 +113,25 @@ export default function RichEditor({
   const requireSelection = (): boolean => {
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
-      window.alert("请先用鼠标选中要设置的文字，再选择字号 / 字体。");
+      window.alert("请先用鼠标选中要设置的文字，再选择字号 / 字体 / 颜色。");
       return false;
     }
     return true;
+  };
+
+  const applyColor = (command: "foreColor" | "hiliteColor", color: string) => {
+    if (typeof document === "undefined" || !ref.current) return;
+    restoreSelection();
+    if (!requireSelection()) return;
+    // styleWithCSS=true makes the browser emit clean
+    // <span style="color:..."> / style="background-color:..." instead of
+    // deprecated <font> tags.
+    document.execCommand("styleWithCSS", false, "true");
+    document.execCommand(command, false, color);
+    document.execCommand("styleWithCSS", false, "false");
+    normalizeFontTags(ref.current);
+    onChange(ref.current.innerHTML);
+    ref.current?.focus();
   };
 
   const applyFontSize = (px: number) => {
@@ -215,11 +234,6 @@ export default function RichEditor({
     insertHtml(html);
   };
 
-  const colorBtn = (title: string, command: string) => {
-    const color = window.prompt(title, "#e61d39");
-    if (color) exec(command, color);
-  };
-
   const uploadFile = async (file: File, type: "image" | "doc") => {
     const folder = type === "image" ? "uploads/products" : "downloads";
     const form = new FormData();
@@ -308,8 +322,40 @@ export default function RichEditor({
         <ToolbarButton onClick={() => exec("justifyCenter")} label="中" title="居中" />
         <ToolbarButton onClick={() => exec("justifyRight")} label="右" title="右对齐" />
         <span className="mx-1 w-px bg-[#ddd]" />
-        <ToolbarButton onClick={() => colorBtn("文字颜色", "foreColor")} label="A" title="文字颜色" />
-        <ToolbarButton onClick={() => colorBtn("背景颜色", "hiliteColor")} label="底" title="背景高亮" />
+        <label
+          className="relative cursor-pointer rounded border border-[#ddd] bg-white px-2 py-1 text-[11px] hover:bg-[#f0f0f0]"
+          title="文字颜色（先选中文字）"
+        >
+          <span className="font-bold" style={{ color: foreColor }}>
+            A
+          </span>
+          <input
+            type="color"
+            value={foreColor}
+            onChange={(event) => {
+              setForeColor(event.currentTarget.value);
+              applyColor("foreColor", event.currentTarget.value);
+            }}
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          />
+        </label>
+        <label
+          className="relative cursor-pointer rounded border border-[#ddd] bg-white px-2 py-1 text-[11px] text-[#555] hover:bg-[#f0f0f0]"
+          title="背景颜色（先选中文字）"
+        >
+          <span className="rounded-sm px-1" style={{ backgroundColor: hiliteColor }}>
+            底
+          </span>
+          <input
+            type="color"
+            value={hiliteColor}
+            onChange={(event) => {
+              setHiliteColor(event.currentTarget.value);
+              applyColor("hiliteColor", event.currentTarget.value);
+            }}
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          />
+        </label>
         <span className="mx-1 w-px bg-[#ddd]" />
         <ToolbarButton onClick={promptLink} label="链接" title="插入链接" />
         <ToolbarButton onClick={promptImage} label="图片" title="插入图片 URL" />
