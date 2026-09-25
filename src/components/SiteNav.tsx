@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { categoryNameZh, SITE } from "@/lib/site-helpers";
 import { getNavCategories, type NavCategory } from "@/lib/site-summary";
 
@@ -29,8 +29,18 @@ const DOWNLOAD_SUBS = [
   { slug: "msds-download", name: "MSDS Download", nameZh: "MSDS下载" },
 ];
 
+// Mirrors the source site's Contact dropdown (apigcl.com/contact.php):
+// the first two point at the contact page itself, the rest jump straight
+// to the message form anchored at #contact_meg.
 const CONTACT_SUBS = [
-  { href: "/message-wall", name: "Message Wall", nameZh: "客户留言墙" },
+  { key: "contact-us", href: "/contact", name: "Contact us", nameZh: "联系我们" },
+  { key: "get-contacts", href: "/contact", name: "Get Contacts", nameZh: "获取联系方式" },
+  { key: "send-inquiry", href: "/contact#contact_meg", name: "Send Inquiry", nameZh: "发送询盘" },
+  { key: "give-advice", href: "/contact#contact_meg", name: "Give Advice To Seller", nameZh: "给卖家建议" },
+  { key: "feedback", href: "/contact#contact_meg", name: "Feedback", nameZh: "意见反馈" },
+  // Extra page built for this site (not on the source) — kept so the
+  // message wall stays reachable.
+  { key: "message-wall", href: "/message-wall", name: "Message Wall", nameZh: "客户留言墙" },
 ];
 
 const LINES_SUBS = [
@@ -71,7 +81,6 @@ type Props = { lang?: "en" | "zh"; categories?: NavCategory[] };
 export default function SiteNav({ lang = "en", categories: liveCategories }: Props) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [expanded, setExpanded] = useState<string>("");
   // The server passes the live tree (rebuilt from `admin_products` after a
   // product transfer). The seeded tree is only a fallback for the rare caller
   // that renders this without the prop.
@@ -80,18 +89,13 @@ export default function SiteNav({ lang = "en", categories: liveCategories }: Pro
   const englishPath = normalizedPath;
   const chinesePath = normalizedPath === "/" ? "/zh" : `/zh${normalizedPath}`;
 
-  useEffect(() => {
-    setOpen(false);
-    setExpanded("");
-  }, [pathname]);
-
   const isActive = (href: string) =>
     href === "/" ? normalizedPath === "/" : normalizedPath.startsWith(href);
 
   const simple = (
-    label: string, 
-    href: string, 
-    subs?: { id?: number; slug?: string; href?: string; name: string; nameZh?: string }[]
+    label: string,
+    href: string,
+    subs?: { id?: number; slug?: string; href?: string; key?: string; name: string; nameZh?: string }[]
   ) => (
     <li className="relative group" key={label}>
       <Link
@@ -111,7 +115,7 @@ export default function SiteNav({ lang = "en", categories: liveCategories }: Pro
                 ? `${lang === "zh" ? "/zh" : ""}${href}?category=${sub.slug}`
                 : `${lang === "zh" ? "/zh" : ""}${href}?id=${sub.id}`;
             return (
-              <li key={sub.href || sub.slug || sub.id}>
+              <li key={sub.key ?? sub.href ?? sub.slug ?? sub.id}>
                 <Link
                   className="block border-b border-[#f1f1f1] px-4 py-[11px] text-[14px] text-[#444] hover:bg-[#f8f8f8] hover:text-[#c8102e]"
                   href={subHref}

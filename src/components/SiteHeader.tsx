@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SiteFloatingBar from "@/components/SiteFloatingBar";
 import SiteNav from "@/components/SiteNav";
 import { SITE } from "@/lib/site";
 import { getNavCategoriesLive } from "@/lib/site-summary";
@@ -8,7 +9,10 @@ export default async function SiteHeader({ active, lang = "en" }: { active?: str
   // 信息转移. Falls back to the seeded tree on any DB hiccup.
   const categories = await getNavCategoriesLive();
   return (
-    <header className="bg-white">
+    <>
+      {/* Fixed right-hand online-contact bar, present on every public page. */}
+      <SiteFloatingBar lang={lang} />
+      <header className="bg-white">
       {/* utility strip */}
       <div className="hidden border-b border-[#efefef] bg-[#fafafa] text-[12px] text-[#666] lg:block">
         <div className="mx-auto flex w-full max-w-[1560px] items-center justify-between px-4 py-[7px]">
@@ -77,5 +81,6 @@ export default async function SiteHeader({ active, lang = "en" }: { active?: str
       <SiteNav categories={categories} lang={lang} />
       {active ? null : null}
     </header>
+    </>
   );
 }
