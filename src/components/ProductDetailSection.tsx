@@ -77,7 +77,7 @@ export default function ProductDetailSection({
       {/* 1. DESCRIPTION */}
       <AccordionSection title="DESCRIPTION" defaultOpen={true}>
         <div 
-          className="prose max-w-none text-xs text-gray-700 leading-relaxed whitespace-pre-line"
+          className="rich-text-body max-w-none text-xs text-gray-700 leading-relaxed"
           dangerouslySetInnerHTML={{
             __html: sanitizeRichHtml(description) || "Detailed product description coming soon."
           }}
@@ -87,7 +87,7 @@ export default function ProductDetailSection({
       {/* 2. TECHNICAL PARAMETERS */}
       <AccordionSection title="TECHNICAL PARAMETERS" defaultOpen={false}>
         {technicalDetails ? (
-          <div className="prose max-w-none text-xs text-gray-700" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(technicalDetails) }} />
+          <div className="rich-text-body max-w-none text-xs text-gray-700" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(technicalDetails) }} />
         ) : parameters && parameters.length > 0 ? (
           <table className="w-full text-left text-xs">
             <tbody>
@@ -107,7 +107,7 @@ export default function ProductDetailSection({
       {/* 3. OFFER DETAILS */}
       <AccordionSection title="OFFER DETAILS" defaultOpen={false}>
         <div
-          className="prose max-w-none text-xs text-gray-700 leading-relaxed"
+          className="rich-text-body max-w-none text-xs text-gray-700 leading-relaxed"
           dangerouslySetInnerHTML={{
             __html: sanitizeRichHtml(offerDetails) || "<p>We offer competitive pricing (FOB / CNF terms available). Minimum order quantity (MOQ) and customized slitting/packaging options can be negotiated based on specific requirements. Contact our sales team for an updated quotation.</p>",
           }}

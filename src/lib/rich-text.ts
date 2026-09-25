@@ -104,5 +104,9 @@ export function sanitizeRichHtml(html: string | null | undefined): string {
   // 6) clean up stray whitespace left behind by removed attributes
   out = out.replace(/\s+>/g, ">");
 
+  // 7) strip inter-tag whitespace (newlines/tabs between > and <) so that
+  //    the browser does not render stray line-breaks from the editor source.
+  out = out.replace(/>\s+</g, "><");
+
   return out;
 }
