@@ -4,6 +4,7 @@ import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import HomeContent from "@/components/pages/HomeContent";
 import { getLatestPostsSafe } from "@/lib/home-data";
+import { DEFAULT_ARTICLE_SOURCE_ID, getArticleColumn } from "@/lib/article-columns";
 import { SITE } from "@/lib/site-helpers";
 import { getHomeSummary } from "@/lib/site-summary";
 
@@ -93,12 +94,19 @@ export default async function ZhPage({
     const { ContentColumnPage } = await import("@/components/pages/Sections");
     const kind = first === "product-lines" ? "lines" : (first as "about" | "honor" | "service" | "cases");
     const id = Number(query.id ?? query.c_id ?? second);
-    const sourceId = Number.isFinite(id) && id > 0 ? id : kind === "cases" ? 54 : undefined;
-    if (kind === "cases" && sourceId === 54) {
-      // Development Cases is a rich-text article column (news-backed) — the same
+    const fallback =
+      kind === "cases"
+        ? DEFAULT_ARTICLE_SOURCE_ID.cases
+        : kind === "service"
+          ? DEFAULT_ARTICLE_SOURCE_ID.service
+          : undefined;
+    const sourceId = Number.isFinite(id) && id > 0 ? id : fallback;
+    const articleColumn = getArticleColumn(sourceId);
+    if (articleColumn && articleColumn.kind === kind) {
+      // 案例 / 服务 article columns are news-backed — the same rich-text
       // editor as 新闻中心 → Employees Literary.
-      const { default: DevelopmentCasesPage } = await import("@/components/pages/DevelopmentCases");
-      content = <DevelopmentCasesPage lang="zh" page={Number.parseInt(query.p ?? "1", 10) || 1} />;
+      const { default: ArticleColumnPage } = await import("@/components/pages/ArticleColumn");
+      content = <ArticleColumnPage column={articleColumn} lang="zh" page={Number.parseInt(query.p ?? "1", 10) || 1} />;
     } else {
       content = <ContentColumnPage kind={kind} lang="zh" sourceId={sourceId} />;
     }

@@ -155,7 +155,7 @@ export function getAdminSections(): AdminSection[] {
         { sourceId: 54, name: "Development Cases", displayType: "news-list", dataSource: "news-db", parentId: 53, itemCount: 0 },
         { sourceId: 145, name: "To Buyers", displayType: "image-list", dataSource: "static", parentId: 53, itemCount: count(145) },
         { sourceId: 146, name: "To Markets", displayType: "image-list", dataSource: "static", parentId: 53, itemCount: count(146) },
-        { sourceId: 147, name: "To Ourselves", displayType: "image-list", dataSource: "static", parentId: 53, itemCount: count(147) },
+        { sourceId: 147, name: "To Ourselves", displayType: "news-list", dataSource: "news-db", parentId: 53, itemCount: 0 },
       ],
     },
     {
@@ -164,8 +164,9 @@ export function getAdminSections(): AdminSection[] {
       nameEn: "Service",
       columns: [
         { sourceId: 79, name: "Useful Links Service", displayType: "news-list", dataSource: "static", parentId: 78, itemCount: count(79) },
-        { sourceId: 141, name: "Company Announcement", displayType: "news-list", dataSource: "static", parentId: 78, itemCount: count(141) },
-        { sourceId: 148, name: "Useful Knowledge", displayType: "news-list", dataSource: "static", parentId: 78, itemCount: count(148) },
+        // Rich-text article columns (same editor as 新闻中心 → Employees Literary).
+        { sourceId: 141, name: "Company Announcement", displayType: "news-list", dataSource: "news-db", parentId: 78, itemCount: 0 },
+        { sourceId: 148, name: "Useful Knowledge", displayType: "news-list", dataSource: "news-db", parentId: 78, itemCount: 0 },
         { sourceId: 199, name: "Vessel Shipping Lines", displayType: "news-list", dataSource: "static", parentId: 78, itemCount: count(199) },
       ],
     },

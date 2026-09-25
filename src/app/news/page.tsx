@@ -28,7 +28,10 @@ export default async function NewsPage({ searchParams }: { searchParams: SearchP
   const sp = await searchParams;
   const categories = (await getCategories()).filter((c) => PUBLIC_NEWS_SLUGS.includes(c.slug));
   const requested = sp.category ?? sp.c_id ?? null;
-  const active = await resolveCategory(requested);
+  const resolved = await resolveCategory(requested);
+  // 案例 / 服务 article columns reuse the news tables — never surface them here.
+  const active =
+    resolved && PUBLIC_NEWS_SLUGS.includes(resolved.slug) ? resolved : (categories[0] ?? null);
   const page = Number.parseInt(sp.p ?? sp.page ?? "1", 10) || 1;
 
   const result = await listPosts({ categoryId: active?.id, page, perPage: PER_PAGE });

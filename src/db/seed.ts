@@ -47,10 +47,13 @@ export const CATEGORY_DEFS = [
   { slug: "industry-news", name: "Industry News", sourceId: 41, sortOrder: 1 },
   { slug: "company-news", name: "Company News", sourceId: 49, sortOrder: 2 },
   { slug: "employees-literary", name: "Employees Literary", sourceId: 52, sortOrder: 3 },
-  // 案例 → Development Cases is managed with the same rich-text article
-  // editor as the news columns (admin 内容管理 → 案例 → Development Cases).
-  // It lives in news_posts so operators get "+ 添加信息" + the TipTap editor.
+  // 案例 / 服务 columns managed with the same rich-text article editor as the
+  // news columns (admin 内容管理 → 案例 / 服务). They live in news_posts so
+  // operators get "+ 添加信息" + the TipTap editor.
   { slug: "development-cases", name: "Development Cases", sourceId: 54, sortOrder: 90 },
+  { slug: "to-ourselves", name: "To Ourselves", sourceId: 147, sortOrder: 91 },
+  { slug: "company-announcement", name: "Company Announcement", sourceId: 141, sortOrder: 92 },
+  { slug: "useful-knowledge", name: "Useful Knowledge", sourceId: 148, sortOrder: 93 },
 ];
 
 /**

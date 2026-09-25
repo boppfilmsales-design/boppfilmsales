@@ -1,5 +1,5 @@
 import { getCategories, allPdfs, productCount, SITE, categoryProductNames, featuredProducts, catalogueImages, productImageUrl } from "@/lib/site";
-import { getLatestPosts } from "@/lib/news";
+import { PUBLIC_NEWS_SLUGS, getLatestPosts } from "@/lib/news";
 
 export { SITE, getCategories, allPdfs, productCount, categoryProductNames, featuredProducts, catalogueImages, productImageUrl };
 
@@ -13,10 +13,11 @@ export async function getLatestPostsSafe(limit = 6) {
     const categories = await import("@/lib/news").then((m) => m.getCategories());
     const names = new Map(categories.map((c) => [c.id, c.name]));
     const slugs = new Map(categories.map((c) => [c.id, c.slug]));
-    // `development-cases` reuses the news tables but belongs to 案例, not 新闻,
-    // so keep it out of the home page / news feeds.
+    // 案例 / 服务 article columns (development-cases, to-ourselves,
+    // company-announcement, useful-knowledge) reuse the news tables but belong
+    // to their own sections, so keep them out of the home page / news feeds.
     return rows
-      .filter((row) => slugs.get(row.categoryId) !== "development-cases")
+      .filter((row) => PUBLIC_NEWS_SLUGS.includes(slugs.get(row.categoryId) ?? ""))
       .map((row) => ({
         id: row.id,
         title: row.title,

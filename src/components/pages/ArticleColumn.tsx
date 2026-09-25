@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Pagination from "@/components/Pagination";
 import { ColumnStrip, PageHero } from "@/components/pages/Sections";
+import type { ArticleColumn } from "@/lib/article-columns";
 import { PER_PAGE, formatListDate, listPosts, resolveCategory, toPlainExcerpt } from "@/lib/news";
 
 export const dynamic = "force-dynamic";
@@ -8,46 +9,47 @@ export const dynamic = "force-dynamic";
 type Lang = "en" | "zh";
 
 /**
- * 案例 → Development Cases.
+ * A 案例 / 服务 column rendered from `news_posts`.
  *
- * This column used to be a *static* "image-list" column with zero rows, which
- * meant the admin panel had nothing to open and operators could never publish
- * into it. It is now backed by `news_posts` (category `development-cases`),
- * exactly like 新闻中心 → Employees Literary, so the admin gets
- * "+ 添加信息" plus the full rich-text article editor, and articles are
- * reachable at /news/development-cases/<id>.
+ * These columns used to be *static* lists, which meant the admin panel had no
+ * usable editor for them. They are now backed by `news_posts` — exactly like
+ * 新闻中心 → Employees Literary — so the admin gets "+ 添加信息" plus the full
+ * rich-text article editor, and articles are reachable at /news/<slug>/<id>.
  */
-export default async function DevelopmentCasesPage({
+export default async function ArticleColumnPage({
+  column,
   lang = "en",
   page = 1,
 }: {
+  column: ArticleColumn;
   lang?: Lang;
   page?: number;
 }) {
-  const category = await resolveCategory("development-cases");
-  const slug = category?.slug ?? "development-cases";
+  const category = await resolveCategory(column.slug);
+  const slug = category?.slug ?? column.slug;
   const result = await listPosts({ categoryId: category?.id, page, perPage: PER_PAGE });
   const current = Math.min(Math.max(1, page), result.pages);
-  const base = lang === "zh" ? "/zh/cases" : "/cases";
+  const base = lang === "zh" ? `/zh${column.href}` : column.href;
   const zh = lang === "zh";
+  const title = zh ? column.nameZh : column.nameEn;
 
   return (
     <>
       <PageHero
-        breadcrumb={[zh ? "经典案例" : "Classic Cases"]}
+        breadcrumb={[zh ? column.sectionZh : column.sectionEn]}
         lang={lang}
-        title={zh ? "发展案例" : "Development Cases"}
+        title={title}
       />
       <section className="py-10">
         <div className="mx-auto w-full max-w-[1560px] px-4">
-          <ColumnStrip activeId={54} kind="cases" lang={lang} />
+          <ColumnStrip activeId={column.sourceId} kind={column.kind} lang={lang} />
 
           <div className="mt-8">
             {result.items.length === 0 ? (
               <p className="border border-dashed border-[#e0e0e0] bg-[#fafafa] px-6 py-12 text-center text-[13px] text-[#888]">
                 {zh
-                  ? "此栏目暂无内容，请到后台「内容管理 → 案例 → Development Cases」添加。"
-                  : "No records published in this column yet. Add one from Admin → Content → Cases → Development Cases."}
+                  ? `此栏目暂无内容，请到后台「内容管理 → ${column.sectionZh} → ${column.nameEn}」添加。`
+                  : `No records published in this column yet. Add one from Admin → Content → ${column.sectionEn} → ${column.nameEn}.`}
               </p>
             ) : (
               <ul className="space-y-[30px]">
@@ -101,7 +103,7 @@ export default async function DevelopmentCasesPage({
             {result.items.length > 0 ? (
               <div className="mt-8">
                 <Pagination
-                  buildHref={(target) => `${base}?id=54&p=${target}`}
+                  buildHref={(target) => `${base}?id=${column.sourceId}&p=${target}`}
                   page={current}
                   pages={result.pages}
                   perPage={PER_PAGE}

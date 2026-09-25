@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
+import ArticleColumnPage from "@/components/pages/ArticleColumn";
 import { ContentColumnPage } from "@/components/pages/Sections";
-import DevelopmentCasesPage from "@/components/pages/DevelopmentCases";
+import { DEFAULT_ARTICLE_SOURCE_ID, getArticleColumn } from "@/lib/article-columns";
 import { getContentForSite } from "@/lib/content-db";
 
 export const dynamic = "force-dynamic";
@@ -12,9 +13,6 @@ export const metadata: Metadata = {
   description: "Development cases of Asia Pacific Industry Group: to buyers, to markets and to ourselves.",
 };
 
-/** 案例 → Development Cases is a rich-text article column (news-backed). */
-const DEVELOPMENT_CASES_ID = 54;
-
 export default async function Page({
   searchParams,
 }: {
@@ -22,14 +20,17 @@ export default async function Page({
 }) {
   const query = await searchParams;
   const parsed = Number(query.id ?? query.c_id ?? "");
-  const sourceId = Number.isFinite(parsed) && parsed > 0 ? parsed : DEVELOPMENT_CASES_ID;
+  const sourceId = Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_ARTICLE_SOURCE_ID.cases;
   const page = Number.parseInt(query.p ?? "1", 10) || 1;
 
-  if (sourceId === DEVELOPMENT_CASES_ID) {
+  // 案例 → Development Cases / To Ourselves are rich-text article columns
+  // (news-backed, same editor as 新闻中心).
+  const articleColumn = getArticleColumn(sourceId);
+  if (articleColumn) {
     return (
       <div className="min-h-screen bg-white">
         <SiteHeader active="Classic Cases" />
-        <DevelopmentCasesPage lang="en" page={page} />
+        <ArticleColumnPage column={articleColumn} lang="en" page={page} />
         <SiteFooter />
       </div>
     );
