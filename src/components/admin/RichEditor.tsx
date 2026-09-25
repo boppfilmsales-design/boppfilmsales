@@ -60,7 +60,7 @@ export default function RichEditor({
   value,
   onChange,
   placeholder,
-  height = 220,
+  height = 400,
 }: {
   value: string;
   onChange: (html: string) => void;

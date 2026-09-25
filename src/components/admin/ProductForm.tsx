@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { AdminCategory } from "./NewsForm";
 import RichEditor from "./RichEditor";
 import ImageField from "./ImageField";
@@ -87,6 +87,47 @@ export default function ProductForm({
   const [status, setStatus] = useState(product?.status ?? "正常");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  // Auto-save draft to localStorage (P1-5)
+  const draftKey = `draft-product-${product?.id ?? 'new-' + familyId}`;
+  useEffect(() => {
+    const timer = setInterval(() => {
+      try {
+        localStorage.setItem(draftKey, JSON.stringify({ title, titleZh, subtitle, subtitleZh, code, price, status, categoryId, sort, bodyHtml, bodyHtmlZh, description, descriptionZh, technical, technicalZh, offer, offerZh }));
+      } catch {}
+    }, 30000);
+    return () => clearInterval(timer);
+  }, [draftKey, title, titleZh, subtitle, subtitleZh, code, price, status, categoryId, sort, bodyHtml, bodyHtmlZh, description, descriptionZh, technical, technicalZh, offer, offerZh]);
+
+  // Check for saved draft on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(draftKey);
+    if (saved) {
+      try {
+        const draft = JSON.parse(saved);
+        if (draft.title && window.confirm('Detect auto-saved draft: ' + draft.title + '. Restore?')) {
+          if (draft.title) setTitle(draft.title);
+          if (draft.titleZh) setTitleZh(draft.titleZh);
+          if (draft.subtitle !== undefined) setSubtitle(draft.subtitle);
+          if (draft.subtitleZh !== undefined) setSubtitleZh(draft.subtitleZh);
+          if (draft.code !== undefined) setCode(draft.code);
+          if (draft.price !== undefined) setPrice(draft.price);
+          if (draft.status) setStatus(draft.status);
+          if (draft.categoryId) setCategoryId(draft.categoryId);
+          if (draft.sort !== undefined) setSort(draft.sort);
+          if (draft.bodyHtml !== undefined) setBodyHtml(draft.bodyHtml);
+          if (draft.bodyHtmlZh !== undefined) setBodyHtmlZh(draft.bodyHtmlZh);
+          if (draft.description !== undefined) setDescription(draft.description);
+          if (draft.descriptionZh !== undefined) setDescriptionZh(draft.descriptionZh);
+          if (draft.technical !== undefined) setTechnical(draft.technical);
+          if (draft.technicalZh !== undefined) setTechnicalZh(draft.technicalZh);
+          if (draft.offer !== undefined) setOffer(draft.offer);
+          if (draft.offerZh !== undefined) setOfferZh(draft.offerZh);
+        }
+      } catch {}
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -136,12 +177,13 @@ export default function ProductForm({
     }
 
     setMessage("保存成功！");
-    onSaved();
+    localStorage.removeItem(draftKey); onSaved();
   }
 
   const inputClass =
     "mt-1 w-full border border-[#ddd] px-3 py-[9px] text-[13px] outline-none focus:border-[#e61d39]";
   const labelClass = "block text-[12px] font-bold text-[#555]";
+const reqMark = <span className="text-red-500"> *</span>;
   const sectionTitle = "mb-3 mt-6 border-l-4 border-[#e61d39] pl-3 text-[14px] font-bold text-[#333]";
 
   return (
@@ -159,7 +201,7 @@ export default function ProductForm({
       <p className={sectionTitle}>基本信息</p>
       <div className="grid gap-4 md:grid-cols-2">
         <label className={labelClass}>
-          产品子栏目
+          产品子栏目{reqMark}
           <select
             className={inputClass}
             onChange={(event) => setCategoryId(Number.parseInt(event.target.value, 10))}
@@ -184,12 +226,12 @@ export default function ProductForm({
         </label>
 
         <label className={labelClass}>
-          产品名称 / 标题
+          产品名称 / 标题{reqMark}
           <input className={inputClass} onChange={(event) => setTitle(event.target.value)} value={title} />
         </label>
 
         <label className={labelClass}>
-          中文产品名称
+          中文产品名称{reqMark}
           <input className={inputClass} onChange={(event) => setTitleZh(event.target.value)} value={titleZh} />
         </label>
 
@@ -214,7 +256,7 @@ export default function ProductForm({
         </label>
 
         <label className={labelClass}>
-          状态
+          状态{reqMark}
           <select className={inputClass} onChange={(event) => setStatus(event.target.value)} value={status}>
             <option value="正常">正常</option>
             <option value="置顶">置顶</option>

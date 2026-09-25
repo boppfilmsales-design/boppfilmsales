@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -137,6 +137,14 @@ function advancedTabName(key: string): string {
   return "高级管理";
 }
 
+
+/** Bilingual column name helper - shows English / Chinese */
+function colDisplayName(name: string): string {
+  const zh: Record<string, string> = {
+    "About Us": "\u5173\u4e8e\u6211\u4eec", "Main Products": "\u4e3b\u8425\u4ea7\u54c1", "Honor": "\u8363\u8a89\u8d44\u8d28", "Culture": "\u4f01\u4e1a\u6587\u5316", "Branch Companies": "\u5206\u516c\u53f8", "Factory & Warehouse": "\u5de5\u5382\u4e0e\u4ed3\u5e93", "Course": "\u53d1\u5c55\u5386\u7a0b", "Industry News": "\u884c\u4e1a\u65b0\u95fb", "Company News": "\u516c\u53f8\u65b0\u95fb", "Employees Literary": "\u5458\u5de5\u6587\u5b66", "General Information": "\u57fa\u672c\u4fe1\u606f", "Get Contacts": "\u8054\u7cfb\u65b9\u5f0f", "Send Inquiry": "\u53d1\u9001\u8be2\u76d8", "Give Advice To Seller": "\u7ed9\u5356\u5bb6\u5efa\u8bae", "Company's Notice": "\u516c\u53f8\u516c\u544a", "Technology Data Download": "\u6280\u672f\u8d44\u6599\u4e0b\u8f7d", "Certificate Download": "\u8bc1\u4e66\u4e0b\u8f7d", "MSDS Download": "MSDS\u4e0b\u8f7d", "Development Cases": "\u53d1\u5c55\u6848\u4f8b", "To Buyers": "\u81f4\u4e70\u5bb6", "To Markets": "\u81f4\u5e02\u573a", "To Ourselves": "\u81f4\u81ea\u5df1", "Useful Links Service": "\u5b9e\u7528\u94fe\u63a5\u670d\u52a1", "Company Announcement": "\u516c\u53f8\u516c\u544a", "Useful Knowledge": "\u5b9e\u7528\u77e5\u8bc6", "Vessel Shipping Lines": "\u8239\u8fd0\u822a\u7ebf", "Packing Film Production Lines": "\u5305\u88c5\u819c\u751f\u4ea7\u7ebf", "BOPP Film Production Lines": "BOPP\u819c\u751f\u4ea7\u7ebf", "BOPET Film Production Lines": "BOPET\u819c\u751f\u4ea7\u7ebf", "Tape Production Lines": "\u80f6\u5e26\u751f\u4ea7\u7ebf", "Thermal Lamination Film Production Lines": "\u70ed\u590d\u5408\u819c\u751f\u4ea7\u7ebf", "Bruckner Production Lines (Germany)": "Bruckner\u751f\u4ea7\u7ebf(\u5fb7\u56fd)", "Mitsubishi Production Lines (Japan)": "\u4e09\u83f1\u751f\u4ea7\u7ebf(\u65e5\u672c)", "Copy Paper Production Lines": "\u590d\u5370\u7eb8\u751f\u4ea7\u7ebf", "Silver Metallized Film Production Lines": "\u9540\u94dd\u819c\u751f\u4ea7\u7ebf", "POF Film Production Lines": "POF\u819c\u751f\u4ea7\u7ebf",  };
+  return zh[name] ? `${name} / ${zh[name]}` : name;
+}
+
 function displayTypeName(type: string): string {
   switch (type) {
     case "single": return "单页内容";
@@ -158,6 +166,7 @@ export default function Dashboard({ username }: { username: string }) {
   const [mode, setMode] = useState<"content" | "advanced">("content");
   const [advancedTab, setAdvancedTab] = useState<string>("messages");
   const [activeSection, setActiveSection] = useState<number | null>(1);
+  const [collapsedSections, setCollapsedSections] = useState<Set<number>>(new Set());
   const [activeColumn, setActiveColumn] = useState<AdminColumn | null>(null);
   const [sections, setSections] = useState<AdminSection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -167,6 +176,8 @@ export default function Dashboard({ username }: { username: string }) {
   const [productRows, setProductRows] = useState<ProductRow[]>([]);
   const [productCats, setProductCats] = useState<ProductCategory[]>([]);
   const [productCatFilter, setProductCatFilter] = useState<number | null>(null);
+  const [productKeyword, setProductKeyword] = useState("");
+  const [productSearch, setProductSearch] = useState("");
   const [productEditing, setProductEditing] = useState<AdminProductDetail | null>(null);
   const [productCreating, setProductCreating] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
@@ -486,7 +497,7 @@ export default function Dashboard({ username }: { username: string }) {
                           }}
                           type="button"
                         >
-                          <span className="truncate">{col.name}</span>
+                          <span className="truncate">{colDisplayName(col.name)}</span>
                           <span className="ml-2 shrink-0 text-[10px] opacity-60">{col.itemCount}</span>
                         </button>
                       </li>
@@ -563,9 +574,8 @@ export default function Dashboard({ username }: { username: string }) {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {sections.map((section) => (
                 <div key={section.pid} className="border border-[#e3e3e3] bg-white p-5">
-                  <h3 className="text-[15px] font-bold text-[#333]">{section.name}</h3>
-                  <p className="text-[11px] text-[#999]">{section.nameEn}</p>
-                  <div className="mt-3 space-y-[6px]">
+                  <h3 className="flex cursor-pointer items-center justify-between text-[15px] font-bold text-[#333]" onClick={() => { const next = new Set(collapsedSections); if (next.has(section.pid)) next.delete(section.pid); else next.add(section.pid); setCollapsedSections(next); }}><span>{section.name}</span><span className="text-[12px] text-[#aaa]">{collapsedSections.has(section.pid) ? "▶" : "▼"}</span></h3>
+                                    {!collapsedSections.has(section.pid) && (<div className="mt-3 space-y-[6px]">
                     {section.columns.map((col) => (
                       <button
                         className="flex w-full items-center justify-between text-left text-[12px] text-[#666] hover:text-[#e61d39]"
@@ -577,13 +587,13 @@ export default function Dashboard({ username }: { username: string }) {
                         }}
                         type="button"
                       >
-                        <span className="truncate">{col.name}</span>
+                        <span className="truncate">{colDisplayName(col.name)}</span>
                         <span className="ml-2 rounded bg-[#f4f4f4] px-1.5 py-[2px] text-[10px] font-bold text-[#888]">
                           {col.itemCount}
                         </span>
                       </button>
                     ))}
-                  </div>
+                  </div>)}
                 </div>
               ))}
             </div>
@@ -807,10 +817,9 @@ export default function Dashboard({ username }: { username: string }) {
                 >
                   + 添加产品
                 </button>
+                <input className="border border-[#ddd] px-3 py-[7px] text-[12px] text-[#666] outline-none focus:border-[#e61d39]" value={productKeyword} onChange={(e) => setProductKeyword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") setProductSearch(productKeyword.trim()); }} placeholder="搜索产品标题" type="text" />
                 <span className="text-[12px] text-[#888]">
-                  {(productCatFilter === null
-                    ? productRows
-                    : productRows.filter((row) => row.categoryId === productCatFilter)).length} products in this category
+                  {productRows.filter((row) => (productCatFilter === null || row.categoryId === productCatFilter) && (!productSearch || row.title.toLowerCase().includes(productSearch.toLowerCase()))).length} products in this category
                 </span>
                 <span className="rounded bg-[#f4f4f4] px-2 py-[3px] text-[11px] font-bold text-[#888]">{displayTypeName(activeColumn.displayType)}</span>
                 <button className="border border-[#ddd] px-3 py-[7px] text-[12px] text-[#666] disabled:opacity-40" disabled={selectedProducts.length === 0} onClick={() => void bulkProductAction("delete")} type="button">批量删除</button>
@@ -861,7 +870,7 @@ export default function Dashboard({ username }: { username: string }) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#eee]">
-                    {productRows.filter((row) => productCatFilter === null || row.categoryId === productCatFilter).map((row) => (
+                    {productRows.filter((row) => (productCatFilter === null || row.categoryId === productCatFilter) && (!productSearch || row.title.toLowerCase().includes(productSearch.toLowerCase()))).map((row) => (
                       <tr key={row.id} className="align-top">
                         <td className="px-3 py-3"><input aria-label={`选择产品 ${row.title}`} checked={selectedProducts.includes(row.id)} onChange={() => toggleProductSelection(row.id)} type="checkbox" /></td>
                         <td className="px-3 py-3 text-[#999]">{row.id}</td>
