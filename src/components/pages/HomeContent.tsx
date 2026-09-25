@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import InquiryForm from "@/components/InquiryForm";
 import Link from "next/link";
 import { categoryNameZh, SITE } from "@/lib/site-helpers";
+import { sanitizeRichHtml } from "@/lib/rich-text";
 import { AllPdfsSection } from "@/components/pages/Sections";
 
 const COPY = {
@@ -167,7 +168,7 @@ export default function HomeContent({
           {/* 左侧文字与按钮区 */}
           <div>
             <div className="inline-flex items-center gap-3 rounded-full border border-white/15 bg-white/[0.06] px-4 py-2 text-[11px] font-bold uppercase tracking-[0.24em] text-white/70 backdrop-blur">
-              <span className="h-2 w-2 rounded-full bg-[#e31b3d] shadow-[0_0_16px_#e31b3d]" />
+              <span className="h-2 w-2 rounded-full bg-[#f2d66c] shadow-[0_0_16px_#f2d66c]" />
               {t.heroEyebrow}
             </div>
 
@@ -184,13 +185,13 @@ export default function HomeContent({
 
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                className="rounded-full bg-[#c8102e] px-7 py-4 text-[12px] font-black uppercase tracking-[0.16em] text-white shadow-[0_16px_40px_rgba(200,16,46,.3)] transition hover:-translate-y-0.5 hover:bg-[#e31b3d]"
+                className="rounded-full bg-[#c8102e] px-7 py-4 text-[12px] font-black uppercase tracking-[0.16em] text-white shadow-[0_16px_40px_rgba(200,16,46,.3)] ring-1 ring-[#f2d66c]/20 transition hover:-translate-y-0.5 hover:bg-[#e31b3d] hover:ring-[#f2d66c]/40"
                 href={lang === "zh" ? "/zh/products" : "/products"}
               >
                 {t.cta1}
               </Link>
               <Link
-                className="rounded-full border border-white/25 bg-white/[0.04] px-7 py-4 text-[12px] font-black uppercase tracking-[0.16em] text-white backdrop-blur transition hover:border-white hover:bg-white hover:text-slate-950"
+                className="rounded-full border border-white/25 bg-white/[0.04] px-7 py-4 text-[12px] font-black uppercase tracking-[0.16em] text-white backdrop-blur transition hover:border-[#f2d66c] hover:bg-white hover:text-slate-950"
                 href={lang === "zh" ? "/zh/downloads" : "/downloads"}
               >
                 {t.cta2}
@@ -284,7 +285,7 @@ export default function HomeContent({
             {lang === "zh" && aboutZh ? (
               <div
                 className="news-body mt-6 text-[15px] leading-[30px] text-[#5b6472]"
-                dangerouslySetInnerHTML={{ __html: aboutZh }}
+                dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(aboutZh) }}
               />
             ) : (
               t.aboutBody.map((para, i) => (
@@ -295,13 +296,13 @@ export default function HomeContent({
             )}
             <div className="mt-9 flex flex-wrap gap-3">
               <Link
-                className="rounded-full bg-[#c8102e] px-6 py-3 text-[12px] font-black uppercase tracking-[0.16em] text-white shadow-[0_14px_34px_rgba(200,16,46,.28)] transition hover:-translate-y-0.5 hover:bg-[#e31b3d]"
+                className="rounded-full bg-[#c8102e] px-6 py-3 text-[12px] font-black uppercase tracking-[0.16em] text-white shadow-[0_14px_34px_rgba(200,16,46,.28)] ring-1 ring-[#f2d66c]/20 transition hover:-translate-y-0.5 hover:bg-[#e31b3d] hover:ring-[#f2d66c]/40"
                 href={lang === "zh" ? "/zh/about" : "/about"}
               >
                 {t.aboutCta1}
               </Link>
               <Link
-                className="rounded-full border border-[#d6dae0] bg-white px-6 py-3 text-[12px] font-black uppercase tracking-[0.16em] text-[#101722] transition hover:border-[#c8102e] hover:text-[#c8102e]"
+                className="rounded-full border border-[#d6dae0] bg-white px-6 py-3 text-[12px] font-black uppercase tracking-[0.16em] text-[#101722] transition hover:border-[#c8102e] hover:text-[#c8102e] hover:shadow-[0_0_0_1px_#f2d66c]"
                 href={lang === "zh" ? "/zh/honor" : "/honor"}
               >
                 {t.aboutCta2}
@@ -331,7 +332,7 @@ export default function HomeContent({
         <div className="mx-auto w-full max-w-[1560px] px-4">
           <div className="text-center">
             <h2 className="text-[28px] font-black text-[#22262e]">{t.familiesTitle}</h2>
-            <i className="mx-auto mt-3 block h-[5px] w-[90px] bg-[#c8102e]" />
+            <i className="mx-auto mt-3 block h-[5px] w-[90px] bg-gradient-to-r from-[#c8102e] via-[#c8102e] to-[#f2d66c]" />
           </div>
           <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {categories.map((category: any) => {
@@ -367,15 +368,15 @@ export default function HomeContent({
         <div className="mx-auto w-full max-w-[1560px] px-4">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.3em] text-[#ff6b82]">{t.featuredEyebrow}</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.3em] text-[#f2d66c]">{t.featuredEyebrow}</p>
               <h2 className="mt-3 text-[28px] font-black tracking-[-0.02em] sm:text-[34px]">{t.featuredTitle}</h2>
             </div>
-            <Link
-              className="rounded-full border border-white/25 px-6 py-3 text-[12px] font-black uppercase tracking-[0.16em] text-white transition hover:bg-white hover:text-slate-950"
-              href={lang === "zh" ? "/zh/products" : "/products"}
-            >
-              {t.featuredCta(totalProducts)}
-            </Link>
+              <Link
+                className="rounded-full border border-white/25 px-6 py-3 text-[12px] font-black uppercase tracking-[0.16em] text-white transition hover:border-[#f2d66c] hover:bg-[#f2d66c] hover:text-slate-950"
+                href={lang === "zh" ? "/zh/products" : "/products"}
+              >
+                {t.featuredCta(totalProducts)}
+              </Link>
           </div>
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
             {featured.map(({ category, product }: any) => {
@@ -399,7 +400,7 @@ export default function HomeContent({
                       <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/45">
                         {lang === "zh" && zhCat ? zhCat : category.name}
                       </p>
-                      <p className="mt-2 line-clamp-2 text-[13px] font-bold leading-snug text-white group-hover:text-[#ff8fa1]">
+                      <p className="mt-2 line-clamp-2 text-[13px] font-bold leading-snug text-white group-hover:text-[#f2d66c]">
                         {lang === "zh" && product.titleZh ? product.titleZh : product.title}
                       </p>
                     </div>
@@ -418,7 +419,7 @@ export default function HomeContent({
         <div className="mx-auto w-full max-w-[1560px] px-4">
           <div className="text-center">
             <h2 className="text-[28px] font-black text-[#22262e]">{t.newsTitle}</h2>
-            <i className="mx-auto mt-3 block h-[5px] w-[90px] bg-[#c8102e]" />
+            <i className="mx-auto mt-3 block h-[5px] w-[90px] bg-gradient-to-r from-[#c8102e] via-[#c8102e] to-[#f2d66c]" />
           </div>
           <ul className="mx-auto mt-9 max-w-[980px] divide-y divide-[#eee] border border-[#eee]">
             {news.map((post: any) => (
@@ -440,7 +441,7 @@ export default function HomeContent({
           </ul>
           <div className="mt-8 text-center">
             <Link
-              className="inline-block bg-[#c8102e] px-7 py-[12px] text-[13px] font-bold uppercase tracking-[1px] text-white"
+              className="inline-block bg-[#c8102e] px-7 py-[12px] text-[13px] font-bold uppercase tracking-[1px] text-white ring-1 ring-[#f2d66c]/20 transition hover:bg-[#e31b3d] hover:ring-[#f2d66c]/40"
               href={lang === "zh" ? "/zh/news" : "/news"}
             >
               {t.newsCta}
@@ -454,13 +455,13 @@ export default function HomeContent({
         <div className="mx-auto w-full max-w-[1560px] px-4">
           <div className="text-center">
             <h2 className="text-[28px] font-bold uppercase tracking-wider text-[#22262e]">CONTACT</h2>
-            <i className="mx-auto mt-3 block h-[4px] w-[70px] bg-[#c8102e]" />
+            <i className="mx-auto mt-3 block h-[4px] w-[70px] bg-gradient-to-r from-[#c8102e] to-[#f2d66c]" />
           </div>
 
           <div className="mt-12 grid gap-12 lg:grid-cols-12 items-start">
             <div className="lg:col-span-5 space-y-5 text-[14px] text-[#555]">
               <div className="flex items-start gap-3">
-                <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-[#00aff0] text-[12px] font-bold text-white shadow">S</span>
+                <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-[#00aff0] text-[12px] font-bold text-white shadow ring-1 ring-[#f2d66c]/40">S</span>
                 <div className="flex flex-col leading-[24px]">
                   <span>asiapacificsale</span>
                   <span>boppfilmsales</span>
@@ -469,7 +470,7 @@ export default function HomeContent({
               </div>
 
               <div className="flex items-start gap-3">
-                <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-[#12b7f5] text-[11px] font-bold text-white shadow">QQ</span>
+                <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-[#12b7f5] text-[11px] font-bold text-white shadow ring-1 ring-[#f2d66c]/40">QQ</span>
                 <div className="flex flex-col leading-[24px]">
                   <span>840715367</span>
                   <span>2538474128</span>
@@ -479,7 +480,7 @@ export default function HomeContent({
               </div>
 
               <div className="flex items-start gap-3">
-                <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-[#07c160] text-[10px] font-bold text-white shadow">微信</span>
+                <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-[#07c160] text-[10px] font-bold text-white shadow ring-1 ring-[#f2d66c]/40">微信</span>
                 <div className="flex flex-col leading-[24px]">
                   <span>18919654871</span>
                   <span>18919659471</span>
@@ -488,7 +489,7 @@ export default function HomeContent({
               </div>
 
               <div className="flex items-start gap-3">
-                <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-[#25d366] text-[12px] font-bold text-white shadow">📞</span>
+                <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-[#25d366] text-[12px] font-bold text-white shadow ring-1 ring-[#f2d66c]/40">📞</span>
                 <div className="flex flex-col leading-[24px]">
                   <span>86-86-18919654871</span>
                   <span>86-86-18919659471</span>
@@ -496,10 +497,10 @@ export default function HomeContent({
               </div>
 
               <div className="flex items-start gap-3 pt-2">
-                <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-[#c8102e] text-[11px] text-white shadow">✉</span>
+                <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-[#f2d66c] text-[11px] text-[#c8102e] shadow">✉</span>
                 <div className="flex flex-col leading-[24px]">
-                  <a className="text-[#c8102e] hover:underline" href="mailto:sales@boppfilmsales.com">sales@boppfilmsales.com</a>
-                  <a className="text-[#c8102e] hover:underline" href="mailto:admin@apigcl.com">admin@apigcl.com</a>
+                  <a className="text-[#c8102e] transition-colors hover:text-[#c9a227] hover:underline" href="mailto:sales@boppfilmsales.com">sales@boppfilmsales.com</a>
+                  <a className="text-[#c8102e] transition-colors hover:text-[#c9a227] hover:underline" href="mailto:admin@apigcl.com">admin@apigcl.com</a>
                 </div>
               </div>
             </div>

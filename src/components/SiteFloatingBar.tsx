@@ -10,7 +10,8 @@ import { useEffect, useState } from "react";
 
 const SPRITE = "url(/images/navRight.png)";
 
-/** Icon cell: 40x40 tile cut out of the sprite at the given background position. */
+/** Icon cell: 40x40 tile cut out of the sprite at the given background position.
+ *  `hoverPosition` mirrors the source-site hover state from `navRight.png`. */
 function BarItem({
   position,
   hoverPosition,
@@ -24,18 +25,20 @@ function BarItem({
   label: string;
   children?: React.ReactNode;
 }) {
+  const [hover, setHover] = useState(false);
+  const bgPos = hover && hoverPosition ? hoverPosition : position;
   return (
     <li
-      className={`group relative h-[40px] w-[40px] cursor-pointer bg-no-repeat ${
+      className={`group relative h-[40px] w-[40px] cursor-pointer bg-no-repeat ring-1 ring-inset ring-[#f2d66c]/20 transition-all duration-200 hover:ring-[#f2d66c]/60 ${
         divide ? "border-b border-white" : ""
       }`}
-      style={{ backgroundImage: SPRITE, backgroundPosition: position }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{ backgroundImage: SPRITE, backgroundPosition: bgPos }}
       title={label}
     >
       {children ? (
-        <div
-          className="invisible absolute right-[47px] top-0 z-10 border border-[#eee] bg-white py-[6px] pl-[10px] pr-[14px] text-left opacity-0 shadow-[0_0_10px_#e5e5e5] transition-all duration-200 group-hover:visible group-hover:opacity-100"
-        >
+        <div className="invisible absolute right-[47px] top-0 z-10 border border-[#eee] bg-white py-[6px] pl-[10px] pr-[14px] text-left opacity-0 shadow-[0_0_10px_#e5e5e5] transition-all duration-200 group-hover:visible group-hover:opacity-100">
           {children}
         </div>
       ) : null}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getFriendlyLinks } from "@/lib/friendly-links";
 import { getSiteSettings, setting } from "@/lib/site-settings";
 
 /**
@@ -9,6 +10,7 @@ import { getSiteSettings, setting } from "@/lib/site-settings";
  */
 export default async function SiteFooter() {
   const settings = await getSiteSettings();
+  const friendlyLinks = await getFriendlyLinks();
   const address = setting(settings, "contact_address");
   const phone = setting(settings, "contact_phone");
   const mobile = setting(settings, "contact_mobile");
@@ -19,24 +21,16 @@ export default async function SiteFooter() {
     <>
       <footer className="mt-16 bg-[#c8102e] py-10 text-white">
         <div className="mx-auto grid w-full max-w-[1560px] gap-8 px-3 md:grid-cols-4">
-          
+
           {/* 第一列：Link */}
           <dl>
             <dt className="mb-[10px] text-[18px] font-bold">Link</dt>
-            {[
-              { label: "Asia Pacific Industry Group Co., Limited", href: "/" },
-              { label: "Anhui Eastern Communication Group", href: "/" },
-              { label: "Asia Pacific International Co., Limited", href: "/" },
-              { label: "Foreign exchange", href: "http://www.boc.cn/sourcedb/whpj" },
-              { label: "Shipping Information", href: "http://www.shipxy.com/" },
-              { label: "Shipping fees", href: "http://ship.shippingchina.com/fclprice/index" },
-              { label: "Site background", href: "http://www.apigcl.com/admin/" },
-            ].map((l) => (
+            {friendlyLinks.map((l) => (
               <dd className="text-[12px] leading-[26px]" key={l.label}>
-                <a 
-                  className="hover:underline" 
-                  href={l.href} 
-                  rel="noreferrer" 
+                <a
+                  className="transition-colors hover:text-[#f2d66c] hover:underline"
+                  href={l.href}
+                  rel="noreferrer"
                   target={l.href.startsWith("http") ? "_blank" : "_self"}
                 >
                   {l.label}
@@ -47,7 +41,10 @@ export default async function SiteFooter() {
 
           {/* 第二列：Product categories */}
           <dl>
-            <dt className="mb-[10px] text-[18px] font-bold">Product categories</dt>
+            <dt className="mb-[10px] flex items-center gap-2 text-[18px] font-bold">
+              <span className="inline-block h-[6px] w-[6px] rotate-45 bg-[#f2d66c]" />
+              Product categories
+            </dt>
             {[
               "BOPET Film (Polyester Film)",
               "BOPP Film (Polypropylene film)",
@@ -57,7 +54,7 @@ export default async function SiteFooter() {
               "BOPS Window Envelope Film",
             ].map((p) => (
               <dd className="text-[12px] leading-[26px]" key={p}>
-                <Link className="hover:underline" href="/products">
+                <Link className="transition-colors hover:text-[#f2d66c] hover:underline" href="/products">
                   {p}
                 </Link>
               </dd>
@@ -66,31 +63,34 @@ export default async function SiteFooter() {
 
           {/* 第三列：Enterprise information (带圆标图标) */}
           <dl>
-            <dt className="mb-[10px] text-[18px] font-bold">Enterprise information</dt>
-            
+            <dt className="mb-[10px] flex items-center gap-2 text-[18px] font-bold">
+              <span className="inline-block h-[6px] w-[6px] rotate-45 bg-[#f2d66c]" />
+              Enterprise information
+            </dt>
+
             <dd className="flex items-center gap-2.5 text-[12px] leading-[30px]">
-              <span className="flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-full bg-[#00aff0] text-[11px] font-bold text-white shadow">
+              <span className="flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-full bg-[#00aff0] text-[11px] font-bold text-white shadow ring-1 ring-[#f2d66c]/50">
                 S
               </span>
               <span>Skype: asiapacificsale</span>
             </dd>
 
             <dd className="flex items-center gap-2.5 text-[12px] leading-[30px]">
-              <span className="flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-full bg-[#12b7f5] text-[10px] font-bold text-white shadow">
+              <span className="flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-full bg-[#12b7f5] text-[10px] font-bold text-white shadow ring-1 ring-[#f2d66c]/50">
                 QQ
               </span>
               <span>QQ: 840715367</span>
             </dd>
 
             <dd className="flex items-center gap-2.5 text-[12px] leading-[30px]">
-              <span className="flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-full bg-[#07c160] text-[9px] font-bold text-white shadow">
+              <span className="flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-full bg-[#07c160] text-[9px] font-bold text-white shadow ring-1 ring-[#f2d66c]/50">
                 微信
               </span>
               <span>WhatsApp: 86-18919654871</span>
             </dd>
 
             <dd className="flex items-center gap-2.5 text-[12px] leading-[30px]">
-              <span className="flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-full bg-[#25d366] text-[10px] font-bold text-white shadow">
+              <span className="flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-full bg-[#25d366] text-[10px] font-bold text-white shadow ring-1 ring-[#f2d66c]/50">
                 📞
               </span>
               <span>Tel: 86-551-64687285</span>
@@ -99,34 +99,37 @@ export default async function SiteFooter() {
 
           {/* 第四列：Contact us (带地址、电话、邮件图标) */}
           <dl>
-            <dt className="mb-[10px] text-[18px] font-bold">Contact us</dt>
-            
-            <dd className="flex items-start gap-2.5 text-[13px] leading-[22px] mb-2">
-              <span className="mt-0.5 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-white text-[11px] text-[#c8102e] shadow">
+            <dt className="mb-[10px] flex items-center gap-2 text-[18px] font-bold">
+              <span className="inline-block h-[6px] w-[6px] rotate-45 bg-[#f2d66c]" />
+              Contact us
+            </dt>
+
+            <dd className="mb-2 flex items-start gap-2.5 text-[13px] leading-[22px]">
+              <span className="mt-0.5 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#f2d66c] text-[11px] text-[#c8102e] shadow">
                 📍
               </span>
               <span>{address}</span>
             </dd>
 
             <dd className="flex items-center gap-2.5 text-[13px] leading-[26px]">
-              <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-white text-[11px] text-[#c8102e] shadow">
+              <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#f2d66c] text-[11px] text-[#c8102e] shadow">
                 ☎
               </span>
               <span>Tel: {phone}</span>
             </dd>
 
             <dd className="flex items-center gap-2.5 text-[13px] leading-[26px]">
-              <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-white text-[11px] text-[#c8102e] shadow">
+              <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#f2d66c] text-[11px] text-[#c8102e] shadow">
                 📱
               </span>
               <span>Mobile: {mobile}</span>
             </dd>
 
             <dd className="flex items-center gap-2.5 text-[13px] leading-[26px]">
-              <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-white text-[10px] text-[#c8102e] shadow">
+              <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#f2d66c] text-[10px] text-[#c8102e] shadow">
                 ✉
               </span>
-              <a className="hover:underline" href={`mailto:${email}`}>
+              <a className="transition-colors hover:text-[#f2d66c] hover:underline" href={`mailto:${email}`}>
                 {email}
               </a>
             </dd>
@@ -136,7 +139,7 @@ export default async function SiteFooter() {
       </footer>
 
       {/* 最底部深色版权与导航栏 */}
-      <div className="bg-[#a30d25] text-[12px] leading-[55px] text-white">
+      <div className="border-t border-[#f2d66c]/20 bg-[#a30d25] text-[12px] leading-[55px] text-white">
         <div className="mx-auto flex w-full max-w-[1560px] flex-wrap items-center justify-between gap-4 px-3">
           <ul className="flex flex-wrap items-center gap-1">
             {[
@@ -147,16 +150,16 @@ export default async function SiteFooter() {
               { label: "Contact", href: "/contact" },
             ].map((l, index, arr) => (
               <li key={l.label} className="flex items-center">
-                <Link className="hover:underline" href={l.href}>
+                <Link className="transition-colors hover:text-[#f2d66c] hover:underline" href={l.href}>
                   {l.label}
                 </Link>
-                {index < arr.length - 1 && <span className="mx-[5px]">|</span>}
+                {index < arr.length - 1 && <span className="mx-[5px] text-[#f2d66c]/60">|</span>}
               </li>
             ))}
           </ul>
           <div className="flex flex-wrap items-center gap-3">
             <span>{copyright}</span>
-            {beian ? <span className="opacity-80">{beian}</span> : null}
+            {beian ? <span className="text-[#f2d66c]/80">{beian}</span> : null}
           </div>
         </div>
       </div>

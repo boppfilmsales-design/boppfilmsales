@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { sanitizeRichHtml } from "@/lib/rich-text";
 
 export type ProductTabItem = {
   id: string;
@@ -51,7 +52,7 @@ export default function ProductTabs({ tabs, lang = "en", inquiryHref = "/contact
         <div
           className="news-body text-[14px] leading-[190%] text-[#3d3d3d]"
           dangerouslySetInnerHTML={{
-            __html: current.html || `<p>${t("Content is being prepared.", "内容整理中。")}</p>`,
+            __html: sanitizeRichHtml(current.html) || `<p>${t("Content is being prepared.", "内容整理中。")}</p>`,
           }}
         />
 

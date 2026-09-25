@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { getNeighbourPosts, getPostById, resolveCategory } from "@/lib/news";
+import { sanitizeRichHtml } from "@/lib/rich-text";
 
 export const dynamic = "force-dynamic";
 
@@ -63,7 +64,9 @@ export default async function NewsDetailPage({ params }: { params: Params }) {
             </div>
             <div
               className="news-body min-h-[500px] text-[14px] leading-[150%] text-[#4b4b4b]"
-              dangerouslySetInnerHTML={{ __html: post.bodyHtml || `<p>${post.excerpt}</p>` }}
+              dangerouslySetInnerHTML={{
+                __html: sanitizeRichHtml(post.bodyHtml) || `<p>${post.excerpt}</p>`,
+              }}
             />
           </article>
 

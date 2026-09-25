@@ -1,6 +1,24 @@
 "use client";
 
+import Link from "next/link";
 import React, { useState } from "react";
+import { sanitizeRichHtml } from "@/lib/rich-text";
+
+function isExternalUrl(url: string): boolean {
+  return /^https?:\/\//i.test(url);
+}
+
+function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return isExternalUrl(href) ? (
+    <a className="text-red-600 hover:text-[#c9a227] hover:underline" href={href} rel="noopener noreferrer" target="_blank">
+      {children}
+    </a>
+  ) : (
+    <Link className="text-red-600 hover:text-[#c9a227] hover:underline" href={href}>
+      {children}
+    </Link>
+  );
+}
 
 interface AccordionItemProps {
   title: string;
@@ -12,11 +30,11 @@ function AccordionSection({ title, defaultOpen = false, children }: AccordionIte
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="mb-2 overflow-hidden rounded bg-[#e60012] shadow-sm">
+    <div className="mb-2 overflow-hidden rounded bg-[#c8102e] shadow-sm ring-1 ring-inset ring-[#f2d66c]/30">
       {/* 标题栏：完美对齐源站的红底白字、白色圆点与加减号 */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center justify-between px-5 py-3 text-left font-bold text-white transition hover:bg-red-700"
+        className="flex w-full items-center justify-between px-5 py-3 text-left font-bold text-white transition hover:bg-[#a30d25]"
       >
         <span className="flex items-center gap-2.5 text-xs tracking-wider uppercase">
           <span className="h-1.5 w-1.5 rounded-full bg-white inline-block"></span>
@@ -61,7 +79,7 @@ export default function ProductDetailSection({
         <div 
           className="prose max-w-none text-xs text-gray-700 leading-relaxed whitespace-pre-line"
           dangerouslySetInnerHTML={{
-            __html: description || "Detailed product description coming soon."
+            __html: sanitizeRichHtml(description) || "Detailed product description coming soon."
           }}
         />
       </AccordionSection>
@@ -69,7 +87,7 @@ export default function ProductDetailSection({
       {/* 2. TECHNICAL PARAMETERS */}
       <AccordionSection title="TECHNICAL PARAMETERS" defaultOpen={false}>
         {technicalDetails ? (
-          <div className="prose max-w-none text-xs text-gray-700" dangerouslySetInnerHTML={{ __html: technicalDetails }} />
+          <div className="prose max-w-none text-xs text-gray-700" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(technicalDetails) }} />
         ) : parameters && parameters.length > 0 ? (
           <table className="w-full text-left text-xs">
             <tbody>
@@ -88,13 +106,12 @@ export default function ProductDetailSection({
 
       {/* 3. OFFER DETAILS */}
       <AccordionSection title="OFFER DETAILS" defaultOpen={false}>
-        <div className="text-gray-700 leading-relaxed">
-          {offerDetails || (
-            <p>
-              We offer competitive pricing (FOB / CNF terms available). Minimum order quantity (MOQ) and customized slitting/packaging options can be negotiated based on specific requirements. Contact our sales team for an updated quotation.
-            </p>
-          )}
-        </div>
+        <div
+          className="prose max-w-none text-xs text-gray-700 leading-relaxed"
+          dangerouslySetInnerHTML={{
+            __html: sanitizeRichHtml(offerDetails) || "<p>We offer competitive pricing (FOB / CNF terms available). Minimum order quantity (MOQ) and customized slitting/packaging options can be negotiated based on specific requirements. Contact our sales team for an updated quotation.</p>",
+          }}
+        />
       </AccordionSection>
 
       {/* 4. MAKE AN INQUIRY */}
@@ -103,12 +120,12 @@ export default function ProductDetailSection({
           <p>Interested in this product? Send us your inquiry directly, and our export team will respond within 24 hours.</p>
           {inquiryContent || (
             <div className="pt-2">
-              <a
+              <Link
                 href="/contact"
-                className="inline-block bg-red-600 hover:bg-red-700 text-white font-medium px-5 py-2.5 rounded transition text-xs tracking-wider uppercase"
+                className="inline-block rounded bg-[#c8102e] px-5 py-2.5 text-xs font-medium uppercase tracking-wider text-white transition hover:bg-[#a30d25]"
               >
                 Submit Inquiry Form
-              </a>
+              </Link>
             </div>
           )}
         </div>
@@ -120,16 +137,14 @@ export default function ProductDetailSection({
           {helpfulLinks && helpfulLinks.length > 0 ? (
             helpfulLinks.map((link, idx) => (
               <li key={idx}>
-                <a href={link.url} className="text-red-600 hover:underline">
-                  {link.title}
-                </a>
+                <NavLink href={link.url}>{link.title}</NavLink>
               </li>
             ))
           ) : (
             <>
-              <li><a href="/products" className="text-red-600 hover:underline">Browse All BOPP / BOPET Film Products</a></li>
-              <li><a href="/contact" className="text-red-600 hover:underline">Contact Sales Representative for Custom Quotes</a></li>
-              <li><a href="/downloads" className="text-red-600 hover:underline">Download Company Catalogs & Certificates</a></li>
+              <li><NavLink href="/products">Browse All BOPP / BOPET Film Products</NavLink></li>
+              <li><NavLink href="/contact">Contact Sales Representative for Custom Quotes</NavLink></li>
+              <li><NavLink href="/downloads">Download Company Catalogs & Certificates</NavLink></li>
             </>
           )}
         </ul>

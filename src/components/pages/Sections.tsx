@@ -27,6 +27,7 @@ import {
   type SiteContent,
 } from "@/lib/site";
 import { getSiteSettings, settingNumber } from "@/lib/site-settings";
+import { sanitizeRichHtml } from "@/lib/rich-text";
 
 type Lang = "en" | "zh";
 
@@ -715,7 +716,7 @@ export function ContentColumnPage({
         {html ? (
           <div
             className="news-body text-[14px] leading-[190%] text-[#3d3d3d]"
-            dangerouslySetInnerHTML={{ __html: html }}
+            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html) }}
           />
         ) : (
           <EmptyState lang={lang} />
@@ -772,7 +773,7 @@ export function ContentEntryPage({
             {html ? (
               <div
                 className="news-body text-[14px] leading-[190%] text-[#3d3d3d]"
-                dangerouslySetInnerHTML={{ __html: html }}
+                dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html) }}
               />
             ) : card?.image ? (
               /* eslint-disable-next-line @next/next/no-img-element */

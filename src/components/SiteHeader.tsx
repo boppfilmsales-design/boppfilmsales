@@ -20,19 +20,19 @@ export default async function SiteHeader({ active, lang = "en" }: { active?: str
             <span className="font-bold text-[#c8102e]">
               {lang === "zh" ? "欢迎光临" : "Welcome to our website"}
             </span>
-            <span>www.apigcl.com &nbsp;&amp;&nbsp; www.boppfilmsales.com</span>
+            <span className="text-[#c9a227]">www.boppfilmsales.com</span>
           </div>
           <div className="flex items-center gap-5">
-            <a className="hover:text-[#c8102e]" href={`tel:${SITE.tel}`}>
+            <a className="transition-colors hover:text-[#c8102e]" href={`tel:${SITE.tel}`}>
               ☎ {SITE.tel}
             </a>
-            <a className="hover:text-[#c8102e]" href={`mailto:${SITE.email}`}>
+            <a className="transition-colors hover:text-[#c8102e]" href={`mailto:${SITE.email}`}>
               ✉ {SITE.email}
             </a>
-            <Link className="hover:text-[#c8102e]" href={lang === "zh" ? "/" : "/zh"}>
+            <Link className="transition-colors hover:text-[#c9a227]" href={lang === "zh" ? "/" : "/zh"}>
               {lang === "zh" ? "English" : "中文版"}
             </Link>
-            <Link className="font-bold text-[#c8102e] hover:underline" href="/admin">
+            <Link className="font-bold text-[#c8102e] transition-colors hover:text-[#c9a227] hover:underline" href="/admin">
               {lang === "zh" ? "网站后台" : "Site background"}
             </Link>
           </div>
