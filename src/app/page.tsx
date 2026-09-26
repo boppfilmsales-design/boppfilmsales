@@ -5,6 +5,7 @@ import HomeContent from "@/components/pages/HomeContent";
 import { SITE } from "@/lib/site-helpers";
 import { getLatestPostsSafe } from "@/lib/home-data";
 import { getHomeSummary } from "@/lib/site-summary";
+import { getHomeSummaryLive } from "@/lib/home-live";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,8 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const summary = getHomeSummary();
+  // Live from D1; falls back to the build-time snapshot if the DB is unavailable.
+  const summary = await getHomeSummaryLive(getHomeSummary());
 
   let news: Awaited<ReturnType<typeof getLatestPostsSafe>> = [];
   try {

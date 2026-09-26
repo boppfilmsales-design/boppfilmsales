@@ -1,5 +1,6 @@
 import homeSummaryJson from "@/data/home-summary.json";
 import siteNavJson from "@/data/site-nav.json";
+import { getLiveCatalogTree } from "@/lib/home-live";
 import { getNavOverride } from "@/lib/nav-sync";
 
 export type NavSub = {
@@ -54,6 +55,16 @@ export function getNavCategories(): NavCategory[] {
  * sub-category.
  */
 export async function getNavCategoriesLive(): Promise<NavCategory[]> {
+  // Preferred path: rebuild the whole tree from `admin_products`, so a product
+  // that was added, renamed or re-filed in the admin panel shows up in the menu
+  // on the next page load instead of after the next deploy.
+  try {
+    const live = await getLiveCatalogTree();
+    if (live && live.length > 0) return live;
+  } catch (error) {
+    console.error("[site-summary] live nav tree failed, using the seeded tree:", error);
+  }
+
   const base = getNavCategories();
   let override: { sourceId: number; count: number; subs: { sourceId: number; count: number; firstItemId: number }[] }[] | null = null;
   try {

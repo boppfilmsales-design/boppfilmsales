@@ -7,6 +7,7 @@ import { getLatestPostsSafe } from "@/lib/home-data";
 import { DEFAULT_ARTICLE_SOURCE_ID, getArticleColumn } from "@/lib/article-columns";
 import { SITE } from "@/lib/site-helpers";
 import { getHomeSummary } from "@/lib/site-summary";
+import { getHomeSummaryLive } from "@/lib/home-live";
 
 export const dynamic = "force-dynamic";
 
@@ -49,7 +50,7 @@ export default async function ZhPage({
   let content: React.ReactNode;
 
   if (!first) {
-    const summary = getHomeSummary();
+    const summary = await getHomeSummaryLive(getHomeSummary());
     const news = await getLatestPostsSafe(6).catch(() => []);
     content = <HomeContent lang="zh" initialData={{ ...summary, news }} />;
   } else if (first === "products" && second && third === "list" && fourth) {
