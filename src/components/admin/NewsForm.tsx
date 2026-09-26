@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import RichEditor from "./RichEditor";
 
 export type AdminCategory = { id: number; slug: string; name: string; nameZh?: string; sourceId?: number };
@@ -52,12 +52,6 @@ export default function NewsForm({
   const [isPublished, setIsPublished] = useState(post?.isPublished ?? true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-
-  useEffect(() => {
-    if (post) {
-      setBodyHtml(post.bodyHtml);
-    }
-  }, [post]);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -137,7 +131,7 @@ export default function NewsForm({
           />
         </label>
         <label className={labelClass}>
-          Thumbnail image URL or /uploads/news/... path
+          Thumbnail image URL or /api/media/uploads/news/... path
           <input className={inputClass} onChange={(event) => setImage(event.target.value)} value={image} />
         </label>
         <label className={labelClass}>

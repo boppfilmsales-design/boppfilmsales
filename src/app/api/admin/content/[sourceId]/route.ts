@@ -47,7 +47,7 @@ function contentImageUrl(value: string): string {
   if (!source) return "";
   if (source.startsWith("/")) return source;
   if (/^https?:\/\//i.test(source)) return source;
-  return `/uploads/content/${source}`;
+  return `/api/media/uploads/content/${source}`;
 }
 
 /**

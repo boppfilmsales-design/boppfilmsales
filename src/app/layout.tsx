@@ -24,13 +24,13 @@ export const metadata: Metadata = {
     siteName: "Asia Pacific Industry Group",
     title: "Advanced BOPP & BOPET Films Built for Industry",
     description: "Technical film materials, tape jumbo rolls and production line solutions for global manufacturers.",
-    images: [{ url: "/uploads/products/9220b185d6079bc5.jpg", width: 600, height: 600, alt: "Film rolls prepared for export" }],
+    images: [{ url: "/api/media/uploads/products/9220b185d6079bc5.jpg", width: 600, height: 600, alt: "Film rolls prepared for export" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Asia Pacific Industry Group",
     description: "BOPP, BOPET, POF and technical film supply for global industry.",
-    images: ["/uploads/products/9220b185d6079bc5.jpg"],
+    images: ["/api/media/uploads/products/9220b185d6079bc5.jpg"],
   },
   robots: { index: true, follow: true },
 };

@@ -673,6 +673,9 @@ export default function Dashboard({ username }: { username: string }) {
               {(creating || editing) && activeColumn && (
                 <div className="mb-5">
                   <NewsForm
+                    // Remount per article so the editor picks up the newly
+                    // loaded body instead of syncing it in an effect.
+                    key={editing ? `post-${editing.id}` : "new"}
                     categories={newsCats.length > 0 ? newsCats : [{ id: newsColumnId, slug: "news", name: activeColumn.name }]}
                     defaultCategoryId={newsColumnId || newsCats[0]?.id}
                     onCancel={() => { setCreating(false); setEditing(null); }}

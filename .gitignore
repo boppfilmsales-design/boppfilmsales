@@ -61,3 +61,4 @@ yarn-error.log*
 /.zh-work/
 /.zh-backup-*.json
 /.audit-backup-*.json
+/.local-media/

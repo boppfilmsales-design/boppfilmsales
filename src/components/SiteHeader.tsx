@@ -44,7 +44,7 @@ export default async function SiteHeader({ active, lang = "en" }: { active?: str
         <Link className="flex items-center gap-3.5" href={lang === "zh" ? "/zh" : "/"}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/uploads/content/logo.png"
+            src="/api/media/uploads/content/logo.png"
             alt={lang === "zh" ? SITE.nameZh : SITE.name}
             className="h-[52px] w-auto object-contain"
           />

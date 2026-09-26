@@ -88,7 +88,7 @@ function ImageListEditor({
               next[i] = e.target.value;
               onChange(next);
             }}
-            placeholder="图片 URL，例如 /uploads/content/xxx.jpg"
+            placeholder="图片 URL，例如 /api/media/uploads/content/xxx.jpg"
           />
           <button
             className="shrink-0 rounded bg-[#f4f4f4] px-3 py-2 text-[12px] text-[#888] hover:bg-[#eee]"
@@ -305,7 +305,7 @@ export default function ContentForm({
                   />
                 </label>
                 <label className="text-[11px] font-bold text-[#777]">
-                  文件地址（PDF 链接 / /downloads/xxx.pdf / 图床链接 https://…）
+                  文件地址（PDF 链接 / /api/media/downloads/xxx.pdf / 图床链接 https://…）
                   <input
                     className={inputCls}
                     value={row.file ?? ""}
@@ -314,7 +314,7 @@ export default function ContentForm({
                       next[i] = { ...next[i], file: e.target.value };
                       setRows(next);
                     }}
-                    placeholder="/downloads/20180921141713_83602.pdf 或 https://图床/xxx.pdf"
+                    placeholder="/api/media/downloads/20180921141713_83602.pdf 或 https://图床/xxx.pdf"
                   />
                 </label>
                 <label className="text-[11px] font-bold text-[#777]">

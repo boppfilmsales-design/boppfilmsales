@@ -45,9 +45,9 @@ export default async function Page({
       serial: row.serial ?? "",
       format: row.format || "PDF",
       date: row.date ?? "",
-      // The legacy rows store either an absolute /downloads/... path or a bare
+      // The legacy rows store either an absolute /api/media/downloads/... path or a bare
       // file name; normalise both so the download button actually works.
-      url: !row.file ? "#" : row.file.startsWith("/") || /^https?:\/\//i.test(row.file) ? row.file : `/downloads/${row.file}`,
+      url: !row.file ? "#" : row.file.startsWith("/") || /^https?:\/\//i.test(row.file) ? row.file : `/api/media/downloads/${row.file}`,
     }));
 
   // Fallback: when the managed column has no rows yet, still show the real

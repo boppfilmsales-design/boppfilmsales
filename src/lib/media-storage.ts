@@ -64,6 +64,26 @@ export async function putMedia(
   return { stored: "local" };
 }
 
+/**
+ * Read a file from the local fallback tree.
+ *
+ * `public/` is checked first. During a Cloudflare build the legacy library is
+ * parked in `.local-media/` (see `scripts/local-media.mjs`), so that directory
+ * is checked next — that way `next dev` keeps rendering images even while the
+ * assets are excluded from the Worker bundle.
+ */
+async function readLocalFile(key: string): Promise<Uint8Array | null> {
+  const { readFile } = await import("node:fs/promises");
+  for (const base of ["public", ".local-media"]) {
+    try {
+      return await readFile(join(cwd(), base, key));
+    } catch {
+      // try the next location
+    }
+  }
+  return null;
+}
+
 /** Fetch a stored object. `null` when it does not exist. */
 export async function getMedia(
   key: string,
@@ -71,28 +91,27 @@ export async function getMedia(
   const bucket = tryGetBucket();
   if (bucket) {
     const object = await bucket.get(key);
-    if (!object) return null;
-    return {
-      body: object.body,
-      contentType: object.httpMetadata?.contentType ?? "application/octet-stream",
-    };
+    if (object) {
+      return {
+        body: object.body,
+        contentType: object.httpMetadata?.contentType ?? "application/octet-stream",
+      };
+    }
+    // Miss. On Workers the local tree is empty so this just returns null, but
+    // under `next dev` the R2 binding is an empty local emulation, and falling
+    // through is what lets the real images render.
   }
-  // Local fallback: stream the file out of `public/`.
-  const { readFile } = await import("node:fs/promises");
-  try {
-    const data = await readFile(join(cwd(), "public", key));
-    return {
-      body: new ReadableStream({
-        start(controller) {
-          controller.enqueue(new Uint8Array(data));
-          controller.close();
-        },
-      }),
-      contentType: guessContentType(key),
-    };
-  } catch {
-    return null;
-  }
+  const data = await readLocalFile(key);
+  if (!data) return null;
+  return {
+    body: new ReadableStream({
+      start(controller) {
+        controller.enqueue(new Uint8Array(data));
+        controller.close();
+      },
+    }),
+    contentType: guessContentType(key),
+  };
 }
 
 /** Best-effort content type for the local fallback path. */

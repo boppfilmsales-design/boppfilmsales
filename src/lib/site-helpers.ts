@@ -16,7 +16,7 @@ export function productImageUrl(value: string): string {
   if (!source) return "";
   if (source.startsWith("/")) return source;
   if (/^https?:\/\//i.test(source)) return source;
-  return `/uploads/products/${source}`;
+  return `/api/media/uploads/products/${source}`;
 }
 
 export function contentImageUrl(value: string): string {
@@ -24,7 +24,7 @@ export function contentImageUrl(value: string): string {
   if (!source) return "";
   if (source.startsWith("/")) return source;
   if (/^https?:\/\//i.test(source)) return source;
-  return `/uploads/content/${source}`;
+  return `/api/media/uploads/content/${source}`;
 }
 
 export function stripHtml(value: string, max = 220): string {

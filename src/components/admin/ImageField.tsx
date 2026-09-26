@@ -22,7 +22,7 @@ export default function ImageField({
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="图片路径，如 /uploads/products/xxx.jpg 或 https://图床/xxx.jpg"
+          placeholder="图片路径，如 /api/media/uploads/products/xxx.jpg 或 https://图床/xxx.jpg"
           className="w-full border border-[#ddd] px-3 py-2 text-[13px] outline-none focus:border-[#e61d39]"
         />
         <UploadButton

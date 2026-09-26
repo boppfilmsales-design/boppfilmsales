@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export type ProductFamilyCard = {
   key: number;
@@ -28,16 +28,15 @@ type Props = {
  * page numbers · next · end.
  */
 export default function ProductFamilyGrid({ families, lang = "en", perPage = 9 }: Props) {
+  // The pager resets when the result set changes. Rather than syncing that in
+  // an effect, the parent remounts this grid with `key={families.length}`
+  // (see Sections.tsx), which is the pattern React recommends for "reset state
+  // when a prop changes" and avoids an extra render pass.
   const [page, setPage] = useState(1);
   const pageCount = Math.max(1, Math.ceil(families.length / perPage));
   const current = Math.min(page, pageCount);
   const slice = families.slice((current - 1) * perPage, current * perPage);
   const t = (en: string, zh: string) => (lang === "zh" ? zh : en);
-
-  // Reset to page 1 whenever the underlying set changes (e.g. filtering).
-  useEffect(() => {
-    setPage(1);
-  }, [families.length]);
 
   if (families.length === 0) {
     return (

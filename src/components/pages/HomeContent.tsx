@@ -68,57 +68,57 @@ const COPY = {
 // 11 张工厂实景图与对应的中英文经典标语配置
 const HERO_SLIDES = [
   {
-    image: "/uploads/content/20180921123852_32535.jpg",
+    image: "/api/media/uploads/content/20180921123852_32535.jpg",
     zh: "精诚所至 金石为开 亚太薄膜 包装世界。",
     en: "Sincerity moves metals and stones; Asia Pacific films pack the world.",
   },
   {
-    image: "/uploads/content/20180921123911_98135.jpg",
+    image: "/api/media/uploads/content/20180921123911_98135.jpg",
     zh: "中国高端薄膜制造者，勇攀薄膜制造最高峰",
     en: "China's premier high-end film manufacturer, scaling the pinnacle of film extrusion technology.",
   },
   {
-    image: "/uploads/content/20180921123930_43821.jpg",
+    image: "/api/media/uploads/content/20180921123930_43821.jpg",
     zh: "亚太薄膜，技艺精湛，直面珠穆朗玛峰。",
     en: "Asia Pacific films crafted with superb mastery, standing tall against the highest peak.",
   },
   {
-    image: "/uploads/content/20180921123948_29404.jpg",
+    image: "/api/media/uploads/content/20180921123948_29404.jpg",
     zh: "薄膜吾家事，谁与争锋？",
     en: "Industrial packaging films are our legacy—who dares to challenge our leadership?",
   },
   {
-    image: "/uploads/content/20180921124008_79463.jpg",
+    image: "/api/media/uploads/content/20180921124008_79463.jpg",
     zh: "精诚所至 金石为开 亚太薄膜 包装世界。",
     en: "Sincerity moves metals and stones; Asia Pacific films pack the world.",
   },
   {
-    image: "/uploads/content/20180921124025_89694.jpg",
+    image: "/api/media/uploads/content/20180921124025_89694.jpg",
     zh: "中国高端薄膜制造者，勇攀薄膜制造最高峰",
     en: "China's premier high-end film manufacturer, scaling the pinnacle of film extrusion technology.",
   },
   {
-    image: "/uploads/content/20180921124042_70262.jpg",
+    image: "/api/media/uploads/content/20180921124042_70262.jpg",
     zh: "亚太薄膜，技艺精湛，直面珠穆朗玛峰。",
     en: "Asia Pacific films crafted with superb mastery, standing tall against the highest peak.",
   },
   {
-    image: "/uploads/content/20180921124100_12296.jpg",
+    image: "/api/media/uploads/content/20180921124100_12296.jpg",
     zh: "薄膜吾家事，谁与争锋？",
     en: "Industrial packaging films are our legacy—who dares to challenge our leadership?",
   },
   {
-    image: "/uploads/content/20180921124117_17434.jpg",
+    image: "/api/media/uploads/content/20180921124117_17434.jpg",
     zh: "精诚所至 金石为开 亚太薄膜 包装世界。",
     en: "Sincerity moves metals and stones; Asia Pacific films pack the world.",
   },
   {
-    image: "/uploads/content/20180921124133_35944.jpg",
+    image: "/api/media/uploads/content/20180921124133_35944.jpg",
     zh: "中国高端薄膜制造者，勇攀薄膜制造最高峰",
     en: "China's premier high-end film manufacturer, scaling the pinnacle of film extrusion technology.",
   },
   {
-    image: "/uploads/content/20180921124149_80738.jpg",
+    image: "/api/media/uploads/content/20180921124149_80738.jpg",
     zh: "亚太薄膜，技艺精湛，直面珠穆朗玛峰。",
     en: "Asia Pacific films crafted with superb mastery, standing tall against the highest peak.",
   },

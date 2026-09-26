@@ -238,7 +238,13 @@ export async function ProductsIndex({ lang = "en" }: { lang?: Lang }) {
       />
       <section className="py-12">
         <div className="mx-auto w-full max-w-[1560px] px-4">
-          <ProductFamilyGrid families={familyCards} lang={lang} perPage={perPage} />
+          <ProductFamilyGrid
+            // Remount when the result set changes so the pager returns to page 1.
+            key={familyCards.length}
+            families={familyCards}
+            lang={lang}
+            perPage={perPage}
+          />
         </div>
       </section>
       <AllPdfsSection lang={lang} />

@@ -9,6 +9,12 @@
     "typecheck": "tsc --noEmit",
     "preview": "node scripts/build-runtime-data.mjs && opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "node scripts/build-runtime-data.mjs && opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "predeploy": "node scripts/local-media.mjs stash",
+    "postdeploy": "node scripts/local-media.mjs restore",
+    "prepreview": "node scripts/local-media.mjs stash",
+    "postpreview": "node scripts/local-media.mjs restore",
+    "media:status": "node scripts/local-media.mjs status",
+    "media:restore": "node scripts/local-media.mjs restore",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {

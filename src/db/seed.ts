@@ -128,7 +128,7 @@ async function seedPosts() {
       excerpt: (item.listExcerpt || item.bodyText || "").trim().slice(0, 400),
       bodyHtml: item.bodyHtml ?? "",
       bodyText: item.bodyText ?? "",
-      image: item.image ? `/uploads/news/${item.image}` : "",
+      image: item.image ? `/api/media/uploads/news/${item.image}` : "",
       isPublished: true,
       sortDate: parseSortDate(listDate, newsDate),
     };
@@ -256,7 +256,7 @@ const MESSAGE_DEFS = [
     author: "xgxadmin",
     title: "下载中心 PDF 文件命名规范",
     body:
-      "下载中心的文件地址请使用 /downloads/ 开头的相对路径，例如 /downloads/bopp-film-tds.pdf。\n" +
+      "下载中心的文件地址请使用 /api/media/downloads/ 开头的相对路径，例如 /api/media/downloads/bopp-film-tds.pdf。\n" +
       "编号列用于前台列表显示，建议格式为 TDS-001 这类可排序的短编号。",
     sectionPid: 42,
     columnSourceId: 76,

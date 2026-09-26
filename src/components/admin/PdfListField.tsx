@@ -51,7 +51,7 @@ export default function PdfListField({
                   type="text"
                   value={pdf.file}
                   onChange={(e) => update(idx, { file: e.target.value })}
-                  placeholder="/downloads/xxx.pdf 或 https://..."
+                  placeholder="/api/media/downloads/xxx.pdf 或 https://..."
                   className="min-w-0 flex-1 border border-[#ddd] px-3 py-2 text-[13px] outline-none focus:border-[#e61d39]"
                 />
                 <UploadButton
