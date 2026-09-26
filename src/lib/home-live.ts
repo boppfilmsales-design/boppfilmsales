@@ -1,5 +1,4 @@
 import { asc, eq, sql } from "drizzle-orm";
-import { cache } from "react";
 
 import validFilesList from "@/data/valid-files.json";
 import { db } from "@/db";
@@ -66,11 +65,11 @@ function isValidPdf(file?: string): boolean {
 /**
  * Live product rows, newest edit included.
  *
- * Wrapped in React's `cache` so the home page and `SiteHeader` (which renders
- * the mega-menu from the same rows) share one query per request instead of
- * running it twice.
+ * Returns an empty array on error so that callers can fall back to the
+ * build-time JSON snapshot. `db` is a lazy proxy — the query is only sent when
+ * this function is actually awaited inside a request.
  */
-const loadRows = cache(async (): Promise<ProductRow[]> => {
+async function loadRows(): Promise<ProductRow[]> {
   try {
     return await db
       .select({
@@ -90,7 +89,7 @@ const loadRows = cache(async (): Promise<ProductRow[]> => {
     console.error("[home-live] product query failed, falling back to the static seed:", error);
     return [];
   }
-});
+}
 
 function groupByFamily(rows: ProductRow[]): Map<number, ProductRow[]> {
   const map = new Map<number, ProductRow[]>();
