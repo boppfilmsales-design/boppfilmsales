@@ -1,6 +1,7 @@
-﻿import { eq, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import seedRaw from "@/data/news-seed.json";
 import { db } from "@/db";
+import { D1_SCHEMA_STATEMENTS } from "@/db/d1-ddl";
 import { adminContents, adminMessages, adminProducts, adminRoles, adminUsers, newsCategories, newsPosts, siteSettings } from "@/db/schema";
 import { hashPassword } from "@/lib/password";
 
@@ -65,184 +66,23 @@ export const PUBLIC_NEWS_SLUGS = ["industry-news", "company-news", "employees-li
 export const ADMIN_USERNAME = process.env.ADMIN_USERNAME ?? "xgxadmin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "xgxadmin";
 
+/**
+ * Ensure the D1 schema exists.
+ *
+ * Tables are normally created ahead of time from the drizzle migration in
+ * `drizzle/0000_init_d1.sql`. This is only a safety net for a brand-new
+ * database: it checks `sqlite_master` once and, only when the core table is
+ * missing, runs the inline DDL from `./d1-ddl` (so a fresh database can still
+ * bootstrap itself without a manual migration).
+ */
 async function ensureSchema() {
-  await db.execute(sql`
-    create table if not exists news_categories (
-      id serial primary key,
-      slug text not null,
-      name text not null,
-      source_id integer not null,
-      sort_order integer not null default 0
-    )`);
-  await db.execute(sql`create unique index if not exists news_categories_slug_key on news_categories (slug)`);
-  await db.execute(
-    sql`create unique index if not exists news_categories_source_id_key on news_categories (source_id)`,
+  const existing = await db.all<{ name: string }>(
+    sql`select name from sqlite_master where type = 'table' and name = 'news_categories' limit 1`,
   );
-  await db.execute(sql`
-    create table if not exists news_posts (
-      id serial primary key,
-      category_id integer not null references news_categories(id) on delete cascade,
-      source_id integer,
-      title text not null,
-      list_date text not null default '',
-      news_date text not null default '',
-      excerpt text not null default '',
-      body_html text not null default '',
-      body_text text not null default '',
-      image text not null default '',
-      is_published boolean not null default true,
-      sort_date timestamptz,
-      created_at timestamptz not null default now(),
-      updated_at timestamptz not null default now()
-    )`);
-  await db.execute(sql`create index if not exists news_posts_category_idx on news_posts (category_id)`);
-  await db.execute(sql`create index if not exists news_posts_sort_idx on news_posts (sort_date)`);
-  await db.execute(sql`
-    create table if not exists admin_users (
-      id serial primary key,
-      username text not null,
-      password_hash text not null,
-      created_at timestamptz not null default now()
-    )`);
-  await db.execute(sql`create unique index if not exists admin_users_username_key on admin_users (username)`);
-  await db.execute(sql`create table if not exists admin_roles (
-      id serial primary key,
-      key text not null,
-      name text not null,
-      name_zh text not null default '',
-      description text not null default '',
-      permissions_json text not null default '["*"]',
-      is_built_in boolean not null default false,
-      created_at timestamptz not null default now()
-    )`);
-  await db.execute(sql`create unique index if not exists admin_roles_key_key on admin_roles (key)`);
-  await db.execute(sql`create table if not exists site_settings (
-      id serial primary key,
-      key text not null,
-      value text not null default '',
-      label text not null default '',
-      group_name text not null default 'general',
-      updated_at timestamptz not null default now()
-    )`);
-  await db.execute(sql`create unique index if not exists site_settings_key_key on site_settings (key)`);
-  await db.execute(sql`create table if not exists admin_audit_log (
-      id serial primary key,
-      actor text not null default '',
-      action text not null,
-      detail text not null default '',
-      created_at timestamptz not null default now()
-    )`);
-  await db.execute(sql`create index if not exists admin_audit_log_created_idx on admin_audit_log (created_at)`);
-  await db.execute(sql`create table if not exists admin_messages (
-      id serial primary key,
-      author text not null default '',
-      title text not null default '',
-      body text not null,
-      section_pid integer,
-      column_source_id integer,
-      status text not null default 'open',
-      reply text not null default '',
-      replied_by text not null default '',
-      replied_at timestamptz,
-      is_pinned boolean not null default false,
-      created_at timestamptz not null default now()
-    )`);
-  await db.execute(sql`create index if not exists admin_messages_created_idx on admin_messages (created_at)`);
-  await db.execute(sql`create index if not exists admin_messages_status_idx on admin_messages (status)`);
-  for (const column of [
-    ["display_name", "text not null default ''"],
-    ["role_key", "text not null default 'owner'"],
-    ["status", "text not null default 'active'"],
-    ["last_login_at", "timestamptz"],
-  ] as const) {
-    await db.execute(sql.raw(`alter table admin_users add column if not exists ${column[0]} ${column[1]}`));
+  if (existing.length > 0) return;
+  for (const statement of D1_SCHEMA_STATEMENTS) {
+    await db.run(sql.raw(statement));
   }
-  await db.execute(sql`
-    create table if not exists admin_products (
-      id serial primary key,
-      source_id integer not null unique,
-      family_id integer not null,
-      category_id integer not null,
-      sort integer not null default 10,
-      title text not null,
-      title_zh text not null default '',
-      subtitle text not null default '',
-      subtitle_zh text not null default '',
-      code text not null default '',
-      price text not null default '',
-      image text not null default '',
-      gallery_json text not null default '[]',
-      body_html text not null default '',
-      body_text text not null default '',
-      body_html_zh text not null default '',
-      description text not null default '',
-      description_zh text not null default '',
-      technical text not null default '',
-      technical_zh text not null default '',
-      offer text not null default '',
-      offer_zh text not null default '',
-      pdfs_json text not null default '[]',
-      status text not null default '正常',
-      created_at timestamptz not null default now(),
-      updated_at timestamptz not null default now()
-    )`);
-  for (const column of [
-    ["title_zh", "text not null default ''"], ["subtitle_zh", "text not null default ''"],
-    ["code", "text not null default ''"], ["price", "text not null default ''"],
-    ["gallery_json", "text not null default '[]'"], ["body_html_zh", "text not null default ''"],
-    ["description", "text not null default ''"], ["description_zh", "text not null default ''"],
-    ["technical", "text not null default ''"], ["technical_zh", "text not null default ''"],
-    ["offer", "text not null default ''"], ["offer_zh", "text not null default ''"],
-    ["pdfs_json", "text not null default '[]'"],
-  ] as const) {
-    await db.execute(sql.raw(`alter table admin_products add column if not exists ${column[0]} ${column[1]}`));
-  }
-  await db.execute(sql`create index if not exists admin_products_family_idx on admin_products (family_id)`);
-  await db.execute(sql`
-    create table if not exists admin_contents (
-      id serial primary key,
-      source_id integer not null unique,
-      kind text not null,
-      name text not null default '',
-      name_zh text not null default '',
-      data_json text not null default '{}',
-      updated_at timestamptz not null default now()
-    )`);
-  await db.execute(sql`create index if not exists admin_contents_kind_idx on admin_contents (kind)`);
-
-  /* ----- Customer inquiries (front-end message form → admin inbox) -----
-     Created here as well as in drizzle-kit so a fresh database is usable
-     without a manual `drizzle-kit push`. */
-  await db.execute(sql`
-    create table if not exists inquiries (
-      id serial primary key,
-      company text not null default '',
-      contact text not null,
-      email text not null,
-      phone text not null default '',
-      message text not null,
-      language text not null default 'en',
-      source_page text not null default '/contact',
-      status text not null default 'new',
-      reply text not null default '',
-      replied_by text not null default '',
-      replied_at timestamptz,
-      is_public boolean not null default false,
-      created_at timestamptz not null default now()
-    )`);
-  for (const column of [
-    ["phone", "text not null default ''"],
-    ["source_page", "text not null default '/contact'"],
-    ["reply", "text not null default ''"],
-    ["replied_by", "text not null default ''"],
-    ["replied_at", "timestamptz"],
-    ["is_public", "boolean not null default false"],
-  ] as const) {
-    await db.execute(sql.raw(`alter table inquiries add column if not exists ${column[0]} ${column[1]}`));
-  }
-  await db.execute(sql`create index if not exists inquiries_created_at_idx on inquiries (created_at)`);
-  await db.execute(sql`create index if not exists inquiries_status_idx on inquiries (status)`);
-  await db.execute(sql`create index if not exists inquiries_public_idx on inquiries (is_public)`);
 }
 
 export function parseSortDate(listDate: string, newsDate: string): Date | null {
@@ -267,7 +107,7 @@ async function seedCategories() {
 
 async function seedPosts() {
   const [{ total }] = await db
-    .select({ total: sql<number>`count(*)::int` })
+    .select({ total: sql<number>`count(*)` })
     .from(newsPosts);
   if (total > 0) return;
 
@@ -437,13 +277,13 @@ const MESSAGE_DEFS = [
 ];
 
 async function seedMessages() {
-  const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(adminMessages);
+  const [{ total }] = await db.select({ total: sql<number>`count(*)` }).from(adminMessages);
   if (total > 0) return;
   await db.insert(adminMessages).values(MESSAGE_DEFS);
 }
 
 async function seedProducts() {
-  const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(adminProducts);
+  const [{ total }] = await db.select({ total: sql<number>`count(*)` }).from(adminProducts);
   if (total > 0) return;
 
   // Read the seed file directly instead of going through `@/lib/site`.
@@ -485,7 +325,7 @@ async function seedProducts() {
 }
 
 async function seedContents() {
-  const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(adminContents);
+  const [{ total }] = await db.select({ total: sql<number>`count(*)` }).from(adminContents);
   if (total > 0) return;
 
   const { readSiteSeed } = await loadSiteSeedReader();
@@ -521,7 +361,7 @@ async function init() {
  * `init()` entirely.
  */
 async function isDatabasePopulated(): Promise<boolean> {
-  const [row] = await db.select({ total: sql<number>`count(*)::int` }).from(adminUsers);
+  const [row] = await db.select({ total: sql<number>`count(*)` }).from(adminUsers);
   return (row?.total ?? 0) > 0;
 }
 

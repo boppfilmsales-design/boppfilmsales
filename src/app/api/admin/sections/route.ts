@@ -57,7 +57,7 @@ export async function GET() {
           // therefore always returned 0 — resolve through `news_categories`
           // first, exactly like `/api/admin/posts` does.
           const result = await db
-            .select({ count: sql<number>`count(*)::int` })
+            .select({ count: sql<number>`count(*)` })
             .from(newsPosts)
             .innerJoin(newsCategories, eq(newsPosts.categoryId, newsCategories.id))
             .where(eq(newsCategories.sourceId, col.sourceId));
@@ -65,7 +65,7 @@ export async function GET() {
           continue;
         }
         if (col.dataSource === "inquiries") {
-          const result = await db.select({ count: sql<number>`count(*)::int` }).from(inquiries);
+          const result = await db.select({ count: sql<number>`count(*)` }).from(inquiries);
           col.itemCount = result[0]?.count ?? 0;
           continue;
         }

@@ -86,7 +86,7 @@ export async function GET() {
     .orderBy(asc(adminContents.sourceId));
   const storedMap = new Map(stored.map((row) => [row.sourceId, row]));
 
-  const [newsCounts] = await db.select({ total: sql<number>`count(*)::int` }).from(adminMessages).limit(1);
+  const [newsCounts] = await db.select({ total: sql<number>`count(*)` }).from(adminMessages).limit(1);
 
   return Response.json({
     ok: true,
@@ -138,18 +138,26 @@ export async function POST(request: Request) {
 
     // Re-file every post of `fromSourceId` (legacy source id 41/49/52) into the
     // target category, resolved via `news_categories.source_id`.
-    const cats = await db.execute<{ id: number; source_id: number; name: string }>(
+    const cats = await db.all<{ id: number; source_id: number; name: string }>(
       sql`select id, source_id, name from news_categories where source_id in (${fromSourceId}, ${toSourceId})`,
     );
-    const from = cats.rows.find((r) => r.source_id === fromSourceId);
-    const to = cats.rows.find((r) => r.source_id === toSourceId);
+    const from = cats.find((r) => r.source_id === fromSourceId);
+    const to = cats.find((r) => r.source_id === toSourceId);
     if (!from || !to) return Response.json({ ok: false, error: "新闻栏目不存在" }, { status: 404 });
 
     // news_posts.source_id is the per-post legacy id, so we must match on the
     // category FK rather than source_id here.
-    const moved = await db.execute<{ id: number }>(
-      sql`update news_posts set category_id = ${to.id}, updated_at = now() where category_id = ${from.id} returning id`,
+    // SQLite has no `now()` (epoch ms is passed in) and `returning id` is not
+    // universally available, so read the affected ids first and update after.
+    const targets = await db.all<{ id: number }>(
+      sql`select id from news_posts where category_id = ${from.id}`,
     );
+    if (targets.length > 0) {
+      await db.run(
+        sql`update news_posts set category_id = ${to.id}, updated_at = ${Date.now()} where category_id = ${from.id}`,
+      );
+    }
+    const moved = { rows: targets };
 
     await db.insert(adminAuditLog).values({
       actor: session?.username ?? "",

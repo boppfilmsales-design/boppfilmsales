@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, like, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { newsCategories, newsPosts } from "@/db/schema";
 import { ensureSeedData } from "@/db/seed";
@@ -73,12 +73,12 @@ async function listPostsForAdmin(request: Request) {
   }
   if (keyword) {
     const term = `%${keyword}%`;
-    const like = or(ilike(newsPosts.title, term), ilike(newsPosts.bodyText, term));
-    if (like) filters.push(like);
+    const searchFilter = or(like(newsPosts.title, term), like(newsPosts.bodyText, term));
+    if (searchFilter) filters.push(searchFilter);
   }
   const where = filters.length > 0 ? and(...filters) : undefined;
 
-  const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(newsPosts).where(where);
+  const [{ total }] = await db.select({ total: sql<number>`count(*)` }).from(newsPosts).where(where);
   const items = await db
     .select({
       id: newsPosts.id,

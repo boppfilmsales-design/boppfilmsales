@@ -48,10 +48,10 @@ export function parseNavOverride(raw: string | undefined): NavCategory[] | null 
 /** Reads the cached override from `site_settings`. Never throws. */
 export async function getNavOverride(): Promise<NavCategory[] | null> {
   try {
-    const rows = await db.execute<{ value: string }>(
+    const rows = await db.all<{ value: string }>(
       sql`select value from site_settings where key = ${NAV_OVERRIDE_KEY} limit 1`,
     );
-    return parseNavOverride(rows.rows[0]?.value);
+    return parseNavOverride(rows[0]?.value);
   } catch {
     return null;
   }
@@ -74,7 +74,7 @@ export async function getNavOverride(): Promise<NavCategory[] | null> {
  * Returns the rebuilt tree, or null when there is nothing to rebuild from.
  */
 export async function rebuildNavFromDb(): Promise<NavCategory[] | null> {
-  const rows = await db.execute<{
+  const rows = await db.all<{
     source_id: number;
     family_id: number;
     category_id: number;
@@ -83,10 +83,10 @@ export async function rebuildNavFromDb(): Promise<NavCategory[] | null> {
   }>(sql`
     select source_id, family_id, category_id, title, title_zh
     from admin_products
-    where status is distinct from '已删除'
+    where ifnull(status, '') <> '已删除'
     order by family_id, category_id, sort, source_id
   `);
-  if (rows.rows.length === 0) return null;
+  if (rows.length === 0) return null;
 
   // Reuse the seeded names so the menu keeps its curated wording; the transfer
   // screen only ever moves products between *existing* families/subs, so this
@@ -104,7 +104,7 @@ export async function rebuildNavFromDb(): Promise<NavCategory[] | null> {
   }
 
   const famMap = new Map<number, NavCategory>();
-  for (const row of rows.rows) {
+  for (const row of rows) {
     let fam = famMap.get(row.family_id);
     if (!fam) {
       const seedName = nameByFamily.get(row.family_id);
@@ -153,10 +153,13 @@ export async function rebuildNavFromDb(): Promise<NavCategory[] | null> {
 /** Writes the rebuilt tree into `site_settings`. Returns false on failure. */
 export async function saveNavOverride(tree: NavCategory[]): Promise<boolean> {
   try {
-    await db.execute(sql`
+    // SQLite/D1: timestamps are epoch milliseconds, so pass the value in
+    // rather than calling `now()` (a PostgreSQL function).
+    const nowMs = Date.now();
+    await db.run(sql`
       insert into site_settings (key, value, label, group_name, updated_at)
-      values (${NAV_OVERRIDE_KEY}, ${JSON.stringify(tree)}, '产品导航树（自动生成）', 'system', now())
-      on conflict (key) do update set value = excluded.value, updated_at = now()
+      values (${NAV_OVERRIDE_KEY}, ${JSON.stringify(tree)}, '产品导航树（自动生成）', 'system', ${nowMs})
+      on conflict (key) do update set value = excluded.value, updated_at = ${nowMs}
     `);
     return true;
   } catch {

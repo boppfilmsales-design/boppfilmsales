@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
-import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-import { cwd } from "node:process";
+import { mediaUrl, putMedia } from "@/lib/media-storage";
 
 export const dynamic = "force-dynamic";
 
@@ -21,12 +19,16 @@ function sanitizeFileName(name: string): string {
 }
 
 /**
- * Admin file upload endpoint. Saves files to the local `public/` directory so
- * they are served as static assets during development.
+ * Admin file upload endpoint.
  *
- * For production (Vercel / Cloudflare Workers), replace this with a cloud
- * storage provider (S3, R2, Vercel Blob, etc.). The frontend only needs the
- * returned URL, so swapping the backend is straightforward.
+ * Files go to Cloudflare R2 (see `src/lib/media-storage.ts`) rather than the
+ * local `public/` directory: D1 stores text and structured data only, and the
+ * Workers filesystem is read-only, so uploads must live in object storage to
+ * survive a deploy. The frontend only needs the returned URL, which is served
+ * back by `/api/media/[...key]`.
+ *
+ * When the R2 binding is absent (plain `next dev`), the storage layer falls
+ * back to `public/` so local development keeps working.
  */
 export async function POST(request: Request) {
   const denied = await requireAdmin();
@@ -46,14 +48,11 @@ export async function POST(request: Request) {
     const safeName = sanitizeFileName(originalName);
     const uniqueName = `${Date.now()}_${safeName}`;
 
-    const destDir = join(cwd(), "public", folder);
-    await mkdir(destDir, { recursive: true });
+    const buffer = new Uint8Array(await file.arrayBuffer());
+    const key = `${folder}/${uniqueName}`;
+    const { stored } = await putMedia(key, buffer, file.type || "application/octet-stream");
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(join(destDir, uniqueName), buffer);
-
-    const url = `/${folder}/${uniqueName}`;
-    return NextResponse.json({ ok: true, url, name: originalName });
+    return NextResponse.json({ ok: true, url: mediaUrl(key), name: originalName, stored });
   } catch (error: any) {
     return NextResponse.json({ ok: false, error: error.message || "上传失败" }, { status: 500 });
   }

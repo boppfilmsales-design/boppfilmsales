@@ -1,37 +1,49 @@
-import { drizzle } from "drizzle-orm/neon-serverless";
-import { Pool, neonConfig } from "@neondatabase/serverless";
-import ws from "ws";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { drizzle, type DrizzleD1Database } from "drizzle-orm/d1";
 
-if (typeof WebSocket === "undefined") {
-  neonConfig.webSocketConstructor = ws;
-}
+import * as schema from "./schema";
 
-type Db = ReturnType<typeof drizzle>;
+/**
+ * Cloudflare D1 data-access layer.
+ *
+ * The site runs on Cloudflare Workers (via @opennextjs/cloudflare) and stores
+ * everything in D1, reached through the `DB` binding declared in
+ * `wrangler.jsonc`. D1 is a Worker binding rather than a TCP connection, so
+ * there is no connection pool and no metered egress — reads and writes never
+ * leave Cloudflare's network.
+ *
+ * `getCloudflareContext()` is only available while a request is being handled,
+ * so the drizzle instance is built lazily on first use (see the `db` proxy
+ * below) instead of at module load time.
+ */
+export type Db = DrizzleD1Database<typeof schema>;
 
-let _pool: Pool | undefined;
 let _db: Db | undefined;
 
-export function getPool(): Pool {
-  if (!_pool) {
-    const databaseUrl = process.env.DATABASE_URL;
-    if (!databaseUrl) throw new Error("DATABASE_URL is required");
-    _pool = new Pool({ connectionString: databaseUrl });
+/** Resolve the D1 binding from the current Cloudflare context. */
+function binding(): D1Database {
+  const { env } = getCloudflareContext();
+  const db = (env as unknown as { DB?: D1Database }).DB;
+  if (!db) {
+    throw new Error(
+      "D1 binding `DB` is missing. Add the `d1_databases` entry to wrangler.jsonc and re-run `npm run cf-typegen`.",
+    );
   }
-  return _pool;
+  return db;
 }
 
 export function getDb(): Db {
-  if (!_db) _db = drizzle(getPool());
+  if (!_db) _db = drizzle(binding(), { schema });
   return _db;
+}
+
+/** Drop the cached drizzle instance (used by scripts that swap bindings). */
+export function resetDb(): void {
+  _db = undefined;
 }
 
 export const db = new Proxy({} as Db, {
   get: (_t, p) => Reflect.get(getDb() as object, p),
 });
 
-export const pool = new Proxy({} as Pool, {
-  get: (_t, p) => {
-    const v = Reflect.get(getPool() as object, p);
-    return typeof v === "function" ? v.bind(getPool()) : v;
-  },
-});
+export { schema };

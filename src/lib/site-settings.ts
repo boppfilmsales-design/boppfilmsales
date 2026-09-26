@@ -33,11 +33,11 @@ export type SiteSettingsMap = Record<string, string>;
 /** Loads every setting in one round-trip. Never throws. */
 export async function getSiteSettings(): Promise<SiteSettingsMap> {
   try {
-    const rows = await db.execute<{ key: string; value: string }>(
+    const rows = await db.all<{ key: string; value: string }>(
       sql`select key, value from site_settings`,
     );
     const map: SiteSettingsMap = { ...DEFAULT_SETTINGS };
-    for (const row of rows.rows) {
+    for (const row of rows) {
       if (row.key) map[row.key] = row.value ?? "";
     }
     return map;

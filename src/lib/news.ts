@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, like, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { newsCategories, newsPosts } from "@/db/schema";
 import { ensureSeedData, CATEGORY_DEFS, type SeedItem } from "@/db/seed";
@@ -119,17 +119,17 @@ export async function listPosts(options: {
     if (options.categoryId) filters.push(eq(newsPosts.categoryId, options.categoryId));
     if (options.search && options.search.trim()) {
       const term = `%${options.search.trim()}%`;
-      const like = or(
-        ilike(newsPosts.title, term),
-        ilike(newsPosts.excerpt, term),
-        ilike(newsPosts.bodyText, term),
+      const searchFilter = or(
+        like(newsPosts.title, term),
+        like(newsPosts.excerpt, term),
+        like(newsPosts.bodyText, term),
       );
-      if (like) filters.push(like);
+      if (searchFilter) filters.push(searchFilter);
     }
     const where = filters.length > 0 ? and(...filters) : undefined;
 
     const [{ total }] = await db
-      .select({ total: sql<number>`count(*)::int` })
+      .select({ total: sql<number>`count(*)` })
       .from(newsPosts)
       .where(where);
 

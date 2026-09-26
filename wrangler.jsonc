@@ -16,6 +16,25 @@
 			"service": "nextjs-postgresql-template"
 		}
 	],
+	"d1_databases": [
+		{
+			// Site database. Replaces the previous Neon Postgres instance, whose
+			// free 5 GB/month network-transfer allowance kept being exhausted.
+			// D1 is a Worker binding, so queries never leave Cloudflare's network
+			// and there is no egress to meter.
+			"binding": "DB",
+			"database_name": "boppfilmsales-db",
+			"database_id": "0fa6ed59-fc86-43e5-a28c-ea3fef1837f8"
+		}
+	],
+	"r2_buckets": [
+		{
+			// Images / PDFs uploaded through the admin panel. D1 stores text and
+			// structured data only, so media lives here instead.
+			"binding": "UPLOADS",
+			"bucket_name": "boppfilmsales-website-assets"
+		}
+	],
 	"images": {
 		// Enable image optimization
 		// see https://opennext.js.org/cloudflare/howtos/image
