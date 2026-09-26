@@ -40,9 +40,7 @@
 			"bucket_name": "boppfilmsales-website-assets"
 		}
 	],
-	"images": {
-		// Enable image optimization
-		// see https://opennext.js.org/cloudflare/howtos/image
-		"binding": "IMAGES"
-	}
+	// No `images` binding: next.config.ts sets `images: { unoptimized: true }`
+	// and nothing in src/ uses next/image, so Cloudflare Images would only be a
+	// deploy-time dependency on a feature the account may not have enabled.
 }

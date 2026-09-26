@@ -4,7 +4,6 @@
 interface __BaseEnv_CloudflareEnv {
 	UPLOADS: R2Bucket;
 	DB: D1Database;
-	IMAGES: ImagesBinding;
 	ASSETS: Fetcher;
 	DATABASE_URL: string;
 	DIRECT_URL: string;
