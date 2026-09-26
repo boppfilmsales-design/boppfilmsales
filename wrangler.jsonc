@@ -2,6 +2,11 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"main": ".open-next/worker.js",
 	"name": "nextjs-postgresql-template",
+	// Deploy target. The D1 database and the R2 bucket below were created in
+	// this account; without an explicit `account_id`, wrangler falls back to
+	// whichever account `wrangler login` picked, and the deploy dies with
+	// "R2 bucket ... not found [code: 10085]".
+	"account_id": "1558b11cf56bf7597de219af04f1834b",
 	"compatibility_date": "2026-09-11",
 	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public", "no_handle_cross_request_promise_resolution"],
 	"assets": {
