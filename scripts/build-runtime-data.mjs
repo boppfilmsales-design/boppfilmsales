@@ -221,16 +221,74 @@ const homeSummary = {
   aboutZhHtml: homeAboutZhHtml(),
 };
 
+/**
+ * Slim runtime copy of `site-seed.json`.
+ *
+ * The full seed is 13.5 MB and is only needed by this script (build time) and
+ * by `src/db/site-seed-reader.ts` (admin seeding, read lazily from disk). The
+ * front-end only needs the catalogue *shape* — ids, names, titles, gallery and
+ * PDFs — because every product body is served from D1 by `catalogue-db.ts`.
+ * Shipping the full seed into the Worker bundle made module init parse 13 MB of
+ * JSON on every cold start, which blew the free-plan CPU budget and surfaced as
+ * `Error 1102: Worker exceeded resource limits`.
+ */
+const ITEM_HEAVY_FIELDS = [
+  "description",
+  "descriptionZh",
+  "bodyHtml",
+  "bodyHtmlZh",
+  "technical",
+  "technicalZh",
+  "offer",
+  "offerZh",
+];
+
+function slimItem(item) {
+  const out = { ...item };
+  for (const field of ITEM_HEAVY_FIELDS) out[field] = "";
+  if (Array.isArray(out.gallery) && out.gallery.length > 3) out.gallery = out.gallery.slice(0, 3);
+  return out;
+}
+
+const siteCatalog = {
+  products: families.map((family) => ({
+    ...family,
+    subs: (family.subs ?? []).map((sub) => ({
+      ...sub,
+      items: (sub.items ?? []).map(slimItem),
+    })),
+  })),
+  items: Object.fromEntries(Object.entries(itemsById).map(([key, item]) => [key, slimItem(item)])),
+  contents,
+};
+
+/**
+ * Slim runtime copy of `news-seed.json`: the static fallback for the news
+ * lists. Article bodies come from D1, so `bodyText` (105 KB, only used to
+ * derive excerpts) is dropped.
+ */
+const newsSeed = readJson(path.join(dataDir, "news-seed.json"));
+const newsCatalog = (Array.isArray(newsSeed) ? newsSeed : (newsSeed.posts ?? [])).map((post) => {
+  const { bodyText, ...rest } = post;
+  return { ...rest, bodyText: "" };
+});
+
 fs.writeFileSync(
   path.join(dataDir, "site-nav.json"),
   JSON.stringify({ categories: navCategories }),
 );
 fs.writeFileSync(path.join(dataDir, "admin-columns-meta.json"), JSON.stringify(adminColumnsMeta));
 fs.writeFileSync(path.join(dataDir, "home-summary.json"), JSON.stringify(homeSummary));
+fs.writeFileSync(path.join(dataDir, "site-catalog.json"), JSON.stringify(siteCatalog));
+fs.writeFileSync(path.join(dataDir, "news-catalog.json"), JSON.stringify(newsCatalog));
 
 const navSize = (fs.statSync(path.join(dataDir, "site-nav.json")).size / 1024).toFixed(1);
 const adminMetaSize = (fs.statSync(path.join(dataDir, "admin-columns-meta.json")).size / 1024).toFixed(1);
 const homeSize = (fs.statSync(path.join(dataDir, "home-summary.json")).size / 1024).toFixed(1);
+const catalogSize = (fs.statSync(path.join(dataDir, "site-catalog.json")).size / 1024).toFixed(1);
+const newsSize = (fs.statSync(path.join(dataDir, "news-catalog.json")).size / 1024).toFixed(1);
 console.log(`Generated src/data/site-nav.json (${navSize} KB)`);
 console.log(`Generated src/data/admin-columns-meta.json (${adminMetaSize} KB)`);
 console.log(`Generated src/data/home-summary.json (${homeSize} KB)`);
+console.log(`Generated src/data/site-catalog.json (${catalogSize} KB)`);
+console.log(`Generated src/data/news-catalog.json (${newsSize} KB)`);

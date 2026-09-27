@@ -2,7 +2,9 @@ import { and, asc, count, desc, eq, like, or, sql, type SQL } from "drizzle-orm"
 import { db } from "@/db";
 import { newsCategories, newsPosts } from "@/db/schema";
 import { ensureSeedData, CATEGORY_DEFS, type SeedItem } from "@/db/seed";
-import newsSeedRaw from "@/data/news-seed.json";
+// Slim runtime copy of the news seed (~390 KB): article bodies come from D1,
+// so `bodyText` is stripped. See `scripts/build-runtime-data.mjs`.
+import newsSeedRaw from "@/data/news-catalog.json";
 
 export const PER_PAGE = 12;
 

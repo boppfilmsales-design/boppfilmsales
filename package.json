@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "predev": "node scripts/build-runtime-data.mjs",
     "build": "node scripts/build-runtime-data.mjs && next build --webpack",
     "start": "next start",
     "lint": "eslint .",

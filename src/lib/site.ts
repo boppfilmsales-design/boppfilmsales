@@ -1,4 +1,8 @@
-import siteSeedJson from "@/data/site-seed.json";
+// Slim runtime copy of the seed (~780 KB instead of 13.5 MB): ids, names,
+// titles, gallery and PDFs. Product bodies live in D1 (see `catalogue-db.ts`),
+// so the full `site-seed.json` is only read from disk by the build script and
+// the admin seeding path — never bundled into the Worker.
+import siteSeedJson from "@/data/site-catalog.json";
 import validFilesList from "@/data/valid-files.json";
 import {
   contentNameZh,

@@ -50,6 +50,8 @@ yarn-error.log*
 /src/data/site-nav.json
 /src/data/home-summary.json
 /src/data/admin-columns-meta.json
+/src/data/site-catalog.json
+/src/data/news-catalog.json
 
 # local build/deploy logs
 /*.log
