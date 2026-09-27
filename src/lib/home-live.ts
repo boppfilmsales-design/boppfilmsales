@@ -91,6 +91,30 @@ async function loadRows(): Promise<ProductRow[]> {
   }
 }
 
+/**
+ * Rows are cached for a short window *inside the isolate*.
+ *
+ * Every page render used to re-run the full `admin_products` scan and rebuild
+ * the mega-menu / home summary objects from scratch. On Workers that is not
+ * just CPU: each rebuild allocates tens of MB, the isolate walks up against
+ * the 128 MB limit and Cloudflare kills the request with Error 1102
+ * (`exceededResources`) even though the CPU cost is only ~10 ms. Reusing the
+ * same rows for 30 s keeps the render allocation flat; 30 s is also short
+ * enough that an admin edit is still visible almost immediately.
+ */
+const ROWS_TTL_MS = 30_000;
+let rowCache: { at: number; rows: ProductRow[] } | null = null;
+
+async function loadRowsCached(): Promise<ProductRow[]> {
+  const now = Date.now();
+  if (rowCache && now - rowCache.at < ROWS_TTL_MS) return rowCache.rows;
+  const rows = await loadRows();
+  // Never cache a failed/empty read: the next request must be able to reach
+  // the database again instead of being stuck with the fallback forever.
+  if (rows.length > 0) rowCache = { at: now, rows };
+  return rows;
+}
+
 function groupByFamily(rows: ProductRow[]): Map<number, ProductRow[]> {
   const map = new Map<number, ProductRow[]>();
   for (const row of rows) {
@@ -110,7 +134,7 @@ function groupByFamily(rows: ProductRow[]): Map<number, ProductRow[]> {
  * added in the admin panel shows up without a redeploy.
  */
 export async function getLiveCatalogTree(): Promise<NavCategory[] | null> {
-  const rows = await loadRows();
+  const rows = await loadRowsCached();
   if (rows.length === 0) return null;
 
   const byFamily = groupByFamily(rows);
@@ -213,7 +237,7 @@ async function aboutZhHtml(fallback: string): Promise<string> {
  * has nothing to say, so the page never breaks because of D1.
  */
 export async function getHomeSummaryLive(fallback: HomeSummary): Promise<HomeSummary> {
-  const rows = await loadRows();
+  const rows = await loadRowsCached();
   if (rows.length === 0) return fallback;
 
   try {

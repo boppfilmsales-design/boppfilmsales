@@ -6,7 +6,15 @@ import { ContentEntryPage } from "@/components/pages/Sections";
 import { getContent, getContents, stripHtml } from "@/lib/site";
 import { getContentForSite } from "@/lib/content-db";
 
-export const dynamic = "force-dynamic";
+/**
+ * Rendered once and then served from the incremental cache.
+ *
+ * `force-dynamic` made every visit re-render the whole tree and re-scan D1;
+ * on Workers that pushed isolates to ~124 MB against the 128 MB ceiling and
+ * Cloudflare killed the request with Error 1102. 60 s keeps admin edits
+ * visible almost immediately while removing almost all of that work.
+ */
+export const revalidate = 60;
 
 const KINDS = ["about", "lines", "honor", "service", "cases"] as const;
 type ContentKind = (typeof KINDS)[number];

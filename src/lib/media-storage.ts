@@ -87,7 +87,7 @@ async function readLocalFile(key: string): Promise<Uint8Array | null> {
 /** Fetch a stored object. `null` when it does not exist. */
 export async function getMedia(
   key: string,
-): Promise<{ body: ReadableStream; contentType: string } | null> {
+): Promise<{ body: ReadableStream; contentType: string; size: number } | null> {
   const bucket = tryGetBucket();
   if (bucket) {
     const object = await bucket.get(key);
@@ -95,6 +95,7 @@ export async function getMedia(
       return {
         body: object.body,
         contentType: object.httpMetadata?.contentType ?? "application/octet-stream",
+        size: object.size ?? 0,
       };
     }
     // Miss. On Workers the local tree is empty so this just returns null, but
@@ -111,6 +112,7 @@ export async function getMedia(
       },
     }),
     contentType: guessContentType(key),
+    size: data.byteLength,
   };
 }
 
