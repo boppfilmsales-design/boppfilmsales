@@ -2,9 +2,6 @@ import { and, asc, count, desc, eq, like, or, sql, type SQL } from "drizzle-orm"
 import { db } from "@/db";
 import { newsCategories, newsPosts } from "@/db/schema";
 import { ensureSeedData, CATEGORY_DEFS, type SeedItem } from "@/db/seed";
-// Slim runtime copy of the news seed (~390 KB): article bodies come from D1,
-// so `bodyText` is stripped. See `scripts/build-runtime-data.mjs`.
-import newsSeedRaw from "@/data/news-catalog.json";
 
 export const PER_PAGE = 12;
 
@@ -12,7 +9,6 @@ export type CategoryRow = typeof newsCategories.$inferSelect;
 export type PostRow = typeof newsPosts.$inferSelect;
 
 // ---- Static fallback data (used when DB is unavailable) ----
-const SEED_ITEMS = newsSeedRaw as unknown as SeedItem[];
 /**
  * Slugs that belong on the public /news tabs. `development-cases` reuses the
  * news tables (so 案例 → Development Cases gets the rich-text article editor)
@@ -28,26 +24,44 @@ const STATIC_CATEGORIES: CategoryRow[] = CATEGORY_DEFS.map((c, i) => ({
   sortOrder: c.sortOrder,
 }));
 const STATIC_CATEGORY_MAP = new Map(STATIC_CATEGORIES.map((c) => [c.slug, c]));
-const STATIC_POSTS: PostRow[] = SEED_ITEMS.map((item, i) => {
-  const cat = STATIC_CATEGORIES.find((c) => String(c.sourceId) === item.categoryId) || STATIC_CATEGORIES[0];
-  const d = item.newsDate ? new Date(item.newsDate) : new Date();
-  return {
-    id: i + 1,
-    categoryId: cat.id,
-    sourceId: item.sourceId,
-    title: item.title || item.listTitle || `News ${item.sourceId}`,
-    listDate: item.listDate || "",
-    newsDate: item.newsDate || "",
-    excerpt: item.listExcerpt || "",
-    bodyHtml: item.bodyHtml || "",
-    bodyText: item.bodyText || "",
-    image: item.image || "",
-    isPublished: true,
-    sortDate: d,
-    createdAt: d,
-    updatedAt: d,
-  };
-});
+/**
+ * Static fallback posts, built lazily from the ~390 KB news catalog.
+ *
+ * This used to run at module-evaluation time as `STATIC_POSTS`, so every route
+ * that imports this module — `/cases` reaches it through `ArticleColumn` —
+ * parsed the JSON and materialised a few hundred post objects on cold start
+ * even though the list is only a fallback for a D1 failure. On Workers that
+ * memory stays in the isolate for its whole lifetime, and 128 MB is the
+ * ceiling that Error 1102 keeps hitting, so it is now built on demand only.
+ */
+let staticPostsCache: PostRow[] | null = null;
+async function getStaticPosts(): Promise<PostRow[]> {
+  if (!staticPostsCache) {
+    const mod = await import("@/data/news-catalog.json");
+    const items = (mod.default ?? mod) as unknown as SeedItem[];
+    staticPostsCache = items.map((item, i) => {
+      const cat = STATIC_CATEGORIES.find((c) => String(c.sourceId) === item.categoryId) || STATIC_CATEGORIES[0];
+      const d = item.newsDate ? new Date(item.newsDate) : new Date();
+      return {
+        id: i + 1,
+        categoryId: cat.id,
+        sourceId: item.sourceId,
+        title: item.title || item.listTitle || `News ${item.sourceId}`,
+        listDate: item.listDate || "",
+        newsDate: item.newsDate || "",
+        excerpt: item.listExcerpt || "",
+        bodyHtml: item.bodyHtml || "",
+        bodyText: item.bodyText || "",
+        image: item.image || "",
+        isPublished: true,
+        sortDate: d,
+        createdAt: d,
+        updatedAt: d,
+      };
+    });
+  }
+  return staticPostsCache;
+}
 
 export async function getCategories(): Promise<CategoryRow[]> {
   try {
@@ -79,15 +93,15 @@ export type ListResult = {
   pages: number;
 };
 
-function staticListPosts(options: {
+async function staticListPosts(options: {
   categoryId?: number;
   page?: number;
   perPage?: number;
   search?: string;
-}): ListResult {
+}): Promise<ListResult> {
   const perPage = options.perPage ?? PER_PAGE;
   const page = Math.max(1, options.page ?? 1);
-  let items = STATIC_POSTS;
+  let items = await getStaticPosts();
   if (options.categoryId) {
     items = items.filter((p) => p.categoryId === options.categoryId);
   }
@@ -145,7 +159,7 @@ export async function listPosts(options: {
 
     return { items, total, page, pages: Math.max(1, Math.ceil(total / perPage)) };
   } catch {
-    return staticListPosts(options);
+    return await staticListPosts(options);
   }
 }
 
@@ -155,7 +169,7 @@ export async function getPostById(id: number): Promise<PostRow | null> {
     const rows = await db.select().from(newsPosts).where(eq(newsPosts.id, id)).limit(1);
     return rows[0] ?? null;
   } catch {
-    return STATIC_POSTS.find((p) => p.id === id) ?? null;
+    return (await getStaticPosts()).find((p) => p.id === id) ?? null;
   }
 }
 
@@ -185,7 +199,7 @@ export async function getNeighbourPosts(post: PostRow) {
       .limit(1);
     return { prev: prev ?? null, next: next ?? null };
   } catch {
-    const sameCat = STATIC_POSTS.filter((p) => p.categoryId === post.categoryId);
+    const sameCat = (await getStaticPosts()).filter((p) => p.categoryId === post.categoryId);
     const idx = sameCat.findIndex((p) => p.id === post.id);
     return {
       prev: idx > 0 ? { id: sameCat[idx - 1].id, title: sameCat[idx - 1].title, categoryId: sameCat[idx - 1].categoryId } : null,
@@ -205,7 +219,7 @@ export async function getCategoryCounts(): Promise<Record<number, number>> {
     return Object.fromEntries(rows.map((row) => [row.categoryId, Number(row.total)]));
   } catch {
     const out: Record<number, number> = {};
-    for (const p of STATIC_POSTS) {
+    for (const p of await getStaticPosts()) {
       out[p.categoryId] = (out[p.categoryId] || 0) + 1;
     }
     return out;
@@ -229,7 +243,7 @@ export async function getLatestPosts(limit = 6) {
       .orderBy(desc(sql`coalesce(${newsPosts.sortDate}, ${newsPosts.createdAt})`), desc(newsPosts.id))
       .limit(limit);
   } catch {
-    return STATIC_POSTS
+    return (await getStaticPosts())
       .slice()
       .sort((a, b) => (b.sortDate?.getTime() || 0) - (a.sortDate?.getTime() || 0))
       .slice(0, limit)

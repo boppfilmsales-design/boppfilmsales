@@ -1,5 +1,4 @@
 import { eq, sql } from "drizzle-orm";
-import seedRaw from "@/data/news-seed.json";
 import { db } from "@/db";
 import { D1_SCHEMA_STATEMENTS } from "@/db/d1-ddl";
 import { adminContents, adminMessages, adminProducts, adminRoles, adminUsers, newsCategories, newsPosts, siteSettings } from "@/db/schema";
@@ -42,7 +41,24 @@ export type SeedItem = {
   bodyText?: string;
 };
 
-const SEED_ITEMS = seedRaw as unknown as SeedItem[];
+/**
+ * The 615 KB news seed, loaded lazily.
+ *
+ * It used to be a top-level `import`, which meant every Worker cold start
+ * paid to parse the whole JSON even on routes that never seed (e.g. /cases).
+ * Together with the 784 KB site catalog that was enough to trip Cloudflare's
+ * Error 1102 (Worker exceeded resource limits) on the free plan's 10 ms CPU
+ * budget. Now it is only parsed inside `seedPosts()`, which early-returns on
+ * a non-empty database.
+ */
+let seedItemsCache: SeedItem[] | null = null;
+async function getSeedItems(): Promise<SeedItem[]> {
+  if (!seedItemsCache) {
+    const mod = await import("@/data/news-seed.json");
+    seedItemsCache = (mod.default ?? mod) as unknown as SeedItem[];
+  }
+  return seedItemsCache;
+}
 
 export const CATEGORY_DEFS = [
   { slug: "industry-news", name: "Industry News", sourceId: 41, sortOrder: 1 },
@@ -114,7 +130,7 @@ async function seedPosts() {
   const rows = await db.select({ id: newsCategories.id, slug: newsCategories.slug }).from(newsCategories);
   const bySlug = new Map(rows.map((row) => [row.slug, row.id]));
 
-  const values = SEED_ITEMS.map((item) => {
+  const values = (await getSeedItems()).map((item) => {
     const categoryId = bySlug.get(item.categorySlug);
     if (!categoryId) return null;
     const listDate = item.listDate ?? "";
