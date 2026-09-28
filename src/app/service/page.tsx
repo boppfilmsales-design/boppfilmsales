@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import ArticleColumnPage from "@/components/pages/ArticleColumn";
-import { ContentColumnPage } from "@/components/pages/Sections";
+// NOTE: ContentColumnPage is imported lazily on the fallback branch only (see
+// src/app/cases/page.tsx for why).
 import { DEFAULT_ARTICLE_SOURCE_ID, getArticleColumn } from "@/lib/article-columns";
 import { getContentForSite } from "@/lib/content-db";
 
@@ -45,6 +46,7 @@ export default async function Page({
   }
 
   const content = await getContentForSite("service", sourceId);
+  const { ContentColumnPage } = await import("@/components/pages/Sections");
   return (
     <div className="min-h-screen bg-white">
       <SiteHeader active="Service Center" />

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Pagination from "@/components/Pagination";
-import { ColumnStrip, PageHero } from "@/components/pages/Sections";
+import { ColumnStrip, PageHero } from "@/components/pages/ArticleChrome";
 import type { ArticleColumn } from "@/lib/article-columns";
 import { PER_PAGE, formatListDate, listPosts, resolveCategory, toPlainExcerpt } from "@/lib/news";
 

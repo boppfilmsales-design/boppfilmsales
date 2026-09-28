@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
-import { AllPdfsSection, ProductsIndex } from "@/components/pages/Sections";
+import { AllPdfsSection } from "@/components/pages/AllPdfsSection";
+import { ProductsIndex } from "@/components/pages/Sections";
 import { allPdfs, productCount } from "@/lib/site";
 
 /**

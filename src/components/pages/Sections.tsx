@@ -28,11 +28,11 @@ import {
 } from "@/lib/site";
 import { getSiteSettings, settingNumber } from "@/lib/site-settings";
 import { sanitizeRichHtml } from "@/lib/rich-text";
-
-type Lang = "en" | "zh";
-
-const baseOf = (lang: Lang) => (lang === "zh" ? "/zh" : "");
-const pick = (lang: Lang, en: string, zh: string) => (lang === "zh" ? zh : en);
+// PageHero / ColumnStrip / Lang / ContentKind / baseOf / pick / COLUMN_HREF now
+// live in ./ArticleChrome (which avoids the heavy `@/lib/site` import); they
+// are re-exported here so existing importers keep working.
+import { baseOf, pick, COLUMN_HREF, type Lang, type ContentKind, PageHero, ColumnStrip } from "./ArticleChrome";
+export { PageHero, ColumnStrip };
 
 const SECTION_TITLES: Record<string, { en: string; zh: string }> = {
   about: { en: "About Us", zh: "关于我们" },
@@ -41,15 +41,6 @@ const SECTION_TITLES: Record<string, { en: string; zh: string }> = {
   service: { en: "Service Center", zh: "服务中心" },
   cases: { en: "Classic Cases", zh: "经典案例" },
   down: { en: "Download", zh: "下载中心" },
-};
-
-const COLUMN_HREF: Record<string, string> = {
-  about: "/about",
-  lines: "/product-lines",
-  honor: "/honor",
-  service: "/service",
-  cases: "/cases",
-  down: "/downloads",
 };
 
 function familyName(family: ProductFamily, lang: Lang) {
@@ -90,36 +81,6 @@ function toCard(
 
 export function entryHref(kind: string, columnId: number, sourceId: number, lang: Lang = "en") {
   return `${baseOf(lang)}/entry/${kind}/${columnId}/${sourceId}`;
-}
-
-export function PageHero({
-  title,
-  subtitle,
-  breadcrumb,
-  lang = "en",
-}: {
-  title: string;
-  subtitle?: string;
-  breadcrumb: string[];
-  lang?: Lang;
-}) {
-  const home = lang === "zh" ? "/zh" : "/";
-  return (
-    <section className="relative overflow-hidden bg-[linear-gradient(115deg,#1b1f2a_0%,#2c3342_55%,#c8102e_140%)] py-14 text-white">
-      <div className="mx-auto w-full max-w-[1560px] px-4">
-        <nav className="text-[12px] uppercase tracking-[2px] text-white/60">
-          <Link className="hover:text-white" href={home}>
-            {lang === "zh" ? "首页" : "Home"}
-          </Link>
-          {breadcrumb.map((item) => (
-            <span key={item}> / {item}</span>
-          ))}
-        </nav>
-        <h1 className="mt-3 text-[28px] font-black leading-tight md:text-[38px]">{title}</h1>
-        {subtitle ? <p className="mt-3 max-w-[880px] text-[14px] leading-[26px] text-white/80">{subtitle}</p> : null}
-      </div>
-    </section>
-  );
 }
 
 function FamilyStrip({ active, lang }: { active: number; lang: Lang }) {
@@ -513,37 +474,6 @@ export function ProductDetail({
   );
 }
 
-export type ContentKind = "about" | "lines" | "honor" | "service" | "cases";
-
-export function ColumnStrip({ kind, activeId, lang }: { kind: ContentKind; activeId: number; lang: Lang }) {
-  const base = baseOf(lang);
-  const href = COLUMN_HREF[kind] ?? "/";
-  const columns = getContents(kind);
-
-  return (
-    <div className="mb-2 grid grid-cols-2 overflow-hidden rounded border border-[#e5e7eb] bg-[#f3f4f6] md:grid-cols-4">
-      {columns.map((column) => {
-        const isActive = column.sourceId === activeId;
-        const name = lang === "zh" ? contentNameZh(column.sourceId) ?? column.name : column.name;
-
-        return (
-          <Link
-            key={column.sourceId}
-            href={`${base}${href}?id=${column.sourceId}`}
-            className={`px-3 py-3.5 text-center text-[13px] font-bold transition-colors ${
-              isActive
-                ? "bg-[#c8102e] text-white shadow-sm"
-                : "bg-[#f3f4f6] text-[#374151] hover:bg-[#c8102e] hover:text-white"
-            }`}
-          >
-            {name}
-          </Link>
-        );
-      })}
-    </div>
-  );
-}
-
 function EmptyState({ lang }: { lang: Lang }) {
   return (
     <p className="border border-dashed border-[#e0e0e0] bg-[#fafafa] px-6 py-12 text-center text-[13px] text-[#888]">
@@ -851,42 +781,7 @@ export function DownloadsPage({ lang = "en" }: { lang?: Lang }) {
   );
 }
 
-export function AllPdfsSection({
-  lang = "en",
-  pdfs,
-}: {
-  lang?: Lang;
-  pdfs?: { label: string; file: string; product: string }[];
-}) {
-  const productPdfs = pdfs ?? allPdfs();
-  if (productPdfs.length === 0) return null;
-
-  return (
-    <section className="py-10 bg-[#f9fafb] border-t border-[#e5e7eb]">
-      <div className="mx-auto w-full max-w-[1560px] px-4">
-        <h2 className="text-[18px] font-bold text-[#22262e] mb-6 flex items-center gap-3">
-          <span className="w-[5px] h-[18px] bg-[#c8102e] block" />
-          {lang === "zh" ? "全部技术 PDF 资料" : "All Technical PDFs"}
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {productPdfs.slice(0, 12).map((pdf) => (
-            <a
-              key={pdf.file}
-              href={pdf.file}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 p-4 bg-white border border-[#e8e8e8] hover:border-[#c8102e] hover:shadow-md transition-all group"
-            >
-              <span className="flex h-[32px] w-[28px] shrink-0 items-center justify-center bg-[#c8102e] text-[9px] font-black text-white">
-                PDF
-              </span>
-              <span className="truncate text-[12px] text-[#333] group-hover:text-[#c8102e]">
-                {pdf.label || pdf.file.split("/").pop()}
-              </span>
-            </a>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
+// AllPdfsSection lives in ./AllPdfsSection: it is imported by the client
+// component HomeContent, so it must stay free of the D1 seed chain
+// (content-db -> seed -> node:fs), which cannot be bundled for the browser.
+import { AllPdfsSection } from "./AllPdfsSection";

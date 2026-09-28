@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { productImageUrl } from "@/lib/site";
+import { productImageUrl } from "@/lib/site-helpers";
 
 type Props = {
   images?: string[];

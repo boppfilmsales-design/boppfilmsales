@@ -1,7 +1,7 @@
 import Link from "next/link";
 import SiteFloatingBar from "@/components/SiteFloatingBar";
 import SiteNav from "@/components/SiteNav";
-import { SITE } from "@/lib/site";
+import { SITE } from "@/lib/site-helpers";
 import { getNavCategoriesLive } from "@/lib/site-summary";
 
 export default async function SiteHeader({ active, lang = "en" }: { active?: string; lang?: "en" | "zh" }) {

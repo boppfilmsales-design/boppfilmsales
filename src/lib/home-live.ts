@@ -1,10 +1,34 @@
 import { asc, eq, sql } from "drizzle-orm";
 
 import validFilesList from "@/data/valid-files.json";
+import siteNavJson from "@/data/site-nav.json";
 import { db } from "@/db";
 import { adminContents, adminProducts } from "@/db/schema";
-import { getCategories, productImageUrl } from "@/lib/site";
+import { productImageUrl } from "@/lib/site-helpers";
 import type { HomeFeatured, HomeGalleryItem, HomePdf, HomeSummary, NavCategory } from "@/lib/site-summary";
+
+/**
+ * Family / sub-category names for the mega-menu, from the 14 KB
+ * `site-nav.json` instead of the ~784 KB `site-catalog.json`.
+ *
+ * `getCategories()` in `@/lib/site` parses the big catalog at module-evaluation
+ * time. Every public page renders `SiteHeader` → `getNavCategoriesLive()` →
+ * `getLiveCatalogTree()`, so that parse landed on each Worker cold start and
+ * blew the free plan's 10 ms CPU budget (Error 1102). The nav JSON carries the
+ * same curated names (sourceId / name / nameZh for families and subs) at ~2%
+ * of the weight, and it is already in the header's import graph via
+ * `@/lib/site-summary`, so this adds zero new modules to the cold-start path.
+ */
+type SeedFamily = {
+  sourceId: number;
+  name: string;
+  nameZh: string;
+  subs: { sourceId: number; name: string; nameZh: string }[];
+};
+
+function getSeedFamilies(): SeedFamily[] {
+  return (siteNavJson as unknown as { categories: SeedFamily[] }).categories ?? [];
+}
 
 /**
  * Home-page + mega-menu data computed from D1 at request time.
@@ -138,7 +162,11 @@ export async function getLiveCatalogTree(): Promise<NavCategory[] | null> {
   if (rows.length === 0) return null;
 
   const byFamily = groupByFamily(rows);
-  const families = getCategories();
+  // Family/sub names come from the 14 KB site-nav.json — NOT from
+  // `@/lib/site`, whose module evaluation parses the ~784 KB site catalog and
+  // blew the free plan's CPU budget (Error 1102) on every cold start, because
+  // SiteHeader (on each public page) reaches this function.
+  const families = getSeedFamilies();
   const seeded = new Set<number>();
   const categories: NavCategory[] = [];
 
@@ -242,7 +270,8 @@ export async function getHomeSummaryLive(fallback: HomeSummary): Promise<HomeSum
 
   try {
     const byFamily = groupByFamily(rows);
-    const families = getCategories();
+    // 14 KB nav JSON instead of the ~784 KB catalog — see getLiveCatalogTree.
+    const families = getSeedFamilies();
 
     const categories = (await getLiveCatalogTree()) ?? fallback.categories;
 

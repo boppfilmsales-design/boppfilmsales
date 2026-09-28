@@ -6,7 +6,7 @@ import Link from "next/link";
 import { categoryNameZh, SITE } from "@/lib/site-helpers";
 import { sanitizeRichHtml } from "@/lib/rich-text";
 import ExpandableRichText from "@/components/ExpandableRichText";
-import { AllPdfsSection } from "@/components/pages/Sections";
+import { AllPdfsSection } from "@/components/pages/AllPdfsSection";
 
 const COPY = {
   en: {

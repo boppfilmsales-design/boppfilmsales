@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { productImageUrl } from "@/lib/site";
+import { productImageUrl } from "@/lib/site-helpers";
 
 export default function ProductCardImage({ image, title }: { image?: string; title: string }) {
   const [failed, setFailed] = useState(false);
