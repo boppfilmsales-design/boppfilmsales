@@ -175,33 +175,82 @@ export async function getPostById(id: number): Promise<PostRow | null> {
   }
 }
 
+/**
+ * 上一篇 / 下一篇。
+ *
+ * 必须严格跟随列表顺序，而列表的顺序键是复合的：
+ *
+ *     is_pinned DESC, coalesce(sort_date, created_at) DESC, id DESC
+ *
+ * 旧实现只比较日期，于是有两个真实故障：
+ *
+ *   1. 同一天的文章 `sort_date` 完全相同 —— 后台按 MM/DD/YYYY 解析日期，同一天
+ *      的条目拿到同一个时间戳。此时 `date > 当前` 找不到任何行，上一篇显示
+ *      "no more"；`date < 当前` 又在同一批里随便取一条，跳到的不是紧邻那篇。
+ *   2. 置顶属于排序键的一部分，但 prev/next 取的是【紧邻的一篇】而不是
+ *      【最靠前的一篇】，把 is_pinned 放进 ORDER BY 是错的。
+ *
+ * 这里改用 SQLite 的行值比较 `(a, b, c) > (x, y, z)`，一次解决两件事：复合键
+ * 比较正确，且与列表顺序完全一致。
+ */
 export async function getNeighbourPosts(post: PostRow) {
+  /** 列表用的排序键，顺序必须与 listPosts() 一致。 */
+  const sortKey = sql`(${newsPosts.isPinned}, coalesce(${newsPosts.sortDate}, ${newsPosts.createdAt}), ${newsPosts.id})`;
+  // 显式取毫秒时间戳：sort_date / created_at 在库里是 integer，
+  // 直接往 sql 模板里塞 Date 会依赖驱动的隐式转换，不如自己算准。
+  const postStamp = (post.sortDate ?? post.createdAt)?.getTime() ?? 0;
+  const postKey = sql`(${post.isPinned ? 1 : 0}, ${postStamp}, ${post.id})`;
+
   try {
+    // 上一篇 = 列表里紧邻的上一条（排序键刚好更大的最小者）
+    // 只考虑已发布的文章 —— 否则「下一篇」可能指向一篇隐藏文章，访客点进去会 404。
     const [prev] = await db
       .select({ id: newsPosts.id, title: newsPosts.title, categoryId: newsPosts.categoryId })
       .from(newsPosts)
       .where(
         and(
           eq(newsPosts.categoryId, post.categoryId),
-          sql`coalesce(${newsPosts.sortDate}, ${newsPosts.createdAt}) > coalesce(${post.sortDate}, ${post.createdAt})`,
+          eq(newsPosts.isPublished, true),
+          sql`${sortKey} > ${postKey}`,
         ),
       )
-      .orderBy(desc(newsPosts.isPinned), asc(sql`coalesce(${newsPosts.sortDate}, ${newsPosts.createdAt})`))
+      .orderBy(
+        asc(newsPosts.isPinned),
+        asc(sql`coalesce(${newsPosts.sortDate}, ${newsPosts.createdAt})`),
+        asc(newsPosts.id),
+      )
       .limit(1);
+
+    // 下一篇 = 列表里紧邻的下一条（排序键刚好更小的最大者）
     const [next] = await db
       .select({ id: newsPosts.id, title: newsPosts.title, categoryId: newsPosts.categoryId })
       .from(newsPosts)
       .where(
         and(
           eq(newsPosts.categoryId, post.categoryId),
-          sql`coalesce(${newsPosts.sortDate}, ${newsPosts.createdAt}) < coalesce(${post.sortDate}, ${post.createdAt})`,
+          eq(newsPosts.isPublished, true),
+          sql`${sortKey} < ${postKey}`,
         ),
       )
-      .orderBy(desc(newsPosts.isPinned), desc(sql`coalesce(${newsPosts.sortDate}, ${newsPosts.createdAt})`))
+      .orderBy(
+        desc(newsPosts.isPinned),
+        desc(sql`coalesce(${newsPosts.sortDate}, ${newsPosts.createdAt})`),
+        desc(newsPosts.id),
+      )
       .limit(1);
+
     return { prev: prev ?? null, next: next ?? null };
   } catch {
-    const sameCat = (await getStaticPosts()).filter((p) => p.categoryId === post.categoryId);
+    // 静态回退：按与列表一致的顺序排好后取相邻项。
+    const sameCat = (await getStaticPosts())
+      .filter((p) => p.categoryId === post.categoryId && p.isPublished)
+      .sort((a, b) => {
+        if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+        const ka = (a.sortDate ?? a.createdAt)?.getTime() ?? 0;
+        const kb = (b.sortDate ?? b.createdAt)?.getTime() ?? 0;
+        if (ka !== kb) return kb - ka;
+        return b.id - a.id;
+      });
     const idx = sameCat.findIndex((p) => p.id === post.id);
     return {
       prev: idx > 0 ? { id: sameCat[idx - 1].id, title: sameCat[idx - 1].title, categoryId: sameCat[idx - 1].categoryId } : null,
