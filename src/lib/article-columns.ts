@@ -12,17 +12,18 @@
  *   3. switch its AdminColumn entry in `src/lib/admin-columns.ts` to
  *      displayType "news-list" / dataSource "news-db"
  *   4. insert the category row into `news_categories`
- *      (see .zh-work/add-article-cats.mjs)
  *
- * 2026-10-01: extended to the Download Center columns. `kind` gained "down"
- * because `/downloads` needs its own breadcrumb/tab strip, and the four download
- * columns previously rendered as a flat file list with a form that could not
- * edit the body text — the "设计不行" the operator reported.
+ * 2026-10-01: extended twice.
+ *   · Download Center + the remaining Classic Cases columns
+ *   · About Us (关于我们): all seven columns, so 公司简介 / 主营产品 / 荣誉资质 /
+ *     企业文化 / 分公司 / 工厂与仓库 / 发展历程 are edited as articles. They used
+ *     to be a single opaque rich-text blob per column with no list and no
+ *     "添加信息" button, which is the design the operator reported as unusable.
  */
 export type ArticleColumn = {
   sourceId: number;
   /** Which public section the column lives in (drives breadcrumb + tab strip). */
-  kind: "cases" | "service" | "down";
+  kind: "about" | "cases" | "service" | "down";
   /** news_categories.slug — also the detail URL: /news/<slug>/<id>. */
   slug: string;
   nameEn: string;
@@ -34,6 +35,79 @@ export type ArticleColumn = {
 };
 
 export const ARTICLE_COLUMNS: Record<number, ArticleColumn> = {
+  // ── 关于我们 / About Us ─────────────────────────────────────────────────
+  13: {
+    sourceId: 13,
+    kind: "about",
+    slug: "about-us",
+    nameEn: "About Us",
+    nameZh: "关于我们",
+    sectionEn: "About Us",
+    sectionZh: "关于我们",
+    href: "/about",
+  },
+  55: {
+    sourceId: 55,
+    kind: "about",
+    slug: "main-products",
+    nameEn: "Main Products",
+    nameZh: "主营产品",
+    sectionEn: "About Us",
+    sectionZh: "关于我们",
+    href: "/about",
+  },
+  16: {
+    sourceId: 16,
+    kind: "about",
+    slug: "honor",
+    nameEn: "Honor",
+    nameZh: "荣誉资质",
+    sectionEn: "About Us",
+    sectionZh: "关于我们",
+    href: "/about",
+  },
+  56: {
+    sourceId: 56,
+    kind: "about",
+    slug: "culture",
+    nameEn: "Culture",
+    nameZh: "企业文化",
+    sectionEn: "About Us",
+    sectionZh: "关于我们",
+    href: "/about",
+  },
+  169: {
+    sourceId: 169,
+    kind: "about",
+    slug: "branch-companies",
+    nameEn: "Branch Companies",
+    nameZh: "分公司",
+    sectionEn: "About Us",
+    sectionZh: "关于我们",
+    href: "/about",
+  },
+  171: {
+    sourceId: 171,
+    kind: "about",
+    slug: "factory-warehouse",
+    nameEn: "Factory & Warehouse",
+    nameZh: "工厂与仓库",
+    sectionEn: "About Us",
+    sectionZh: "关于我们",
+    href: "/about",
+  },
+  172: {
+    sourceId: 172,
+    kind: "about",
+    slug: "course",
+    nameEn: "Course",
+    nameZh: "发展历程",
+    sectionEn: "About Us",
+    sectionZh: "关于我们",
+    href: "/about",
+  },
+
+  // ── 案例 / Classic Cases ───────────────────────────────────────────────
   54: {
     sourceId: 54,
     kind: "cases",
@@ -54,7 +128,6 @@ export const ARTICLE_COLUMNS: Record<number, ArticleColumn> = {
     sectionZh: "经典案例",
     href: "/cases",
   },
-  // ── 2026-10-01 新增：Classic Cases 下的另外两栏 ──────────────────────────
   145: {
     sourceId: 145,
     kind: "cases",
@@ -75,6 +148,8 @@ export const ARTICLE_COLUMNS: Record<number, ArticleColumn> = {
     sectionZh: "经典案例",
     href: "/cases",
   },
+
+  // ── 服务 / Service Center ──────────────────────────────────────────────
   141: {
     sourceId: 141,
     kind: "service",
@@ -95,7 +170,8 @@ export const ARTICLE_COLUMNS: Record<number, ArticleColumn> = {
     sectionZh: "服务中心",
     href: "/service",
   },
-  // ── 2026-10-01 新增：下载中心四栏 ────────────────────────────────────────
+
+  // ── 下载中心 / Download Center ─────────────────────────────────────────
   43: {
     sourceId: 43,
     kind: "down",
@@ -140,6 +216,7 @@ export const ARTICLE_COLUMNS: Record<number, ArticleColumn> = {
 
 /** Fallback (still static) column for each section. */
 export const DEFAULT_ARTICLE_SOURCE_ID: Record<ArticleColumn["kind"], number> = {
+  about: 13,
   cases: 54,
   service: 79,
   down: 43,

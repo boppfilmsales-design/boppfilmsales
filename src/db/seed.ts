@@ -80,6 +80,14 @@ export const CATEGORY_DEFS = [
   { slug: "technology-data", name: "Technology Data", sourceId: 76, sortOrder: 97 },
   { slug: "certificate-download", name: "Certificate Download", sourceId: 157, sortOrder: 98 },
   { slug: "msds-download", name: "MSDS Download", sourceId: 158, sortOrder: 99 },
+  // 2026-10-01: 关于我们七栏也改为富文本文章模式。
+  { slug: "about-us", name: "About Us", sourceId: 13, sortOrder: 100 },
+  { slug: "main-products", name: "Main Products", sourceId: 55, sortOrder: 101 },
+  { slug: "honor", name: "Honor", sourceId: 16, sortOrder: 102 },
+  { slug: "culture", name: "Culture", sourceId: 56, sortOrder: 103 },
+  { slug: "branch-companies", name: "Branch Companies", sourceId: 169, sortOrder: 104 },
+  { slug: "factory-warehouse", name: "Factory & Warehouse", sourceId: 171, sortOrder: 105 },
+  { slug: "course", name: "Course", sourceId: 172, sortOrder: 106 },
 ];
 
 /**

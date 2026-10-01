@@ -64,13 +64,16 @@ export function getAdminSections(): AdminSection[] {
       name: "关于我们",
       nameEn: "About Us",
       columns: [
-        { sourceId: 13, name: "About Us", displayType: "single", dataSource: "static", parentId: 1, itemCount: count(13) },
-        { sourceId: 55, name: "Main Products", displayType: "single", dataSource: "static", parentId: 1, itemCount: count(55) },
-        { sourceId: 16, name: "Honor", displayType: "image-list", dataSource: "static", parentId: 1, itemCount: count(16) },
-        { sourceId: 56, name: "Culture", displayType: "single", dataSource: "static", parentId: 1, itemCount: count(56) },
-        { sourceId: 169, name: "Branch Companies", displayType: "single", dataSource: "static", parentId: 1, itemCount: count(169) },
-        { sourceId: 171, name: "Factory & Warehouse", displayType: "single", dataSource: "static", parentId: 1, itemCount: count(171) },
-        { sourceId: 172, name: "Course", displayType: "single", dataSource: "static", parentId: 1, itemCount: count(172) },
+        // 2026-10-01: 七栏全部改为富文本文章模式（news-db）。原来每栏是一整块
+        // 不可分割的富文本，没有列表也没有「+ 添加信息」，正是操作员反馈
+        // “设计不行”的地方。现在与 新闻中心 → Employees Literary 完全一致。
+        { sourceId: 13, name: "About Us", displayType: "news-list", dataSource: "news-db", parentId: 1, itemCount: 0 },
+        { sourceId: 55, name: "Main Products", displayType: "news-list", dataSource: "news-db", parentId: 1, itemCount: 0 },
+        { sourceId: 16, name: "Honor", displayType: "news-list", dataSource: "news-db", parentId: 1, itemCount: 0 },
+        { sourceId: 56, name: "Culture", displayType: "news-list", dataSource: "news-db", parentId: 1, itemCount: 0 },
+        { sourceId: 169, name: "Branch Companies", displayType: "news-list", dataSource: "news-db", parentId: 1, itemCount: 0 },
+        { sourceId: 171, name: "Factory & Warehouse", displayType: "news-list", dataSource: "news-db", parentId: 1, itemCount: 0 },
+        { sourceId: 172, name: "Course", displayType: "news-list", dataSource: "news-db", parentId: 1, itemCount: 0 },
       ],
     },
     {
