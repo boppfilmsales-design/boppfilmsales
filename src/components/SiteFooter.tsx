@@ -3,6 +3,26 @@ import { getFriendlyLinks } from "@/lib/friendly-links";
 import { getSiteSettings, setting } from "@/lib/site-settings";
 
 /**
+ * 版权年份自动跟随系统时间。
+ *
+ * 站点设置里的 `footer_copyright` 存的是固定文本（例如
+ * "© 2026 Asia Pacific Industry Group All rights reserved."），年份写死会让
+ * 2027 年之后一直显示旧年份。这里在渲染时把 © / (c) / Copyright / 版权所有
+ * 后面紧邻的四位年份换成当前年份，其它数字一概不动。
+ *
+ * 因为页脚是服务端组件、页面又是 revalidate=60 的增量缓存，跨年当天最多
+ * 一分钟后就会自动显示新年份，不需要改数据库、也不需要重新部署。
+ */
+function withCurrentYear(text: string): string {
+  if (!text) return text;
+  const year = String(new Date().getFullYear());
+  return text.replace(
+    /((?:©|\(c\)|Copyright|版权所有)\s*)(\d{4})/gi,
+    (_match, prefix: string) => `${prefix}${year}`,
+  );
+}
+
+/**
  * Async server component: the contact block and the copyright line are driven
  * by 高级管理 → 系统管理 → 站点设置, so an operator can change them without a
  * redeploy. `getSiteSettings()` never throws — it falls back to the built-in
@@ -21,7 +41,7 @@ export default async function SiteFooter() {
     .split(/[,;\n]+/)
     .map((e) => e.trim())
     .filter(Boolean);
-  const copyright = setting(settings, "footer_copyright");
+  const copyright = withCurrentYear(setting(settings, "footer_copyright"));
   const beian = setting(settings, "footer_beian");
   return (
     <>
@@ -128,7 +148,7 @@ export default async function SiteFooter() {
               <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#f2d66c] text-[11px] text-[#c8102e] shadow">
                 📱
               </span>
-              <span>Mobile: {mobile}</span>
+              <span>Mobile/WhatsApp: {mobile}</span>
             </dd>
 
             <dd className="flex items-start gap-2.5 text-[13px] leading-[26px]">
