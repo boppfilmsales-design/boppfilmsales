@@ -87,30 +87,25 @@ for (const name of ["lock"]) {
 }
 
 // ---------------------------------------------------------------------------
-// 2) 清掉构建缓存，避免下一次构建复用可能过期的产物清单
+// 2) 保留 .next/cache
+//
+// 这里曾经清空过缓存，结果 Vercel 的下一个报错变成
+//     ENOENT: lstat '/vercel/path0/.next/cache/.previewinfo'
+// ——它要往那个目录里写自己的预览标记，目录被删掉就写不进去了。
+// 缓存必须留着；上面补 .next/lock 才是真正解决 ENOENT 的那一步。
 // ---------------------------------------------------------------------------
 const cacheDir = path.join(nextDir, "cache");
-try {
-  if (fs.existsSync(cacheDir)) {
-    const size = (() => {
-      let n = 0;
-      const walk = (d) => {
-        for (const e of fs.readdirSync(d, { withFileTypes: true })) {
-          const p = path.join(d, e.name);
-          if (e.isDirectory()) walk(p);
-          else { try { n += fs.statSync(p).size; } catch { /* */ } }
-        }
-      };
-      try { walk(cacheDir); } catch { /* */ }
-      return (n / 1024 / 1024).toFixed(1);
-    })();
-    fs.rmSync(cacheDir, { recursive: true, force: true });
-    line(`  ✅ 已清空 .next/cache（原 ${size} MB）`);
-  } else {
-    line("  ℹ️ 没有 .next/cache，无需清理");
+line("");
+line("缓存处理:");
+if (fs.existsSync(cacheDir)) {
+  line("  ℹ️ .next/cache 保留（Vercel 会在其中写入 .previewinfo）");
+} else {
+  try {
+    fs.mkdirSync(cacheDir, { recursive: true });
+    line("  ✅ 已重建 .next/cache");
+  } catch (e) {
+    line(`  ⚠️ 重建 .next/cache 失败（忽略）: ${e.message}`);
   }
-} catch (e) {
-  line(`  ⚠️ 清理 .next/cache 失败（忽略）: ${e.message}`);
 }
 
 // ---------------------------------------------------------------------------
