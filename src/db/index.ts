@@ -99,19 +99,38 @@ function httpBinding(options: {
 const DEFAULT_ACCOUNT_ID = "1558b11cf56bf7597de219af04f1834b";
 const DEFAULT_DATABASE_ID = "0fa6ed59-fc86-43e5-a28c-ea3fef1837f8";
 
+/**
+ * `next build` evaluates every page once to pre-render it. Those evaluations
+ * must not touch a database: on Vercel a `fetch` to the D1 HTTP API is a
+ * `no-store` request, Next.js then decides the route "couldn't be rendered
+ * statically", aborts the build, and Vercel's post-build step trips over the
+ * half-written `.next` with `ENOENT: lstat '.next/lock'`.
+ *
+ * The Cloudflare build never had the problem because its binding is simply
+ * absent at build time. Reporting "no database" here reproduces that: every
+ * caller already falls back to the build-time snapshot in `src/data/`, and the
+ * real query happens on the first request instead.
+ */
+function isBuildPhase(): boolean {
+  const phase = process.env.NEXT_PHASE;
+  return phase === "phase-production-build" || phase === "phase-export";
+}
+
 export function getDb(): Db {
   if (!_db) {
-    const bound = binding();
+    const bound = isBuildPhase() ? undefined : binding();
     if (bound) {
       _db = drizzle(bound, { schema });
     } else {
       const accountId = process.env.CLOUDFLARE_ACCOUNT_ID || DEFAULT_ACCOUNT_ID;
       const databaseId = process.env.CLOUDFLARE_D1_DATABASE_ID || DEFAULT_DATABASE_ID;
-      const token = process.env.CLOUDFLARE_API_TOKEN;
+      const token = isBuildPhase() ? undefined : process.env.CLOUDFLARE_API_TOKEN;
       if (!token) {
         throw new Error(
-          "No database available: the D1 binding `DB` is missing and " +
-            "CLOUDFLARE_API_TOKEN is not set, so the HTTP query API cannot be reached.",
+          isBuildPhase()
+            ? "No database during the build phase — using the build-time snapshot."
+            : "No database available: the D1 binding `DB` is missing and " +
+              "CLOUDFLARE_API_TOKEN is not set, so the HTTP query API cannot be reached.",
         );
       }
       _db = httpBinding({ accountId, databaseId, token });
