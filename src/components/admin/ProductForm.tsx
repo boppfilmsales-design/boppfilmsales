@@ -25,6 +25,14 @@ function htmlToText(html: string): string {
 
 export type AdminProductDetail = {
   id: number;
+  /**
+   * 业务主键。产品接口（GET/PUT/DELETE /api/admin/products/item/[id]）是按
+   * `admin_products.source_id` 匹配的，后台列表返回的 `id` 也是它。
+   *
+   * ⚠️ 不要用 `id` 去拼保存 URL：`id` 是自增主键，和 source_id 完全不同
+   * （例如 source_id=178 那行的 id=95）。用错会得到 404 "Product not found"。
+   */
+  sourceId: number;
   categoryId: number;
   sort: number;
   title: string;
@@ -159,8 +167,14 @@ export default function ProductForm({
       offerZh,
     };
 
-    const url = product ? `/api/admin/products/item/${product.id}` : "/api/admin/products";
-    const method = product ? "PUT" : "POST";
+    /**
+     * 保存走的是 `admin_products.source_id` —— 接口和后台列表都用它。
+     * 用主键 `id` 会 404，因为两者不是同一个值（source_id=178 的 id 是 95）。
+     * `?? product.id` 只是兜底：万一某条历史数据没有 sourceId。
+     */
+    const productKey = product ? (product.sourceId ?? product.id) : null;
+    const url = productKey ? `/api/admin/products/item/${productKey}` : "/api/admin/products";
+    const method = productKey ? "PUT" : "POST";
 
     const response = await fetch(url, {
       method,
@@ -190,7 +204,7 @@ const reqMark = <span className="text-red-500"> *</span>;
     <form className="border border-[#e3e3e3] bg-white p-5" onSubmit={submit}>
       <div className="flex items-center justify-between">
         <h2 className="text-[16px] font-bold text-[#333]">
-          {product ? `编辑产品 #${product.id}` : "添加新产品"}
+          {product ? `编辑产品 #${product.sourceId ?? product.id}` : "添加新产品"}
         </h2>
         <button className="text-[12px] text-[#888] hover:text-[#e61d39]" onClick={onCancel} type="button">
           关闭 ✕
