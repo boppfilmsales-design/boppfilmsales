@@ -156,27 +156,39 @@ export default function NewsForm({
         </div>
       </div>
 
-      <label className="mt-4 flex items-center gap-2 text-[13px] text-[#555]">
-        <input
-          checked={isPublished}
-          onChange={(event) => setIsPublished(event.target.checked)}
-          type="checkbox"
-        />
-        Published (visible on the website)
-      </label>
+      {/*
+        发布 / 置顶：紧贴富文本编辑器下方，作为一个整体呈现。
+        置顶与「留言板」的置顶同一套做法（news_posts.is_pinned）。
+      */}
+      <div className="mt-4 space-y-3 border border-[#e8e8e8] bg-[#fafafa] px-4 py-3">
+        <label className="flex cursor-pointer items-center gap-2 text-[13px] text-[#555]">
+          <input
+            checked={isPublished}
+            onChange={(event) => setIsPublished(event.target.checked)}
+            type="checkbox"
+          />
+          Published (visible on the website)
+          <span className="text-[12px] text-[#aaa]">/ 发布（取消勾选则前台隐藏）</span>
+        </label>
 
-      {/* 置顶：与「留言板」的置顶同一套做法（news_posts.is_pinned）。 */}
-      <label className="mt-2 flex items-center gap-2 text-[13px] text-[#555]">
-        <input
-          checked={isPinned}
-          onChange={(event) => setIsPinned(event.target.checked)}
-          type="checkbox"
-        />
-        <span className="font-bold text-[#e61d39]">置顶</span>
-        <span className="text-[#888]">
-          （勾选后这篇文章在本栏目的后台列表和前台列表里都排到最前，其余顺序不变）
-        </span>
-      </label>
+        <label className="flex cursor-pointer items-center gap-2 text-[13px] text-[#555]">
+          <input
+            checked={isPinned}
+            onChange={(event) => setIsPinned(event.target.checked)}
+            type="checkbox"
+          />
+          <span className="font-bold text-[#e61d39]">置顶 / Pin to top</span>
+          <span className="text-[12px] text-[#888]">
+            勾选后这篇文章在本栏目的后台列表与前台列表里都排到最前，其余顺序不变
+          </span>
+        </label>
+
+        {isPinned ? (
+          <p className="border-t border-[#eee] pt-2 text-[12px] text-[#e61d39]">
+            ★ 当前已置顶 —— 保存后立即生效（前台有 60 秒缓存）
+          </p>
+        ) : null}
+      </div>
 
       <div className="mt-5 flex items-center gap-3">
         <button
