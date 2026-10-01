@@ -73,3 +73,6 @@ src/**/*.bak-*
 *.bak-2026*
 # D1 -> Neon backup exports (local only)
 /.neon-backups/
+
+# 字体规范化前的备份（normalize-rich-text.mjs 输出，含原始 HTML，体积大）
+/.font-backups/
