@@ -61,6 +61,11 @@ export const newsPosts = sqliteTable(
     bodyText: text("body_text").notNull().default(""),
     image: text("image").notNull().default(""),
     isPublished: integer("is_published", { mode: "boolean" }).notNull().default(true),
+    /**
+     * 置顶。与 admin_messages.is_pinned 同一套做法：置顶的文章在后台列表和
+     * 前台列表里都排在最前，其余顺序不变。
+     */
+    isPinned: integer("is_pinned", { mode: "boolean" }).notNull().default(false),
     sortDate: ts("sort_date"),
     createdAt: ts("created_at").notNull().$defaultFn(() => new Date()),
     updatedAt: ts("updated_at").notNull().$defaultFn(() => new Date()),
@@ -68,6 +73,7 @@ export const newsPosts = sqliteTable(
   (table) => [
     index("news_posts_category_idx").on(table.categoryId),
     index("news_posts_sort_idx").on(table.sortDate),
+    index("news_posts_pinned_idx").on(table.isPinned),
   ],
 );
 

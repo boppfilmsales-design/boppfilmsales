@@ -54,6 +54,8 @@ async function getStaticPosts(): Promise<PostRow[]> {
         bodyText: item.bodyText || "",
         image: item.image || "",
         isPublished: true,
+        // 静态快照里没有置顶概念；显式给 false，保证 PostRow 形状完整。
+        isPinned: false,
         sortDate: d,
         createdAt: d,
         updatedAt: d,
@@ -153,7 +155,7 @@ export async function listPosts(options: {
       .select()
       .from(newsPosts)
       .where(where)
-      .orderBy(desc(sql`coalesce(${newsPosts.sortDate}, ${newsPosts.createdAt})`), desc(newsPosts.id))
+      .orderBy(desc(newsPosts.isPinned), desc(sql`coalesce(${newsPosts.sortDate}, ${newsPosts.createdAt})`), desc(newsPosts.id))
       .limit(perPage)
       .offset((page - 1) * perPage);
 
@@ -184,7 +186,7 @@ export async function getNeighbourPosts(post: PostRow) {
           sql`coalesce(${newsPosts.sortDate}, ${newsPosts.createdAt}) > coalesce(${post.sortDate}, ${post.createdAt})`,
         ),
       )
-      .orderBy(asc(sql`coalesce(${newsPosts.sortDate}, ${newsPosts.createdAt})`))
+      .orderBy(desc(newsPosts.isPinned), asc(sql`coalesce(${newsPosts.sortDate}, ${newsPosts.createdAt})`))
       .limit(1);
     const [next] = await db
       .select({ id: newsPosts.id, title: newsPosts.title, categoryId: newsPosts.categoryId })
@@ -195,7 +197,7 @@ export async function getNeighbourPosts(post: PostRow) {
           sql`coalesce(${newsPosts.sortDate}, ${newsPosts.createdAt}) < coalesce(${post.sortDate}, ${post.createdAt})`,
         ),
       )
-      .orderBy(desc(sql`coalesce(${newsPosts.sortDate}, ${newsPosts.createdAt})`))
+      .orderBy(desc(newsPosts.isPinned), desc(sql`coalesce(${newsPosts.sortDate}, ${newsPosts.createdAt})`))
       .limit(1);
     return { prev: prev ?? null, next: next ?? null };
   } catch {
@@ -240,7 +242,7 @@ export async function getLatestPosts(limit = 6) {
       })
       .from(newsPosts)
       .where(eq(newsPosts.isPublished, true))
-      .orderBy(desc(sql`coalesce(${newsPosts.sortDate}, ${newsPosts.createdAt})`), desc(newsPosts.id))
+      .orderBy(desc(newsPosts.isPinned), desc(sql`coalesce(${newsPosts.sortDate}, ${newsPosts.createdAt})`), desc(newsPosts.id))
       .limit(limit);
   } catch {
     return (await getStaticPosts())

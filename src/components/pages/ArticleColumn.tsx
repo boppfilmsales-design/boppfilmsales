@@ -77,6 +77,11 @@ export default async function ArticleColumnPage({
                         </div>
                         <div className="box-border min-h-[220px] flex-1 bg-[#f8f8f8] p-[28px]">
                           <h2 className="mb-[8px] truncate text-[16px] font-bold text-[#333] group-hover:text-[#c8102e]">
+                            {post.isPinned ? (
+                              <span className="mr-2 bg-[#e61d39] px-1.5 py-[2px] align-middle text-[10px] font-bold text-white">
+                                {zh ? "置顶" : "PINNED"}
+                              </span>
+                            ) : null}
                             <Link href={href}>{post.title}</Link>
                           </h2>
                           <span className="text-[13px] text-[#666]">

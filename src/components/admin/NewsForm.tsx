@@ -16,6 +16,8 @@ export type AdminPostDetail = {
   bodyHtml: string;
   bodyText: string;
   isPublished: boolean;
+  /** 置顶：在后台与前台列表里排到最前。 */
+  isPinned: boolean;
 };
 
 function today(offsetDays = 0): string {
@@ -50,6 +52,7 @@ export default function NewsForm({
   const [excerpt, setExcerpt] = useState(post?.excerpt ?? "");
   const [bodyHtml, setBodyHtml] = useState(post?.bodyHtml ?? "");
   const [isPublished, setIsPublished] = useState(post?.isPublished ?? true);
+  const [isPinned, setIsPinned] = useState(post?.isPinned ?? false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -65,6 +68,7 @@ export default function NewsForm({
       excerpt,
       image,
       isPublished,
+      isPinned,
       bodyHtml,
       bodyText: "",
     };
@@ -159,6 +163,19 @@ export default function NewsForm({
           type="checkbox"
         />
         Published (visible on the website)
+      </label>
+
+      {/* 置顶：与「留言板」的置顶同一套做法（news_posts.is_pinned）。 */}
+      <label className="mt-2 flex items-center gap-2 text-[13px] text-[#555]">
+        <input
+          checked={isPinned}
+          onChange={(event) => setIsPinned(event.target.checked)}
+          type="checkbox"
+        />
+        <span className="font-bold text-[#e61d39]">置顶</span>
+        <span className="text-[#888]">
+          （勾选后这篇文章在本栏目的后台列表和前台列表里都排到最前，其余顺序不变）
+        </span>
       </label>
 
       <div className="mt-5 flex items-center gap-3">

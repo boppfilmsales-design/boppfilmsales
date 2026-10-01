@@ -89,12 +89,13 @@ async function listPostsForAdmin(request: Request) {
       excerpt: newsPosts.excerpt,
       image: newsPosts.image,
       isPublished: newsPosts.isPublished,
+      isPinned: newsPosts.isPinned,
       sourceId: newsPosts.sourceId,
       updatedAt: newsPosts.updatedAt,
     })
     .from(newsPosts)
     .where(where)
-    .orderBy(desc(sql`coalesce(${newsPosts.sortDate}, ${newsPosts.createdAt})`), desc(newsPosts.id))
+    .orderBy(desc(newsPosts.isPinned), desc(sql`coalesce(${newsPosts.sortDate}, ${newsPosts.createdAt})`), desc(newsPosts.id))
     .limit(perPage)
     .offset((page - 1) * perPage);
 

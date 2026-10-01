@@ -121,6 +121,11 @@ export default async function NewsPage({ searchParams }: { searchParams: SearchP
                   </div>
                   <div className="box-border h-auto min-h-[260px] flex-1 bg-[#f8f8f8] p-[40px] md:h-[260px]">
                     <h1 className="mt-[20px] mb-[10px] truncate text-[16px] text-[#333] group-hover:text-[#e61d39]">
+                      {post.isPinned ? (
+                        <span className="mr-2 bg-[#e61d39] px-1.5 py-[2px] align-middle text-[10px] font-bold text-white">
+                          PINNED
+                        </span>
+                      ) : null}
                       <Link href={`/news/${active?.slug ?? "news"}/${post.id}`}>{post.title}</Link>
                     </h1>
                     <span className="text-[13px] text-[#666]">

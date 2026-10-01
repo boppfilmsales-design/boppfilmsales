@@ -11,6 +11,8 @@ export type PostPayload = {
   bodyText?: string;
   image?: string;
   isPublished?: boolean;
+  /** 置顶：在后台与前台列表里排到最前，其余顺序不变。 */
+  isPinned?: boolean;
 };
 
 export function buildPostValues(payload: PostPayload, requireCategory: boolean) {
@@ -37,6 +39,8 @@ export function buildPostValues(payload: PostPayload, requireCategory: boolean) 
   };
 
   if (payload.isPublished !== undefined) values.isPublished = Boolean(payload.isPublished);
+  // 只在显式提交时改写，避免"编辑标题顺手把置顶取消掉"。
+  if (payload.isPinned !== undefined) values.isPinned = Boolean(payload.isPinned);
 
   if (requireCategory || payload.categoryId !== undefined) {
     const categoryId = Number.parseInt(String(payload.categoryId ?? ""), 10);

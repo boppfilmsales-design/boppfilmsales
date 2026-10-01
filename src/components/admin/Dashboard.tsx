@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -23,6 +23,8 @@ type Row = {
   excerpt: string;
   image: string;
   isPublished: boolean;
+  /** 置顶：列表里排到最前，行内可切换。 */
+  isPinned?: boolean;
   sourceId: number | null;
 };
 
@@ -348,6 +350,33 @@ export default function Dashboard({ username }: { username: string }) {
         isPublished: !row.isPublished,
       }),
     });
+    if (activeColumn) await loadColumnContent(activeColumn);
+  }
+
+  /**
+   * 行内置顶开关。把整行原样回传、只翻转 isPinned —— `buildPostValues` 只在
+   * 字段显式出现时才改写，所以正文与其它字段不会被动到。
+   */
+  async function togglePin(row: Row) {
+    const res = await fetch(`/api/admin/posts/${row.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: row.title,
+        listDate: row.listDate,
+        newsDate: row.newsDate,
+        excerpt: row.excerpt,
+        image: row.image,
+        categoryId: row.categoryId,
+        isPublished: row.isPublished,
+        isPinned: !row.isPinned,
+      }),
+    });
+    setNotice(
+      res.ok
+        ? `文章 #${row.id} ${row.isPinned ? "已取消置顶" : "已置顶"}`
+        : "置顶操作失败",
+    );
     if (activeColumn) await loadColumnContent(activeColumn);
   }
 
@@ -736,7 +765,7 @@ export default function Dashboard({ username }: { username: string }) {
                   <thead className="bg-[#fafafa] text-[12px] text-[#888]">
                     <tr>
                       <th className="px-3 py-3">编号</th>
-                      <th className="px-3 py-3">排序</th>
+                      <th className="px-3 py-3">置顶</th>
                       <th className="px-3 py-3">标题</th>
                       <th className="px-3 py-3">封面图片</th>
                       <th className="px-3 py-3">状态</th>
@@ -747,8 +776,27 @@ export default function Dashboard({ username }: { username: string }) {
                     {newsRows.map((row) => (
                       <tr key={row.id} className="align-top">
                         <td className="px-3 py-3 text-[#999]">{row.id}</td>
-                        <td className="px-3 py-3 text-[#666]">{row.id * 10}</td>
+                        <td className="px-3 py-3">
+                          {/* 置顶：与「留言板」同一套做法（news_posts.is_pinned） */}
+                          <button
+                            className={`whitespace-nowrap px-2 py-[3px] text-[11px] font-bold ${
+                              row.isPinned
+                                ? "bg-[#e61d39] text-white"
+                                : "bg-[#f4f4f4] text-[#888] hover:bg-[#e61d39] hover:text-white"
+                            }`}
+                            onClick={() => void togglePin(row)}
+                            title="置顶后在本栏目的后台与前台列表里都排到最前"
+                            type="button"
+                          >
+                            {row.isPinned ? "★ 已置顶" : "☆ 置顶"}
+                          </button>
+                        </td>
                         <td className="max-w-[300px] px-3 py-3">
+                          {row.isPinned ? (
+                            <span className="mr-2 bg-[#e61d39] px-1.5 py-[2px] align-middle text-[10px] font-bold text-white">
+                              置顶
+                            </span>
+                          ) : null}
                           <Link className="font-bold text-[#333] hover:text-[#e61d39]" href={`/news/${newsCats.find((c) => c.id === row.categoryId)?.slug ?? "news"}/${row.id}`} target="_blank">
                             {row.title}
                           </Link>

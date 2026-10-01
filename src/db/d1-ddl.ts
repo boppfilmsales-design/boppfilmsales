@@ -41,12 +41,14 @@ export const D1_SCHEMA_STATEMENTS: readonly string[] = [
     body_text text default '' not null,
     image text default '' not null,
     is_published integer default 1 not null,
+    is_pinned integer default 0 not null,
     sort_date integer,
     created_at integer not null,
     updated_at integer not null
   )`,
   `create index if not exists news_posts_category_idx on news_posts (category_id)`,
   `create index if not exists news_posts_sort_idx on news_posts (sort_date)`,
+  `create index if not exists news_posts_pinned_idx on news_posts (is_pinned)`,
 
   `create table if not exists admin_users (
     id integer primary key autoincrement not null,
