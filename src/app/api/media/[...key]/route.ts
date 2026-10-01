@@ -1,4 +1,4 @@
-import { getMedia } from "@/lib/media-storage";
+import { getMedia, remoteMediaBase } from "@/lib/media-storage";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +45,16 @@ export async function GET(request: Request, context: RouteContext) {
     return new Response("Bad Request", { status: 400 });
   }
   const objectKey = key.join("/");
+
+  // Off-Workers (Vercel) there is no R2 binding, so hand the request to the
+  // deployment that owns the bucket rather than 404ing every image.
+  const remote = remoteMediaBase();
+  if (remote) {
+    return Response.redirect(
+      `${remote}/api/media/${key.map(encodeURIComponent).join("/")}`,
+      307,
+    );
+  }
 
   const cache = edgeCache();
   if (cache) {

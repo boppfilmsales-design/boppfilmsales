@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
-import { mediaUrl, putMedia } from "@/lib/media-storage";
+import { mediaUrl, putMedia, remoteMediaBase } from "@/lib/media-storage";
 
 export const dynamic = "force-dynamic";
 
@@ -27,12 +27,43 @@ function sanitizeFileName(name: string): string {
  * survive a deploy. The frontend only needs the returned URL, which is served
  * back by `/api/media/[...key]`.
  *
- * When the R2 binding is absent (plain `next dev`), the storage layer falls
- * back to `public/` so local development keeps working.
+ * Two fallbacks keep this working off-Workers:
+ *
+ *   · `MEDIA_ORIGIN` set (Vercel) — the request is forwarded to the deployment
+ *     that owns the bucket, carrying the admin cookie so the shared
+ *     `SESSION_SECRET` authenticates it there too. Without this the file would
+ *     land on Vercel's ephemeral disk and vanish on the next deploy.
+ *   · Nothing set (plain `next dev`) — the storage layer writes to `public/`.
  */
 export async function POST(request: Request) {
   const denied = await requireAdmin();
   if (denied) return denied;
+
+  const remote = remoteMediaBase();
+  if (remote) {
+    try {
+      const body = await request.arrayBuffer();
+      const forwarded = await fetch(`${remote}/api/admin/upload`, {
+        method: "POST",
+        headers: {
+          "content-type": request.headers.get("content-type") ?? "",
+          cookie: request.headers.get("cookie") ?? "",
+        },
+        body,
+      });
+      return new Response(forwarded.body, {
+        status: forwarded.status,
+        headers: {
+          "content-type": forwarded.headers.get("content-type") ?? "application/json",
+        },
+      });
+    } catch (error: any) {
+      return NextResponse.json(
+        { ok: false, error: `转发上传到 ${remote} 失败：${error?.message ?? error}` },
+        { status: 502 },
+      );
+    }
+  }
 
   try {
     const formData = await request.formData();

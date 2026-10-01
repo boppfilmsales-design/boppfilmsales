@@ -10,10 +10,13 @@ import { cwd } from "node:process";
  * structured data), so uploads are written to the `UPLOADS` R2 bucket declared
  * in `wrangler.jsonc`. Objects are served back through `/api/media/[...key]`.
  *
- * When the R2 binding is unavailable — i.e. plain `next dev` without the
- * Wrangler platform proxy — we fall back to `public/`, which keeps local
- * development working. That fallback is inert on Workers, where the filesystem
- * is read-only.
+ * Two fallbacks exist, in this order:
+ *
+ *   1. `MEDIA_ORIGIN` — set on Vercel, where the R2 binding does not exist.
+ *      `/api/media/*` redirects to the canonical Workers deployment, which
+ *      reads the same bucket natively. No S3 credentials, no double storage.
+ *   2. `public/` — plain `next dev` without the Wrangler platform proxy. Inert
+ *      on Workers, where the filesystem is read-only.
  */
 const BINDING = "UPLOADS";
 
@@ -42,6 +45,22 @@ export function getBucket(): Bucket {
     );
   }
   return bucket;
+}
+
+/**
+ * Base URL of the deployment that owns the R2 bucket.
+ *
+ * Set `MEDIA_ORIGIN` on Vercel (e.g. `https://www.boppfilmsales.com`). When it
+ * is present and the R2 binding is not, `/api/media/*` redirects there instead
+ * of trying to read a bucket it cannot see. Returns undefined on Workers and
+ * whenever the variable is absent or malformed, so every existing path keeps
+ * working unchanged.
+ */
+export function remoteMediaBase(): string | undefined {
+  if (tryGetBucket()) return undefined;
+  const raw = (process.env.MEDIA_ORIGIN ?? "").trim();
+  if (!raw || !/^https?:\/\//i.test(raw)) return undefined;
+  return raw.replace(/\/+$/, "");
 }
 
 /**

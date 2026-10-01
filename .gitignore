@@ -71,3 +71,5 @@ yarn-error.log*
 /.sync-backups/
 src/**/*.bak-*
 *.bak-2026*
+# D1 -> Neon backup exports (local only)
+/.neon-backups/
