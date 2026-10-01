@@ -50,7 +50,7 @@ export default function ProductTabs({ tabs, lang = "en", inquiryHref = "/contact
 
       <div className="px-5 py-6 md:px-8 md:py-8">
         <div
-          className="news-body text-[14px] leading-[190%] text-[#3d3d3d]"
+          className="news-body leading-[190%] text-[#3d3d3d]"
           dangerouslySetInnerHTML={{
             __html: sanitizeRichHtml(current.html) || `<p>${t("Content is being prepared.", "内容整理中。")}</p>`,
           }}

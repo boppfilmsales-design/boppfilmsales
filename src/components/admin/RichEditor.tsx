@@ -64,7 +64,13 @@ const FontSize = TextStyle.extend({
 
 const FONT_SIZES = [12, 14, 16, 18, 20, 24, 28, 32, 40, 48];
 
+/**
+ * 2026-10-01: Calibri 放在第一位，因此它也是 `useState(FONT_FAMILIES[0].value)`
+ * 里的默认字体。Carlito 是 Calibri 的度量兼容替代品，Linux/Android 上没装
+ * Calibri 时用它，排版不会跳。
+ */
 const FONT_FAMILIES: { label: string; value: string }[] = [
+  { label: "Calibri", value: "Calibri, Carlito, 'Segoe UI', Candara, Optima, Arial, sans-serif" },
   { label: "微软雅黑", value: "'Microsoft YaHei', 'PingFang SC', sans-serif" },
   { label: "宋体", value: "SimSun, 'Songti SC', serif" },
   { label: "黑体", value: "SimHei, sans-serif" },

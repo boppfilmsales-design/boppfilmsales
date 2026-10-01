@@ -16,7 +16,8 @@ import { contentNameZh } from "@/lib/site-helpers";
  */
 
 export type Lang = "en" | "zh";
-export type ContentKind = "about" | "lines" | "honor" | "service" | "cases";
+/** 2026-10-01: 加入 "down" —— 下载中心四栏已改为富文本文章模式。 */
+export type ContentKind = "about" | "lines" | "honor" | "service" | "cases" | "down";
 
 export const baseOf = (lang: Lang) => (lang === "zh" ? "/zh" : "");
 export const pick = (lang: Lang, en: string, zh: string) => (lang === "zh" ? zh : en);

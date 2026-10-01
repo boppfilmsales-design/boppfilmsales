@@ -72,11 +72,20 @@ export const CATEGORY_DEFS = [
   { slug: "to-ourselves", name: "To Ourselves", sourceId: 147, sortOrder: 91 },
   { slug: "company-announcement", name: "Company Announcement", sourceId: 141, sortOrder: 92 },
   { slug: "useful-knowledge", name: "Useful Knowledge", sourceId: 148, sortOrder: 93 },
+  // 2026-10-01: Classic Cases 的另外两栏与下载中心四栏也改为富文本文章模式，
+  // 与 新闻中心 → Employees Literary 共用同一套编辑器。
+  { slug: "to-buyers", name: "To Buyers", sourceId: 145, sortOrder: 94 },
+  { slug: "to-markets", name: "To Markets", sourceId: 146, sortOrder: 95 },
+  { slug: "companys-notice", name: "Company's Notice", sourceId: 43, sortOrder: 96 },
+  { slug: "technology-data", name: "Technology Data", sourceId: 76, sortOrder: 97 },
+  { slug: "certificate-download", name: "Certificate Download", sourceId: 157, sortOrder: 98 },
+  { slug: "msds-download", name: "MSDS Download", sourceId: 158, sortOrder: 99 },
 ];
 
 /**
- * Categories that are real news columns. `development-cases` reuses the news
- * tables but must not show up in the public /news category tabs.
+ * Categories that are real news columns. Every other article column reuses the
+ * news tables but is surfaced on its own section page (/cases, /service,
+ * /downloads), so it must not appear in the public /news category tabs.
  */
 export const PUBLIC_NEWS_SLUGS = ["industry-news", "company-news", "employees-literary"];
 

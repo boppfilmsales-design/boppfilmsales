@@ -20,9 +20,28 @@ html {
 
 body {
   margin: 0;
-  font-family: Arial, Helvetica, "Microsoft YaHei", sans-serif;
+  /* 2026-10-01: Calibri first — Carlito is its metric-compatible stand-in for
+     Linux/Android, where Calibri itself is not installed. */
+  font-family: Calibri, Carlito, Arial, Helvetica, "Microsoft YaHei", sans-serif;
   background: #fff;
   color: #26303d;
+}
+
+/* ── 全站可编辑富文本：统一 Calibri 16px ────────────────────────────────────
+   三处渲染面共用同一套基线：
+     · .news-body           新闻正文（/news/<slug>/<id>）
+     · .rich-text-body      产品与栏目的富文本块
+     · .rich-editor-content 后台 TipTap 编辑区
+
+   只设基线，不加 !important：内容里显式写下的 font-size / font-family 是编辑
+   有意设置的（例如绿色的 18px 小标题），强制覆盖会破坏原有设计。要让历史内容
+   也回到 16px，见 scripts/normalize-rich-text.mjs。 */
+.news-body,
+.rich-text-body,
+.rich-editor-content {
+  font-family: Calibri, Carlito, Arial, Helvetica, "Microsoft YaHei", sans-serif;
+  font-size: 16px;
+  line-height: 1.7;
 }
 
 ::selection {
@@ -102,8 +121,7 @@ img {
 .news-body td,
 .news-body th {
   border: 1px solid #e2e2e2;
-  padding: 6px 8px;
-  font-size: 13px;
+  padding: 6px 8px;
 }
 
 .news-body a {
@@ -171,8 +189,7 @@ img {
 .rich-text-body td,
 .rich-text-body th {
   border: 1px solid #e2e2e2;
-  padding: 4px 6px;
-  font-size: 12px;
+  padding: 4px 6px;
 }
 .rich-text-body br + br {
   display: none;
@@ -183,8 +200,7 @@ img {
 }
 
 /* ── TipTap editing surface (admin RichEditor) ─────────────────────────── */
-.rich-editor-content {
-  font-size: 14px;
+.rich-editor-content {
   line-height: 1.7;
   color: #333;
 }
@@ -239,8 +255,7 @@ img {
 .rich-editor-content td,
 .rich-editor-content th {
   border: 1px solid #d9dde3;
-  padding: 5px 8px;
-  font-size: 13px;
+  padding: 5px 8px;
   position: relative;
   vertical-align: top;
 }

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
+import ArticleColumnPage from "@/components/pages/ArticleColumn";
+import { getArticleColumn } from "@/lib/article-columns";
 import { allPdfs } from "@/lib/site";
 import Link from "next/link";
 import { getContentForSite } from "@/lib/content-db";
@@ -27,14 +29,62 @@ const DOWNLOAD_CATEGORIES = [
   { slug: "msds-download", name: "MSDS Download" },
 ];
 
+/** 栏目 slug → admin_contents.source_id */
+function sourceIdFor(slug: string): number {
+  switch (slug) {
+    case "technology-data": return 76;
+    case "certificate-download": return 157;
+    case "msds-download": return 158;
+    default: return 43; // company-notice
+  }
+}
+
+/**
+ * 反向映射：source_id → 栏目 slug。
+ *
+ * ColumnStrip 和分页都发 `?id=<source_id>`（与 /cases、/service 一致），而这个
+ * 页面历史上用 `?category=<slug>`。两种都要接受，否则从标签条点进来会落到
+ * Company's Notice。
+ */
+function slugForSourceId(sourceId: number): string {
+  switch (sourceId) {
+    case 76: return "technology-data";
+    case 157: return "certificate-download";
+    case 158: return "msds-download";
+    default: return "company-notice";
+  }
+}
+
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{ category?: string; p?: string; id?: string }>;
 }) {
   const params = await searchParams;
-  const currentSlug = params.category || "company-notice";
-  const sourceId = currentSlug === "technology-data" ? 76 : currentSlug === "certificate-download" ? 157 : currentSlug === "msds-download" ? 158 : 43;
+  const requestedId = Number.parseInt(params.id ?? "", 10);
+  const currentSlug =
+    Number.isFinite(requestedId) && requestedId > 0
+      ? slugForSourceId(requestedId)
+      : params.category || "company-notice";
+  const sourceId = sourceIdFor(currentSlug);
+  const page = Number.parseInt(params.p ?? "1", 10) || 1;
+
+  /**
+   * 2026-10-01: 下载中心四栏已改为富文本文章模式（news_posts 支撑），
+   * 渲染方式与 新闻中心 → Employees Literary 完全一致：列表 + 详情页。
+   * 没有匹配到时才回落到原来的文件列表渲染，保证旧链接不会 404。
+   */
+  const articleColumn = getArticleColumn(sourceId);
+  if (articleColumn) {
+    return (
+      <div className="min-h-screen bg-white">
+        <SiteHeader active="Download" />
+        <ArticleColumnPage column={articleColumn} lang="en" page={page} />
+        <SiteFooter />
+      </div>
+    );
+  }
+
   const managedContent = await getContentForSite("down", sourceId);
 
   // Real PDF catalogue, used to backfill the "Technology Data" tab when the

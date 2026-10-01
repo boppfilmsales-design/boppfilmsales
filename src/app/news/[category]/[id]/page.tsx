@@ -71,7 +71,7 @@ export default async function NewsDetailPage({ params }: { params: Params }) {
               Time：{displayDate}
             </div>
             <div
-              className="news-body min-h-[500px] text-[14px] leading-[150%] text-[#4b4b4b]"
+              className="news-body min-h-[500px] leading-[150%] text-[#4b4b4b]"
               dangerouslySetInnerHTML={{
                 __html: sanitizeRichHtml(post.bodyHtml) || `<p>${post.excerpt}</p>`,
               }}

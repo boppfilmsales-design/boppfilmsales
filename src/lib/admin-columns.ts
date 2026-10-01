@@ -122,10 +122,12 @@ export function getAdminSections(): AdminSection[] {
       name: "下载中心",
       nameEn: "Download Center",
       columns: [
-        { sourceId: 43, name: "Company's Notice", displayType: "news-list", dataSource: "static", parentId: 42, itemCount: count(43) },
-        { sourceId: 76, name: "Technology Data Download", displayType: "news-list", dataSource: "static", parentId: 42, itemCount: count(76) },
-        { sourceId: 157, name: "Certificate Download", displayType: "news-list", dataSource: "static", parentId: 42, itemCount: count(157) },
-        { sourceId: 158, name: "MSDS Download", displayType: "news-list", dataSource: "static", parentId: 42, itemCount: count(158) },
+        // 2026-10-01: 四栏改为富文本文章模式（news-db），后台使用与
+        // 新闻中心 → Employees Literary 相同的「+ 添加信息」+ TipTap 编辑器。
+        { sourceId: 43, name: "Company's Notice", displayType: "news-list", dataSource: "news-db", parentId: 42, itemCount: 0 },
+        { sourceId: 76, name: "Technology Data Download", displayType: "news-list", dataSource: "news-db", parentId: 42, itemCount: 0 },
+        { sourceId: 157, name: "Certificate Download", displayType: "news-list", dataSource: "news-db", parentId: 42, itemCount: 0 },
+        { sourceId: 158, name: "MSDS Download", displayType: "news-list", dataSource: "news-db", parentId: 42, itemCount: 0 },
       ],
     },
     {
@@ -153,8 +155,9 @@ export function getAdminSections(): AdminSection[] {
         // Managed as rich-text articles (same editor as 新闻中心), so operators
         // get "+ 添加信息" + the TipTap editor instead of the static card form.
         { sourceId: 54, name: "Development Cases", displayType: "news-list", dataSource: "news-db", parentId: 53, itemCount: 0 },
-        { sourceId: 145, name: "To Buyers", displayType: "image-list", dataSource: "static", parentId: 53, itemCount: count(145) },
-        { sourceId: 146, name: "To Markets", displayType: "image-list", dataSource: "static", parentId: 53, itemCount: count(146) },
+        // 2026-10-01: 这两栏原本是 image-list/static，正文无法编辑 —— 现改为文章模式。
+        { sourceId: 145, name: "To Buyers", displayType: "news-list", dataSource: "news-db", parentId: 53, itemCount: 0 },
+        { sourceId: 146, name: "To Markets", displayType: "news-list", dataSource: "news-db", parentId: 53, itemCount: 0 },
         { sourceId: 147, name: "To Ourselves", displayType: "news-list", dataSource: "news-db", parentId: 53, itemCount: 0 },
       ],
     },

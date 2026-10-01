@@ -651,7 +651,7 @@ export function ContentColumnPage({
         ) : null}
         {html ? (
           <div
-            className="news-body text-[14px] leading-[190%] text-[#3d3d3d]"
+            className="news-body leading-[190%] text-[#3d3d3d]"
             dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html) }}
           />
         ) : (
@@ -708,7 +708,7 @@ export function ContentEntryPage({
           <div className="border border-[#e8e8e8] bg-white p-6 md:p-10">
             {html ? (
               <div
-                className="news-body text-[14px] leading-[190%] text-[#3d3d3d]"
+                className="news-body leading-[190%] text-[#3d3d3d]"
                 dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html) }}
               />
             ) : card?.image ? (

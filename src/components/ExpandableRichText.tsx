@@ -38,7 +38,7 @@ export default function ExpandableRichText({
       >
         <div
           ref={innerRef}
-          className="news-body text-[15px] leading-[30px] text-[#5b6472]"
+          className="news-body leading-[30px] text-[#5b6472]"
           dangerouslySetInnerHTML={{ __html: cleanHtml }}
         />
         {!expanded && needsExpand && (

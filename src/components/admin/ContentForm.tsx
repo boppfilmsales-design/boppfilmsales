@@ -118,7 +118,7 @@ function BodyPreview({ html }: { html: string }) {
       <p className="mb-2 text-[11px] font-bold text-[#999]">前台效果预览</p>
       {hasContent ? (
         <div
-          className="news-body max-h-[300px] overflow-y-auto text-[13px] leading-[190%] text-[#3d3d3d]"
+          className="news-body max-h-[300px] overflow-y-auto leading-[190%] text-[#3d3d3d]"
           dangerouslySetInnerHTML={{ __html: html }}
         />
       ) : (
