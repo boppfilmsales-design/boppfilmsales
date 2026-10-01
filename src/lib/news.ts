@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, like, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, like, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { newsCategories, newsPosts } from "@/db/schema";
 import { ensureSeedData, CATEGORY_DEFS, type SeedItem } from "@/db/seed";
@@ -277,9 +277,37 @@ export async function getCategoryCounts(): Promise<Record<number, number>> {
   }
 }
 
-export async function getLatestPosts(limit = 6) {
+/**
+ * 最新文章，供首页「News Center」与中文站使用。
+ *
+ * ⚠️ `publicOnly` 必须在 SQL 里先限定栏目再 `limit`，不能先取后过滤。
+ *
+ * 2026-10-01 修复：调用方原来是这样写的 ——
+ *
+ *     const rows = await getLatestPosts(6);
+ *     return rows.filter(r => PUBLIC_NEWS_SLUGS.includes(slug));
+ *
+ * 而 `news_posts` 现在同时承载 20 个栏目（新闻 + 案例 + 下载中心 + 关于我们）。
+ * 于是最新的 6 条里会混进「发展历程」「TDS 资料」这类文章，被过滤掉之后首页
+ * 只剩 5 条、4 条甚至更少 —— 表现出来就是"首页新闻不更新/条数不对劲"。
+ *
+ * 改成在查询里 `category_id in (...)`，保证拿到的就是 6 条真新闻。
+ */
+export async function getLatestPosts(limit = 6, options: { publicOnly?: boolean } = {}) {
   try {
     await ensureSeedData();
+
+    const filters: SQL[] = [eq(newsPosts.isPublished, true)];
+    if (options.publicOnly) {
+      const categories = await getCategories();
+      const publicIds = categories
+        .filter((c) => PUBLIC_NEWS_SLUGS.includes(c.slug))
+        .map((c) => c.id);
+      // 一条都没有时不要退化成"不过滤"，否则又会把别的栏目放进来。
+      if (publicIds.length === 0) return [];
+      filters.push(inArray(newsPosts.categoryId, publicIds));
+    }
+
     return await db
       .select({
         id: newsPosts.id,
@@ -290,13 +318,22 @@ export async function getLatestPosts(limit = 6) {
         categoryId: newsPosts.categoryId,
       })
       .from(newsPosts)
-      .where(eq(newsPosts.isPublished, true))
+      .where(and(...filters))
       .orderBy(desc(newsPosts.isPinned), desc(sql`coalesce(${newsPosts.sortDate}, ${newsPosts.createdAt})`), desc(newsPosts.id))
       .limit(limit);
   } catch {
-    return (await getStaticPosts())
+    const staticPosts = await getStaticPosts();
+    const categories = await getCategories();
+    const allowed = options.publicOnly
+      ? new Set(categories.filter((c) => PUBLIC_NEWS_SLUGS.includes(c.slug)).map((c) => c.id))
+      : null;
+    return staticPosts
+      .filter((p) => (allowed ? allowed.has(p.categoryId) : true))
       .slice()
-      .sort((a, b) => (b.sortDate?.getTime() || 0) - (a.sortDate?.getTime() || 0))
+      .sort((a, b) => {
+        if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+        return (b.sortDate?.getTime() || 0) - (a.sortDate?.getTime() || 0);
+      })
       .slice(0, limit)
       .map((p) => ({ id: p.id, title: p.title, listDate: p.listDate, excerpt: p.excerpt, image: p.image, categoryId: p.categoryId }));
   }

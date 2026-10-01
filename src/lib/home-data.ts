@@ -4,19 +4,23 @@ import { warnDbFallback } from "@/lib/db-log";
 
 export { SITE, getCategories, allPdfs, productCount, categoryProductNames, featuredProducts, catalogueImages, productImageUrl };
 
-/** Home page news list that never throws when the DB is still initialising. */
+/**
+ * 首页新闻列表，数据库还在初始化时也不会抛错。
+ *
+ * `publicOnly: true` 让 SQL 直接限定「新闻中心」三个栏目后再取条数 ——
+ * 不要在这里先取一大把再过滤：`news_posts` 现在同时装着案例、下载中心和
+ * 关于我们的文章，先取后过滤会让首页新闻少几条甚至为空（2026-10-01 修复）。
+ */
 export async function getLatestPostsSafe(limit = 6) {
   try {
-    const rows = await getLatestPosts(limit);
+    const rows = await getLatestPosts(limit, { publicOnly: true });
     if (!rows || rows.length === 0) {
       throw new Error("No news rows found in DB");
     }
     const categories = await import("@/lib/news").then((m) => m.getCategories());
     const names = new Map(categories.map((c) => [c.id, c.name]));
     const slugs = new Map(categories.map((c) => [c.id, c.slug]));
-    // 案例 / 服务 article columns (development-cases, to-ourselves,
-    // company-announcement, useful-knowledge) reuse the news tables but belong
-    // to their own sections, so keep them out of the home page / news feeds.
+    // 这些栏目复用 news 表但属于别的板块，这里再兜一层过滤，防止将来查询被改错。
     return rows
       .filter((row) => PUBLIC_NEWS_SLUGS.includes(slugs.get(row.categoryId) ?? ""))
       .map((row) => ({
