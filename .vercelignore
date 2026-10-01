@@ -1,0 +1,29 @@
+# ---------------------------------------------------------------------------
+# Build inputs Vercel must not copy.
+#
+# `public/uploads` + `public/downloads` hold ~434 MB of legacy media (2,788
+# files). Since 305ba85 they are served from Cloudflare R2 through
+# `/api/media/<key>` — the copies in `public/` are dead weight, and shipping
+# them made every Vercel deployment fail right after a clean `next build` with:
+#
+#     ENOENT: no such file or directory, lstat '/vercel/path0/.next/lock'
+#
+# `next build` itself exits 0; it is the post-build output collection that
+# trips, and a 434 MB static tree is what makes it trip. The Cloudflare build
+# excludes the same directories through `scripts/local-media.mjs`.
+#
+# Keep this list in step with `scripts/local-media.mjs`.
+# ---------------------------------------------------------------------------
+public/uploads
+public/downloads
+.local-media
+
+# Local-only artefacts (also in .gitignore)
+.source-cache
+.zh-work
+.sync-backups
+.neon-backups
+.wrangler
+.open-next
+.tsbuildinfo
+*.log
