@@ -66,3 +66,8 @@ yarn-error.log*
 /.zh-backup-*.json
 /.audit-backup-*.json
 /.local-media/
+
+# Neon -> D1 sync tooling (2026-10-01)
+/.sync-backups/
+src/**/*.bak-*
+*.bak-2026*

@@ -2,6 +2,10 @@ import { sql } from "drizzle-orm";
 import { db } from "@/db";
 
 /**
+ * 2026-10-01: replaced the template vendor's placeholder company
+ * (Hebei Xinguangxing) with this site's real details, both in the database
+ * and in the fallback defaults below.
+ *
  * Reads a slice of "高级管理 → 系统管理 → 站点设置" for the *front end*.
  *
  * Settings live in the `site_settings` key/value table and are edited from the
@@ -11,17 +15,19 @@ import { db } from "@/db";
  * so a DB hiccup can never take down a public page.
  */
 export const DEFAULT_SETTINGS: Record<string, string> = {
-  site_name: "Hebei Xinguangxing Packing Material Co., Ltd.",
-  site_name_zh: "河北新光兴包装材料有限公司",
-  site_tagline: "BOPP Film & Packaging Material Manufacturer",
-  contact_person: "Ms. Linda",
-  contact_phone: "+86-311-88888888",
-  contact_mobile: "+86-138-0000-0000",
-  contact_email: "sales@apigcl.com",
-  contact_address: "Xinguangxing Industrial Park, Shijiazhuang, Hebei, China",
-  contact_address_zh: "中国河北省石家庄市新光兴工业园",
-  footer_copyright: "© 2024 Hebei Xinguangxing Packing Material Co., Ltd. All rights reserved.",
-  footer_beian: "冀ICP备00000000号",
+  // 2026-10-01：原为模板作者的示例公司（Hebei Xinguangxing），已替换为本站真实信息。
+  // 这些只是在数据库不可用时的兜底值，正常读取的是 site_settings 表。
+  site_name: "Asia Pacific Industry Group Co., Limited",
+  site_name_zh: "亚太工业集团有限公司",
+  site_tagline: "BOPET,BOPP Film & Packaging Material Manufacturer",
+  contact_person: "Mr Sunny Jiang",
+  contact_phone: "+86-551-64687285",
+  contact_mobile: "+86-18919654871",
+  contact_email: "admin@apigcl.com, sales@boppfilmsales.com",
+  contact_address: "No. 3399, Luzhou Ave.,baohe District, HeFei City, 230051, Anhui Province, China",
+  contact_address_zh: "安徽省合肥市包河区庐州大道3399号",
+  footer_copyright: "© 2026 Asia Pacific Industry Group All rights reserved.",
+  footer_beian: "皖ICP备07010519号",
   products_per_page: "9",
   news_per_page: "10",
   site_status: "online",

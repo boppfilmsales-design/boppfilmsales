@@ -14,7 +14,13 @@ export default async function SiteFooter() {
   const address = setting(settings, "contact_address");
   const phone = setting(settings, "contact_phone");
   const mobile = setting(settings, "contact_mobile");
-  const email = setting(settings, "contact_email");
+  // `contact_email` may hold several addresses separated by commas/semicolons;
+  // each one is rendered as its own mailto link so the footer can show both
+  // admin@… and sales@… without a second setting.
+  const emails = setting(settings, "contact_email")
+    .split(/[,;\n]+/)
+    .map((e) => e.trim())
+    .filter(Boolean);
   const copyright = setting(settings, "footer_copyright");
   const beian = setting(settings, "footer_beian");
   return (
@@ -125,13 +131,21 @@ export default async function SiteFooter() {
               <span>Mobile: {mobile}</span>
             </dd>
 
-            <dd className="flex items-center gap-2.5 text-[13px] leading-[26px]">
-              <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#f2d66c] text-[10px] text-[#c8102e] shadow">
+            <dd className="flex items-start gap-2.5 text-[13px] leading-[26px]">
+              <span className="mt-0.5 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#f2d66c] text-[10px] text-[#c8102e] shadow">
                 ✉
               </span>
-              <a className="transition-colors hover:text-[#f2d66c] hover:underline" href={`mailto:${email}`}>
-                {email}
-              </a>
+              <span className="flex flex-col">
+                {emails.map((e) => (
+                  <a
+                    key={e}
+                    className="transition-colors hover:text-[#f2d66c] hover:underline"
+                    href={`mailto:${e}`}
+                  >
+                    {e}
+                  </a>
+                ))}
+              </span>
             </dd>
           </dl>
 

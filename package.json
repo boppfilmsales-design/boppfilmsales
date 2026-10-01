@@ -9,7 +9,10 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "preview": "node scripts/deploy.mjs --preview",
-    "deploy": "node scripts/deploy.mjs",
+        "deploy": "node scripts/deploy.mjs",
+    "sync": "node scripts/sync-to-d1.mjs",
+    "sync:apply": "node scripts/sync-to-d1.mjs --apply",
+    "sync:check": "node scripts/sync-to-d1.mjs --tables=news_posts,admin_contents,site_settings",
     "media:status": "node scripts/local-media.mjs status",
     "media:restore": "node scripts/local-media.mjs restore",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
