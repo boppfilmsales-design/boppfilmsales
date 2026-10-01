@@ -1,104 +1,124 @@
 #!/usr/bin/env node
 /**
- * 部署诊断 —— 在 `next build` 之后运行，把 .next 的真实状态打到构建日志里。
+ * 部署诊断 + `.next/lock` 兼容处理。
  *
- * 目的是回答一个具体问题：Vercel 的 post-build 步骤报告
- *   ENOENT: no such file or directory, lstat '/vercel/path0/.next/lock'
- * 那么构建结束时 .next 到底存不存在、里面有什么、lock 文件在不在。
+ * 背景（2026-10-01 排查结论）
+ * ---------------------------------------------------------------------------
+ * 每一次 Vercel 部署都在 `next build` 干净退出之后失败于：
  *
- * 只读，不修改任何东西。
+ *     ENOENT: no such file or directory, lstat '/vercel/path0/.next/lock'
+ *
+ * 诊断证实构建本身完全正常：Build ID 已生成、路由表已打印、`.next` 有 22 个
+ * 条目、standalone 输出按预期没有产生。而 `lock` 与 `export-detail.json`
+ * 【本来就不该存在】——`next build` 在开始时创建 lock、结束时删除它。
+ *
+ * 也就是说 Vercel 的 post-build 步骤在 lstat 一个 Next.js 有意不留的文件。
+ * Vercel 社区的同类报告里，失败文件名还会在两次相同提交之间变化
+ * （`.next/lock` ↔ `.next/export-detail.json`），指向同一个原因：这一步依赖
+ * 的是上一次构建留下的产物清单，而那份清单已经过期。
+ *
+ * 处理方式
+ * ---------------------------------------------------------------------------
+ * 构建之后补上那个文件。它是个零字节标记，不影响运行——Next.js 只在构建期间
+ * 关注它，而构建已经结束了。同时清掉 `.next/cache`，让下一次构建不再从可能
+ * 过期的清单里恢复。
+ *
+ * 只做这两件事，全部带 try/catch，任何失败都只记一行日志，绝不让构建失败。
  */
 
 import fs from "node:fs";
 import path from "node:path";
 
 const line = (s) => console.log("[diag] " + s);
+const nextDir = path.join(process.cwd(), ".next");
 
 line("=".repeat(70));
-line("构建后诊断");
+line("构建后处理");
 line("=".repeat(70));
 line("cwd                 : " + process.cwd());
 line("VERCEL              : " + (process.env.VERCEL ?? "(未设置)"));
 line("VERCEL_ENV          : " + (process.env.VERCEL_ENV ?? "(未设置)"));
-line("NEXT_PHASE          : " + (process.env.NEXT_PHASE ?? "(未设置)"));
-line("NODE_ENV            : " + (process.env.NODE_ENV ?? "(未设置)"));
-line("");
-
-// ---- .next 目录 ----
-const nextDir = path.join(process.cwd(), ".next");
 line(".next 是否存在      : " + fs.existsSync(nextDir));
 
-if (fs.existsSync(nextDir)) {
-  const entries = fs.readdirSync(nextDir);
-  line(".next 条目数        : " + entries.length);
-
-  // 关键文件
-  const keys = [
-    "BUILD_ID",
-    "lock",
-    "export-marker.json",
-    "export-detail.json",
-    "routes-manifest.json",
-    "prerender-manifest.json",
-    "required-server-files.json",
-    "standalone",
-    "server",
-    "static",
-    "cache",
-    "types",
-  ];
-  line("");
-  line("关键条目:");
-  for (const k of keys) {
-    const p = path.join(nextDir, k);
-    let info = "缺失";
-    try {
-      const st = fs.lstatSync(p);
-      if (st.isDirectory()) {
-        const n = fs.readdirSync(p).length;
-        info = `目录 (${n} 项)`;
-      } else {
-        info = `${st.size} 字节`;
-      }
-    } catch (e) {
-      info = "缺失 (" + e.code + ")";
-    }
-    line(`  ${k.padEnd(30)} ${info}`);
-  }
-
-  // 完整列表（前 40）
-  line("");
-  line(".next 完整条目（最多 40）:");
-  for (const e of entries.slice(0, 40)) {
-    let kind = "?";
-    try { kind = fs.lstatSync(path.join(nextDir, e)).isDirectory() ? "DIR " : "FILE"; } catch { /**/ }
-    line(`  ${kind} ${e}`);
-  }
-  if (entries.length > 40) line(`  … 还有 ${entries.length - 40} 项`);
-} else {
-  line("  ❌ .next 不存在 —— 这就是 Vercel 报 ENOENT 的直接原因");
+if (!fs.existsSync(nextDir)) {
+  line("❌ .next 不存在，跳过后续处理");
+  line("=".repeat(70));
+  process.exit(0);
 }
 
-// ---- standalone 是否被误生成 ----
+const entries = fs.readdirSync(nextDir);
+line(".next 条目数        : " + entries.length);
+
+const info = (name) => {
+  const p = path.join(nextDir, name);
+  try {
+    const st = fs.lstatSync(p);
+    return st.isDirectory() ? `目录 (${fs.readdirSync(p).length} 项)` : `${st.size} 字节`;
+  } catch (e) {
+    return `缺失 (${e.code})`;
+  }
+};
+
 line("");
-line("standalone 目录       : " + (fs.existsSync(path.join(nextDir, "standalone")) ? "存在（不该在 Vercel 上生成）" : "不存在 ✅"));
-
-// ---- public 大小 ----
-const pub = path.join(process.cwd(), "public");
-if (fs.existsSync(pub)) {
-  let n = 0;
-  let bytes = 0;
-  const walk = (d) => {
-    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
-      const p = path.join(d, e.name);
-      if (e.isDirectory()) walk(p);
-      else { n++; try { bytes += fs.statSync(p).size; } catch { /**/ } }
-    }
-  };
-  try { walk(pub); } catch { /**/ }
-  line(`public/              : ${n} 个文件, ${(bytes / 1024 / 1024).toFixed(1)} MB`);
-} else {
-  line("public/              : 不存在");
+line("关键条目:");
+for (const k of ["BUILD_ID", "lock", "export-marker.json", "export-detail.json",
+                 "routes-manifest.json", "standalone", "server", "static"]) {
+  line(`  ${k.padEnd(28)} ${info(k)}`);
 }
 
+// ---------------------------------------------------------------------------
+// 1) 补上 Vercel 的 post-build 步骤要找的标记文件
+// ---------------------------------------------------------------------------
+line("");
+line("兼容处理:");
+
+for (const name of ["lock"]) {
+  const p = path.join(nextDir, name);
+  try {
+    if (!fs.existsSync(p)) {
+      fs.writeFileSync(p, "");
+      line(`  ✅ 已创建 .next/${name}（0 字节标记，Vercel 的 post-build 步骤会 lstat 它）`);
+    } else {
+      line(`  ℹ️ .next/${name} 已存在，未改动`);
+    }
+  } catch (e) {
+    line(`  ⚠️ 创建 .next/${name} 失败（忽略）: ${e.message}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 2) 清掉构建缓存，避免下一次构建复用可能过期的产物清单
+// ---------------------------------------------------------------------------
+const cacheDir = path.join(nextDir, "cache");
+try {
+  if (fs.existsSync(cacheDir)) {
+    const size = (() => {
+      let n = 0;
+      const walk = (d) => {
+        for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+          const p = path.join(d, e.name);
+          if (e.isDirectory()) walk(p);
+          else { try { n += fs.statSync(p).size; } catch { /* */ } }
+        }
+      };
+      try { walk(cacheDir); } catch { /* */ }
+      return (n / 1024 / 1024).toFixed(1);
+    })();
+    fs.rmSync(cacheDir, { recursive: true, force: true });
+    line(`  ✅ 已清空 .next/cache（原 ${size} MB）`);
+  } else {
+    line("  ℹ️ 没有 .next/cache，无需清理");
+  }
+} catch (e) {
+  line(`  ⚠️ 清理 .next/cache 失败（忽略）: ${e.message}`);
+}
+
+// ---------------------------------------------------------------------------
+// 3) 最终确认
+// ---------------------------------------------------------------------------
+line("");
+line("处理后:");
+for (const k of ["lock", "export-marker.json", "standalone"]) {
+  line(`  ${k.padEnd(28)} ${info(k)}`);
+}
 line("=".repeat(70));
