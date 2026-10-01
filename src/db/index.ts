@@ -90,19 +90,28 @@ function httpBinding(options: {
   ) as unknown as Db;
 }
 
+/**
+ * Public identifiers of the D1 database. Neither is a secret — the account id
+ * appears in every Cloudflare dashboard URL and the database id in every
+ * `wrangler d1` command — so they are baked in as defaults and only the API
+ * token has to be supplied as an environment variable on Vercel.
+ */
+const DEFAULT_ACCOUNT_ID = "1558b11cf56bf7597de219af04f1834b";
+const DEFAULT_DATABASE_ID = "0fa6ed59-fc86-43e5-a28c-ea3fef1837f8";
+
 export function getDb(): Db {
   if (!_db) {
     const bound = binding();
     if (bound) {
       _db = drizzle(bound, { schema });
     } else {
-      const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-      const databaseId = process.env.CLOUDFLARE_D1_DATABASE_ID;
+      const accountId = process.env.CLOUDFLARE_ACCOUNT_ID || DEFAULT_ACCOUNT_ID;
+      const databaseId = process.env.CLOUDFLARE_D1_DATABASE_ID || DEFAULT_DATABASE_ID;
       const token = process.env.CLOUDFLARE_API_TOKEN;
-      if (!accountId || !databaseId || !token) {
+      if (!token) {
         throw new Error(
           "No database available: the D1 binding `DB` is missing and " +
-            "CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_D1_DATABASE_ID / CLOUDFLARE_API_TOKEN are not all set.",
+            "CLOUDFLARE_API_TOKEN is not set, so the HTTP query API cannot be reached.",
         );
       }
       _db = httpBinding({ accountId, databaseId, token });

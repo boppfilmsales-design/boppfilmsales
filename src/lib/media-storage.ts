@@ -48,19 +48,27 @@ export function getBucket(): Bucket {
 }
 
 /**
+ * Deployment that owns the R2 bucket.
+ *
+ * `www.boppfilmsales.com` will replace this once the domain is on Cloudflare;
+ * until then the workers.dev hostname is the canonical origin. Override with
+ * `MEDIA_ORIGIN` when the two deployments are swapped or renamed.
+ */
+const DEFAULT_MEDIA_ORIGIN = "https://nextjs-postgresql-template.boppfilmsales.workers.dev";
+
+/**
  * Base URL of the deployment that owns the R2 bucket.
  *
- * Set `MEDIA_ORIGIN` on Vercel (e.g. `https://www.boppfilmsales.com`). When it
- * is present and the R2 binding is not, `/api/media/*` redirects there instead
- * of trying to read a bucket it cannot see. Returns undefined on Workers and
- * whenever the variable is absent or malformed, so every existing path keeps
- * working unchanged.
+ * Off-Workers (Vercel) there is no R2 binding, so `/api/media/*` redirects here
+ * and `/api/admin/upload` forwards here rather than trying to read a bucket it
+ * cannot see. Returns undefined on Workers — where the binding is present and no
+ * redirect is ever needed — so the Worker path is completely unchanged.
  */
 export function remoteMediaBase(): string | undefined {
   if (tryGetBucket()) return undefined;
   const raw = (process.env.MEDIA_ORIGIN ?? "").trim();
-  if (!raw || !/^https?:\/\//i.test(raw)) return undefined;
-  return raw.replace(/\/+$/, "");
+  const base = raw && /^https?:\/\//i.test(raw) ? raw : DEFAULT_MEDIA_ORIGIN;
+  return base.replace(/\/+$/, "");
 }
 
 /**
