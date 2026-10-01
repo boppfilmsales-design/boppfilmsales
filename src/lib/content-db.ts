@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { adminContents } from "@/db/schema";
 import { ensureSeedData } from "@/db/seed";
 import type { SiteContent } from "@/lib/site";
+import { logDbFallback } from "@/lib/db-log";
 
 /**
  * NOTE: `@/lib/site` is loaded dynamically, never at module scope.
@@ -50,7 +51,7 @@ export async function getContentForSite(kind: SiteContent["kind"], sourceId: num
     const [row] = await db.select().from(adminContents).where(eq(adminContents.sourceId, Number(sourceId))).limit(1);
     if (row) return fromRow(row);
   } catch (error) {
-    console.error("[content-db] D1 read failed, falling back to the site catalog", error);
+    logDbFallback("[content-db] D1 read failed, falling back to the site catalog", error);
   }
   const { getContent } = await import("@/lib/site");
   return getContent(kind, sourceId);
@@ -64,7 +65,7 @@ export async function getContentsForSite(kind: SiteContent["kind"]): Promise<Sit
       .orderBy(asc(adminContents.sourceId));
     if (rows.length > 0) return rows.map(fromRow);
   } catch (error) {
-    console.error("[content-db] D1 read failed, falling back to the site catalog", error);
+    logDbFallback("[content-db] D1 read failed, falling back to the site catalog", error);
   }
   const { getContents } = await import("@/lib/site");
   return getContents(kind);

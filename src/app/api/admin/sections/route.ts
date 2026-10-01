@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/db";
 import { adminContents, inquiries, newsCategories, newsPosts } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
+import { logDbFallback } from "@/lib/db-log";
 
 export const dynamic = "force-dynamic";
 
@@ -75,7 +76,7 @@ export async function GET() {
       }
     }
   } catch (err) {
-    console.error("[admin/sections] DB count failed, using static counts:", err);
+    logDbFallback("[admin/sections] DB count failed, using static counts:", err);
   }
 
   return Response.json({ ok: true, sections });

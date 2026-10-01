@@ -5,6 +5,7 @@ import { adminUsers } from "@/db/schema";
 import { ADMIN_USERNAME, ensureSeedData } from "@/db/seed";
 import { SESSION_COOKIE, createSessionToken, sessionCookieOptions } from "@/lib/auth";
 import { verifyPassword } from "@/lib/password";
+import { logDbFallback } from "@/lib/db-log";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
   try {
     await ensureSeedData();
   } catch (err) {
-    console.error("[admin/login] ensureSeedData failed (continuing with env fallback):", err);
+    logDbFallback("[admin/login] ensureSeedData failed (continuing with env fallback):", err);
   }
   const body = (await request.json().catch(() => ({}))) as {
     username?: string;
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
       .limit(1);
     user = rows[0] ?? null;
   } catch (err) {
-    console.error("[admin/login] DB query failed, falling back to env credentials:", err);
+    logDbFallback("[admin/login] DB query failed, falling back to env credentials:", err);
   }
   const expectedPassword = process.env.ADMIN_PASSWORD ?? "xgxadmin";
   const valid = user
@@ -69,7 +70,7 @@ export async function POST(request: Request) {
         .set({ lastLoginAt: new Date() })
         .where(eq(adminUsers.id, user.id));
     } catch (err) {
-      console.error("[admin/login] failed to record lastLoginAt:", err);
+      logDbFallback("[admin/login] failed to record lastLoginAt:", err);
     }
   }
 

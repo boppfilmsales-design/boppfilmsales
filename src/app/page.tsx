@@ -6,6 +6,7 @@ import { SITE } from "@/lib/site-helpers";
 import { getLatestPostsSafe } from "@/lib/home-data";
 import { getHomeSummary } from "@/lib/site-summary";
 import { getHomeSummaryLive } from "@/lib/home-live";
+import { logDbFallback } from "@/lib/db-log";
 
 /**
  * Rendered once and then served from the incremental cache.
@@ -33,7 +34,7 @@ export default async function HomePage() {
   try {
     news = await getLatestPostsSafe(6).catch(() => []);
   } catch (e) {
-    console.error("Failed to load news:", e);
+    logDbFallback("Failed to load news:", e);
   }
 
   const initialData = {

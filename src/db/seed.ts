@@ -20,6 +20,7 @@ import { hashPassword } from "@/lib/password";
  * not pull the JSON into the bundle graph the way `@/lib/site` does.
  */
 import { readSiteSeed } from "@/db/site-seed-reader";
+import { logDbFallback } from "@/lib/db-log";
 
 async function loadSiteSeedReader(): Promise<typeof import("@/db/site-seed-reader")> {
   return { readSiteSeed };
@@ -421,7 +422,7 @@ export function ensureSeedData(): Promise<void> {
   })().catch((error) => {
     // Allow a later request to retry after a transient failure.
     readyPromise = null;
-    console.error("[seed] failed", error);
+    logDbFallback("[seed] failed", error);
     throw error;
   });
 

@@ -6,6 +6,7 @@ import { db } from "@/db";
 import { adminContents, adminProducts } from "@/db/schema";
 import { productImageUrl } from "@/lib/site-helpers";
 import type { HomeFeatured, HomeGalleryItem, HomePdf, HomeSummary, NavCategory } from "@/lib/site-summary";
+import { logDbFallback } from "@/lib/db-log";
 
 /**
  * Family / sub-category names for the mega-menu, from the 14 KB
@@ -110,7 +111,7 @@ async function loadRows(): Promise<ProductRow[]> {
       .where(sql`ifnull(${adminProducts.status}, '') <> '已删除'`)
       .orderBy(asc(adminProducts.sort), asc(adminProducts.sourceId));
   } catch (error) {
-    console.error("[home-live] product query failed, falling back to the static seed:", error);
+    logDbFallback("[home-live] product query failed, falling back to the static seed:", error);
     return [];
   }
 }
@@ -326,7 +327,7 @@ export async function getHomeSummaryLive(fallback: HomeSummary): Promise<HomeSum
       aboutZhHtml: await aboutZhHtml(fallback.aboutZhHtml),
     };
   } catch (error) {
-    console.error("[home-live] falling back to the build-time summary:", error);
+    logDbFallback("[home-live] falling back to the build-time summary:", error);
     return fallback;
   }
 }

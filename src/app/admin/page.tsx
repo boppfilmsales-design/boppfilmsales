@@ -3,6 +3,7 @@ import Dashboard from "@/components/admin/Dashboard";
 import LoginForm from "@/components/admin/LoginForm";
 import { ensureSeedData } from "@/db/seed";
 import { getAdminSession } from "@/lib/auth";
+import { logDbFallback } from "@/lib/db-log";
 
 export const metadata: Metadata = {
   title: "XgxCms 后台管理系统 - Asia Pacific Industry Group",
@@ -18,7 +19,7 @@ export default async function AdminPage() {
   try {
     await ensureSeedData();
   } catch (err) {
-    console.error("[admin/page] ensureSeedData failed (continuing anyway):", err);
+    logDbFallback("[admin/page] ensureSeedData failed (continuing anyway):", err);
   }
   const session = await getAdminSession();
   if (!session) return <LoginForm />;

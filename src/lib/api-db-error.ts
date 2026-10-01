@@ -1,4 +1,5 @@
 import { ensureSeedData } from "@/db/seed";
+import { logDbFallback } from "@/lib/db-log";
 
 /**
  * Runs `ensureSeedData()` and, when the database is unreachable (e.g. Neon
@@ -23,7 +24,7 @@ export function dbErrorResponse(error: unknown, action: string): Response {
   const own = error instanceof Error ? error.message : String(error);
   const cause = (error as { cause?: { message?: string } } | null)?.cause?.message ?? "";
   const detail = [own, cause].filter(Boolean).join(" — ").slice(0, 400);
-  console.error(`[admin api] ${action} failed:`, detail);
+  logDbFallback(`[admin api] ${action} failed:`, detail);
   const quota = /quota|402/i.test(detail);
   return Response.json(
     {

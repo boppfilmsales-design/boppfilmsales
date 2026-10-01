@@ -1,5 +1,6 @@
 import { getCategories, allPdfs, productCount, SITE, categoryProductNames, featuredProducts, catalogueImages, productImageUrl } from "@/lib/site";
 import { PUBLIC_NEWS_SLUGS, getLatestPosts } from "@/lib/news";
+import { warnDbFallback } from "@/lib/db-log";
 
 export { SITE, getCategories, allPdfs, productCount, categoryProductNames, featuredProducts, catalogueImages, productImageUrl };
 
@@ -26,7 +27,7 @@ export async function getLatestPostsSafe(limit = 6) {
         slug: slugs.get(row.categoryId) ?? "industry-news",
       }));
   } catch (error) {
-    console.warn("⚠️ [Home News Fallback] Using mock news data due to DB status:", error);
+    warnDbFallback("⚠️ [Home News Fallback] Using mock news data due to DB status:", error);
     
     // 💡 降级方案：当数据库未初始化时返回高质量的默认行业新闻，确保首页完美展示
     return [

@@ -5,6 +5,7 @@ import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { db } from "@/db";
 import { inquiries } from "@/db/schema";
+import { logDbFallback } from "@/lib/db-log";
 
 /**
  * Rendered once and then served from the incremental cache.
@@ -46,7 +47,7 @@ async function getPublicMessages() {
       .orderBy(desc(inquiries.createdAt))
       .limit(60);
   } catch (error) {
-    console.error("message wall: failed to load messages", error);
+    logDbFallback("message wall: failed to load messages", error);
     return [];
   }
 }

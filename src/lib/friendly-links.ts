@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { adminContents } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { logDbFallback } from "@/lib/db-log";
 
 export type FriendlyLink = {
   label: string;
@@ -61,7 +62,7 @@ export async function getFriendlyLinks(): Promise<FriendlyLink[]> {
 
     return links.length > 0 ? links : DEFAULT_LINKS;
   } catch (error) {
-    console.error("[getFriendlyLinks] failed, using defaults:", error);
+    logDbFallback("[getFriendlyLinks] failed, using defaults:", error);
     return DEFAULT_LINKS;
   }
 }

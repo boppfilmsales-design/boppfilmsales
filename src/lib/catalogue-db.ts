@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { adminProducts } from "@/db/schema";
 import { ensureSeedData } from "@/db/seed";
 import { getCategory, getItem, type ProductFamily, type ProductItem, type ProductSub } from "@/lib/site";
+import { logDbFallback } from "@/lib/db-log";
 
 function parseArray<T>(value: string, fallback: T[]): T[] {
   try {
@@ -75,7 +76,7 @@ export async function getCategoryForSite(catId: string | number): Promise<Produc
       itemIds: rows.map((row) => row.sourceId),
     };
   } catch (error) {
-    console.error("[catalogue-db] falling back to site seed", error);
+    logDbFallback("[catalogue-db] falling back to site seed", error);
     return fallback;
   }
 }
