@@ -2,12 +2,25 @@ import Link from "next/link";
 import SiteFloatingBar from "@/components/SiteFloatingBar";
 import SiteNav from "@/components/SiteNav";
 import { SITE } from "@/lib/site-helpers";
+import { getSiteSettings, setting } from "@/lib/site-settings";
 import { getNavCategoriesLive } from "@/lib/site-summary";
 
 export default async function SiteHeader({ active, lang = "en" }: { active?: string; lang?: "en" | "zh" }) {
   // Read the live product tree so the mega-menu reflects products moved by
   // 信息转移. Falls back to the seeded tree on any DB hiccup.
   const categories = await getNavCategoriesLive();
+
+  /**
+   * 旧版网站入口（"Website Old Version"）。
+   *
+   * 旧服务器 2026 年底到期后会关停，所以这个链接是**临时的** —— 做成站点设置
+   * 而不是写死在代码里：到期后到「高级管理 → 站点设置」把
+   * `header_old_site_url` 清空，链接就会消失，不需要改代码重新部署。
+   * 设置里为空时这里什么都不渲染。
+   */
+  const settings = await getSiteSettings();
+  const oldSiteUrl = setting(settings, "header_old_site_url").trim();
+
   return (
     <>
       {/* Fixed right-hand online-contact bar, present on every public page. */}
@@ -32,6 +45,18 @@ export default async function SiteHeader({ active, lang = "en" }: { active?: str
             <Link className="transition-colors hover:text-[#c9a227]" href={lang === "zh" ? "/" : "/zh"}>
               {lang === "zh" ? "English" : "中文版"}
             </Link>
+            {oldSiteUrl ? (
+              // 指向旧服务器上的老站 —— 另一个站点，所以新开标签页打开，
+              // 免得访客跳出当前浏览位置。rel="noreferrer" 顺手去掉来源信息。
+              <a
+                className="underline decoration-dotted underline-offset-2 transition-colors hover:text-[#c8102e]"
+                href={oldSiteUrl}
+                rel="noreferrer"
+                target="_blank"
+              >
+                {lang === "zh" ? "网站旧版" : "Website Old Version"}
+              </a>
+            ) : null}
             <Link className="font-bold text-[#c8102e] transition-colors hover:text-[#c9a227] hover:underline" href="/admin">
               {lang === "zh" ? "网站后台" : "Site background"}
             </Link>

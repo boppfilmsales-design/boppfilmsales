@@ -28,6 +28,13 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   contact_address_zh: "安徽省合肥市包河区庐州大道3399号",
   footer_copyright: "© 2026 Asia Pacific Industry Group All rights reserved.",
   footer_beian: "皖ICP备07010519号",
+  /**
+   * 头部「Website Old Version / 网站旧版」的链接目标。
+   *
+   * 旧服务器 2026 年底到期，这个入口是临时的：到期后到
+   * 「高级管理 → 站点设置」把本项清空，链接就会从头部消失（无需改代码）。
+   */
+  header_old_site_url: "http://old.boppfilmsales.com/",
   products_per_page: "9",
   news_per_page: "10",
   site_status: "online",
