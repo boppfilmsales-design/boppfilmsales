@@ -143,57 +143,50 @@ export default function SiteFloatingBar({ lang = "en" }: { lang?: "en" | "zh" })
           因此这里做三件事：
             ① 明确列出 Wechat1 / Wechat2 与完整号码
             ② 号码可点击 → 一键复制（方便访客去微信里搜索添加）
-            ③ 下方给出二维码，扫码即加好友
+            ③ ⭐ **每个号码紧挨着它自己那张二维码** —— 客户不会扫错人
+
+          ⭐ 二维码与号码的对应关系（2026-10-02 运营逐一确认）
+             qr2.jpg  →  18919654871（头像：白衬衫、建筑前）
+             qr3.jpg  →  18919659471（头像：红夹克、海边）
         */}
         <BarItem label={t("WeChat", "微信")} position="0 -295px">
-          <div className="max-w-[calc(100vw-90px)] bg-white p-[10px]">
-            <p className="mb-2 text-[12px] font-bold text-[#333]">WeChat / 微信</p>
+          <div className="max-w-[calc(100vw-90px)] bg-white p-[12px]">
+            <p className="mb-3 text-[12px] font-bold text-[#333]">WeChat / 微信</p>
 
             {[
-              { label: "Wechat1", num: "0086-18919654871" },
-              { label: "Wechat2", num: "0086-18919659471" },
-            ].map(({ label, num }) => (
-              <button
-                className="mb-1 block w-full cursor-pointer whitespace-nowrap text-left text-[12px] leading-[20px] text-[#000] hover:text-[#07c160]"
-                key={num}
-                onClick={() => {
-                  // 复制纯号码，方便直接粘进微信「添加朋友」
-                  void navigator.clipboard?.writeText(num).then(
-                    () => window.alert(`${label} ${num}\n\n已复制，可粘贴到微信「添加朋友」里搜索。`),
-                    () => window.alert(`${label}：${num}`),
-                  );
-                }}
-                title="Click to copy — paste into WeChat → Add Contacts"
-                type="button"
-              >
-                <span className="font-bold">{label}:</span> {num}
-                <span className="ml-1 text-[11px] text-[#07c160]">复制</span>
-              </button>
-            ))}
-
-            <p className="my-2 text-[11px] leading-[16px] text-[#888]">
-              {t(
-                "Scan the QR code below to add us on WeChat, or copy the number above.",
-                "扫下方二维码添加好友，或复制上方号码到微信搜索。",
-              )}
-            </p>
-
-            <div className="flex flex-wrap gap-[12px]">
-              {[
-                "/images/qr/qr1.jpg",
-                "/images/qr/qr2.jpg",
-                "/images/qr/qr3.jpg",
-                "/images/qr/qr4.jpg",
-              ].map((src) => (
-                // eslint-disable-next-line @next/next/no-img-element
+              { label: "Wechat1", num: "0086-18919654871", qr: "/images/qr/qr2.jpg" },
+              { label: "Wechat2", num: "0086-18919659471", qr: "/images/qr/qr3.jpg" },
+            ].map(({ label, num, qr }) => (
+              <div className="mb-4 flex items-start gap-3 last:mb-0" key={num}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  alt="WeChat QR code"
-                  className="h-[130px] w-[130px] border border-[#eee] object-cover"
-                  key={src}
-                  src={src}
+                  alt={`${label} WeChat QR code`}
+                  className="h-[120px] w-[120px] shrink-0 border border-[#eee] object-cover"
+                  src={qr}
                 />
-              ))}
-            </div>
+                <div className="min-w-[150px] pt-1">
+                  <p className="text-[12px] font-bold text-[#333]">{label}</p>
+                  <button
+                    className="mt-1 block cursor-pointer whitespace-nowrap text-left text-[12px] leading-[18px] text-[#000] hover:text-[#07c160]"
+                    onClick={() => {
+                      // 复制纯号码，方便直接粘进微信「添加朋友」
+                      void navigator.clipboard?.writeText(num).then(
+                        () => window.alert(`${label} ${num}\n\n已复制，可粘贴到微信「添加朋友」里搜索。`),
+                        () => window.alert(`${label}：${num}`),
+                      );
+                    }}
+                    title="点击复制号码 — 可粘贴到微信「添加朋友」搜索"
+                    type="button"
+                  >
+                    {num}
+                    <span className="ml-1 text-[11px] text-[#07c160]">复制</span>
+                  </button>
+                  <p className="mt-2 text-[11px] leading-[16px] text-[#888]">
+                    {t("Scan to add friend", "扫码添加好友")}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </BarItem>
 
