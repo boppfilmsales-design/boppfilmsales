@@ -76,3 +76,7 @@ src/**/*.bak-*
 
 # 字体规范化前的备份（normalize-rich-text.mjs 输出，含原始 HTML，体积大）
 /.font-backups/
+
+# 云端数据导出（backup-cloud-data.mjs 输出）
+# ⚠️ 含 admin_users 密码哈希与 inquiries 客户邮箱电话，绝不能进公开仓库
+/.data-backups/
