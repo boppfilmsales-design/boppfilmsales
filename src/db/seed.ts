@@ -88,6 +88,10 @@ export const CATEGORY_DEFS = [
   { slug: "branch-companies", name: "Branch Companies", sourceId: 169, sortOrder: 104 },
   { slug: "factory-warehouse", name: "Factory & Warehouse", sourceId: 171, sortOrder: 105 },
   { slug: "course", name: "Course", sourceId: 172, sortOrder: 106 },
+  // 2026-10-02: 荣誉资质（前台菜单 HONOR_SUBS）其余三栏也改为富文本文章模式。
+  { slug: "certificate", name: "Certificate", sourceId: 17, sortOrder: 107 },
+  { slug: "to-customer", name: "To Customer", sourceId: 50, sortOrder: 108 },
+  { slug: "certification-report", name: "Certification Report", sourceId: 51, sortOrder: 109 },
 ];
 
 /**

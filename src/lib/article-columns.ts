@@ -23,7 +23,7 @@
 export type ArticleColumn = {
   sourceId: number;
   /** Which public section the column lives in (drives breadcrumb + tab strip). */
-  kind: "about" | "cases" | "service" | "down";
+  kind: "about" | "honor" | "cases" | "service" | "down";
   /** news_categories.slug — also the detail URL: /news/<slug>/<id>. */
   slug: string;
   nameEn: string;
@@ -58,13 +58,47 @@ export const ARTICLE_COLUMNS: Record<number, ArticleColumn> = {
   },
   16: {
     sourceId: 16,
-    kind: "about",
+    // 2026-10-02：原先归在 "about"（href=/about），于是「关于我们 → Honor」是文章
+    // 列表、而「荣誉资质 → Honor」还是旧的卡片网格，同一栏两种样子。改挂到
+    // /honor 后两个入口都渲染文章列表。
+    kind: "honor",
     slug: "honor",
     nameEn: "Honor",
     nameZh: "荣誉资质",
-    sectionEn: "About Us",
-    sectionZh: "关于我们",
-    href: "/about",
+    sectionEn: "Honor & Certificates",
+    sectionZh: "荣誉资质",
+    href: "/honor",
+  },
+  // ── 荣誉资质 / Honor & Certificates（前台菜单 HONOR_SUBS）──────────────
+  17: {
+    sourceId: 17,
+    kind: "honor",
+    slug: "certificate",
+    nameEn: "Certificate",
+    nameZh: "证书",
+    sectionEn: "Honor & Certificates",
+    sectionZh: "荣誉资质",
+    href: "/honor",
+  },
+  50: {
+    sourceId: 50,
+    kind: "honor",
+    slug: "to-customer",
+    nameEn: "To Customer",
+    nameZh: "致客户",
+    sectionEn: "Honor & Certificates",
+    sectionZh: "荣誉资质",
+    href: "/honor",
+  },
+  51: {
+    sourceId: 51,
+    kind: "honor",
+    slug: "certification-report",
+    nameEn: "Certification Report",
+    nameZh: "认证报告",
+    sectionEn: "Honor & Certificates",
+    sectionZh: "荣誉资质",
+    href: "/honor",
   },
   56: {
     sourceId: 56,
@@ -217,6 +251,7 @@ export const ARTICLE_COLUMNS: Record<number, ArticleColumn> = {
 /** Fallback (still static) column for each section. */
 export const DEFAULT_ARTICLE_SOURCE_ID: Record<ArticleColumn["kind"], number> = {
   about: 13,
+  honor: 16,
   cases: 54,
   service: 79,
   down: 43,

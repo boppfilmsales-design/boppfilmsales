@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
+import ArticleColumnPage from "@/components/pages/ArticleColumn";
 import { ContentColumnPage } from "@/components/pages/Sections";
+import { getArticleColumn } from "@/lib/article-columns";
 import { getContentForSite } from "@/lib/content-db";
 
 /**
@@ -26,11 +28,31 @@ export const metadata: Metadata = {
 export default async function HonorPage({
   searchParams,
 }: {
-  searchParams: Promise<{ id?: string; c_id?: string }>;
+  searchParams: Promise<{ id?: string; c_id?: string; p?: string }>;
 }) {
   const query = await searchParams;
   const parsed = Number(query.id ?? query.c_id ?? "");
-  const content = await getContentForSite("honor", Number.isFinite(parsed) && parsed > 0 ? parsed : 16);
+  const sourceId = Number.isFinite(parsed) && parsed > 0 ? parsed : 16;
+  const page = Number.parseInt(query.p ?? "1", 10) || 1;
+
+  /**
+   * 2026-10-02: 荣誉资质四栏（Honor / Certificate / To Customer /
+   * Certification Report）已改为富文本文章模式（news_posts 支撑），
+   * 渲染方式与 新闻中心 → Employees Literary 一致：列表 + 详情页。
+   * 没有匹配到时回落到原来的卡片网格，旧链接仍然可用。
+   */
+  const articleColumn = getArticleColumn(sourceId);
+  if (articleColumn) {
+    return (
+      <div className="min-h-screen bg-white">
+        <SiteHeader active="Honor" />
+        <ArticleColumnPage column={articleColumn} lang="en" page={page} />
+        <SiteFooter />
+      </div>
+    );
+  }
+
+  const content = await getContentForSite("honor", sourceId);
 
   return (
     <div className="min-h-screen bg-white">
