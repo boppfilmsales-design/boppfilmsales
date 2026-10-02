@@ -49,21 +49,49 @@ async function listPostsForAdmin(request: Request) {
   const keyword = (url.searchParams.get("q") ?? "").trim();
 
   // The admin sidebar addresses columns by their *legacy* source id
-  // (41 / 49 / 52), while `news_posts.category_id` is the serial FK into
-  // `news_categories.id` (1 / 2 / 3). Resolve either form, otherwise the
-  // column filter never matches and every news column looks empty.
+  // (13 / 16 / 41 / 49 …), while `news_posts.category_id` is the serial FK into
+  // `news_categories.id`. Resolve either form, otherwise the column filter never
+  // matches and every news column looks empty.
   const allCategories = await db
     .select()
     .from(newsCategories)
     .orderBy(asc(newsCategories.sortOrder), asc(newsCategories.id));
 
+  /**
+   * ⚠️ 必须先按 `sourceId` 匹配，`id` 只能作为兜底 —— 顺序写反会张冠李戴。
+   *
+   * 2026-10-02 修复：原先写成 `find(id) ?? find(sourceId)`。因为
+   * `news_categories.id` 与 `sourceId` 的取值空间重叠，数字会撞车：
+   *
+   *     13  = Certificate Download 的 id  = About Us 的 source_id
+   *     16  = Main Products 的 id        = Honor 的 source_id
+   *
+   * 于是点开「关于我们 → About Us」（sourceId=13）时，第一条就命中了
+   * Certificate Download，后台显示的是别的栏目的文章；在这个错误视图里编辑并
+   * 保存，还会把内容写进错误的栏目。
+   *
+   * 后台侧边栏传的始终是 legacy sourceId，所以 sourceId 优先才是正确语义。
+   */
   let resolvedCategoryId: number | undefined;
   if (categoryParam && categoryParam !== "all") {
     const numeric = Number.parseInt(categoryParam, 10);
     if (Number.isInteger(numeric)) {
-      resolvedCategoryId =
-        allCategories.find((c) => c.id === numeric)?.id ??
-        allCategories.find((c) => c.sourceId === numeric)?.id;
+      const bySource = allCategories.find((c) => c.sourceId === numeric);
+      const byId = allCategories.find((c) => c.id === numeric);
+
+      // 防复发：如果两个解释同时成立却指向不同栏目，说明又撞号了。
+      // 以 sourceId 为准（后台传的就是它），但要在日志里喊一声，
+      // 免得又变成"某栏目显示别人家文章"这种难查的问题。
+      if (bySource && byId && bySource.id !== byId.id) {
+        console.warn(
+          `[admin/posts] category id ${numeric} is ambiguous: ` +
+            `source_id -> "${bySource.name}" (news_categories.id=${bySource.id}), ` +
+            `id -> "${byId.name}" (source_id=${byId.sourceId}). ` +
+            `Using the source_id match; 新增栏目时请避开与其它栏目 id 相同的 source_id。`,
+        );
+      }
+
+      resolvedCategoryId = bySource?.id ?? byId?.id;
     }
   }
 
