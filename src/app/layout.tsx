@@ -45,8 +45,25 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         dangerouslySetInnerHTML={{
           __html: `var _hmt = _hmt || [];
 (function() {
+  /* 百度统计 —— 按访问域名选对应的站点 ID。
+     改造前这里写死 apigcl 的 ID，于是 boppfilmsales.com 的访客也被计进
+     apigcl 的报表，两份数据是混的。
+     在浏览器里判断 hostname 而不是服务端：Workers / Vercel / old 子域
+     复用同一份 HTML，服务端只知道构建时的域名。
+     去掉 www. 前缀后匹配，这样 www 与裸域自动归到同一个站点。 */
+  var SITES = {
+    "boppfilmsales.com": "908ba259a0b256ef0b23f307a9e0992a",
+    "boppfilmsale.com": "908ba259a0b256ef0b23f307a9e0992a",
+    "apigcl.com": "3861ee9aa38791080fd3cdc167fc15a1"
+  };
+  var FALLBACK = "908ba259a0b256ef0b23f307a9e0992a";
+
+  var host = (location.hostname || "").toLowerCase().replace(/^www\\./, "");
+  var id = SITES[host] || FALLBACK;
+
   var hm = document.createElement("script");
-  hm.src = "https://hm.baidu.com/hm.js?3861ee9aa38791080fd3cdc167fc15a1";
+  hm.async = true;
+  hm.src = "https://hm.baidu.com/hm.js?" + id;
   var s = document.getElementsByTagName("script")[0];
   s.parentNode.insertBefore(hm, s);
 })();`,
