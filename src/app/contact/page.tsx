@@ -3,8 +3,9 @@ import Link from "next/link";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import InquiryForm from "@/components/InquiryForm";
-import { ArticleColumnList } from "@/components/pages/ArticleColumn";
+import { ContactInfoList } from "@/components/pages/ArticleColumn";
 import { getArticleColumn } from "@/lib/article-columns";
+import { listPosts, resolveCategory } from "@/lib/news";
 
 /**
  * 实时渲染：后台改完内容，前台立刻生效。
@@ -26,20 +27,22 @@ export const metadata: Metadata = {
 };
 
 /**
- * 2026-10-02 重构说明
+ * 联系我们页 —— 版式与旧站 contact.php 一致，内容由后台驱动。
  * =====================================================================
- * 改造前：这一页的联系方式（公司名、地址、Tel、Fax、Mobile、Url、Email、
- *         Skype、QQ、WeChat、WhatsApp、Our Official Address）**全部硬编码**
- *         在本文件里，而后台「内容管理 → 联系我们 → General Information」
- *         另有 8 条数据 —— 两边互不相干。于是运营在后台改了联系方式，
- *         前台没有任何变化，后台列表还只显示「10 - TEXT」这种占位符。
+ * 演进过程（值得记下来，否则很容易又改错）：
  *
- * 改造后：这一页的联系方式由后台文章驱动（news_posts，栏目 sourceId = 32），
- *         渲染方式与 新闻中心 → Employees Literary 完全一致 —— 左侧列表，
- *         点进去看详情页 /news/general-information/<id>。
+ *   ① 最初：整页联系方式**硬编码**在本文件里，后台另有 8 条 static 数据，
+ *      两边互不相干 —— 后台改了前台不变，而且后台列表只显示「10 - TEXT」。
  *
- * 保留：面包屑、页面标题、地图、二维码、世界地图宣传语、留言表单。
- *       地图/二维码/表单属于功能性内容，不适合做成文章。
+ *   ② 第一次改造：后台改成富文本文章模式（对了），但前台也顺手换成了
+ *      新闻卡片样式（NO PHOTO 灰块 + 时间 + 摘要）—— **错了**，联系方式
+ *      不该长成新闻列表的样子。运营的原话：「前端网站不能这样显示，请恢复」。
+ *
+ *   ③ 现在：后台保持「一条一条」的文章列表（改一条不牵连别的），
+ *      前台恢复传统的联系信息版式 —— 公司名 + 地址 + 两列信息网格 + 地图
+ *      + 二维码 + 世界地图 + 留言表单，但**内容全部读后台文章**。
+ *
+ * 所以：`ContactInfoList` 读的是同一批文章，只是渲染成紧凑的信息行。
  */
 const QR_IMAGES = [
   "/images/qr/qr1.jpg",
@@ -51,9 +54,30 @@ const QR_IMAGES = [
 const MAP_SRC =
   "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3654.0!2d117.302891!3d31.806389!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzHCsDQ4JzIzLjAiTiAxMTfCsDE4JzEwLjQiRQ!5e0!3m2!1sen!2sus!4v1600000000000!5m2!1sen!2sus";
 
+/** 取某篇联系信息文章的第一行纯文本（公司名 / 地址用）。 */
+async function contactField(slug: string, title: string): Promise<string> {
+  const category = await resolveCategory(slug);
+  const result = await listPosts({ categoryId: category?.id, page: 1, perPage: 50 });
+  const post = result.items.find((p) => p.title.toLowerCase() === title.toLowerCase());
+  if (!post) return "";
+  const lines = `${post.bodyHtml}`
+    .replace(/<[^>]*>/g, "\n")
+    .replace(/&nbsp;/g, " ")
+    .split("\n")
+    .map((l) => l.trim())
+    // 去掉「Company:」这类前缀，只留内容
+    .map((l) => l.replace(/^(Company|Address|Tel|Fax|Mobile[^:：]*|E-?mail|Website|Skype|QQ)\s*[:：]\s*/i, ""))
+    .filter((l) => l.length > 0);
+  return lines[0] ?? "";
+}
+
 export default async function ContactPage() {
   /** 后台「联系我们 → General Information」栏目（sourceId 32）。 */
   const column = getArticleColumn(32);
+  const slug = column?.slug ?? "general-information";
+
+  const company = await contactField(slug, "Company");
+  const address = await contactField(slug, "Address");
 
   return (
     <div className="min-h-screen bg-white">
@@ -73,37 +97,48 @@ export default async function ContactPage() {
       </section>
 
       <article className="mx-auto w-full max-w-[1200px] px-3 py-12">
-        {/* Main title */}
+        {/* Title */}
         <div className="text-center">
           <h1 className="text-[28px] font-bold uppercase tracking-[1px] text-[#c8102e]">Contact</h1>
           <i className="mx-auto mt-3 block h-[3px] w-[70px] bg-[#c8102e]" />
         </div>
 
-        {/*
-          联系方式 —— 由后台文章驱动。
-          与 /honor、/downloads、/cases 等栏目用的是同一个列表组件，
-          所以样式与「新闻中心 → Employees Literary」完全一致。
-        */}
-        <div className="mt-10">
-          {column ? (
-            <ArticleColumnList column={column} lang="en" />
-          ) : (
-            <p className="border border-dashed border-[#e0e0e0] bg-[#fafafa] px-6 py-12 text-center text-[13px] text-[#888]">
-              Contact details are not configured yet. Add them from Admin → Content → Contact Us →
-              General Information.
-            </p>
-          )}
-        </div>
+        {/* Company name + address —— 读后台「Company」「Address」两篇 */}
+        {company || address ? (
+          <div className="mt-10">
+            {company ? (
+              <>
+                <h2 className="text-[18px] font-bold uppercase text-[#c8102e]">{company}</h2>
+                <i className="mt-3 block h-[2px] w-[50px] bg-[#c8102e]" />
+              </>
+            ) : null}
+            {address ? (
+              <p className="mt-5 text-[14px] font-medium leading-[24px] text-[#555]">{address}</p>
+            ) : null}
+          </div>
+        ) : null}
 
-        {/* Map */}
-        <div className="mt-10 min-h-[400px] border border-[#eee] bg-[#f9f9f9]">
-          <iframe
-            allowFullScreen
-            className="h-full min-h-[400px] w-full border-0"
-            loading="lazy"
-            src={MAP_SRC}
-            title="Company location"
-          />
+        {/* Info grid + map */}
+        <div className="mt-10 grid gap-8 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            {column ? (
+              <ContactInfoList column={column} />
+            ) : (
+              <p className="border border-dashed border-[#e0e0e0] bg-[#fafafa] px-6 py-12 text-center text-[13px] text-[#888]">
+                Contact details are not configured yet.
+              </p>
+            )}
+          </div>
+
+          <div className="min-h-[400px] border border-[#eee] bg-[#f9f9f9] lg:col-span-1">
+            <iframe
+              allowFullScreen
+              className="h-full min-h-[400px] w-full border-0"
+              loading="lazy"
+              src={MAP_SRC}
+              title="Company location"
+            />
+          </div>
         </div>
 
         {/* QR codes */}

@@ -3,6 +3,7 @@ import Pagination from "@/components/Pagination";
 import { ColumnStrip, PageHero } from "@/components/pages/ArticleChrome";
 import type { ArticleColumn } from "@/lib/article-columns";
 import { PER_PAGE, formatListDate, listPosts, resolveCategory, toPlainExcerpt } from "@/lib/news";
+import { sanitizeRichHtml } from "@/lib/rich-text";
 
 export const dynamic = "force-dynamic";
 
@@ -122,6 +123,66 @@ export async function ArticleColumnList({
         </div>
       ) : null}
     </>
+  );
+}
+
+/**
+ * 联系方式列表 —— 给 /contact 用，**不是**新闻卡片样式。
+ *
+ * 运营要的是两件事同时成立：
+ *   · 后台按新闻中心那样「一条一条」列出来，改一条不影响别的；
+ *   · 前台仍是传统的联系信息版式（图标 + 标签 + 内容的两列网格），
+ *     不能变成带 NO PHOTO 灰块和日期的新闻卡片。
+ *
+ * 所以这里读同一批文章（news_posts，栏目 sourceId = 32），但按
+ * 「图标 + 标题 + 富文本内容」的紧凑行来渲染，视觉上贴近旧站
+ * contact.php 的 Tel / Fax / Mobile / Url / E-maile adress 区块。
+ */
+
+/** 按文章标题挑一个图标；匹配不到就用通用圆点。 */
+function iconForTitle(title: string): string {
+  const t = title.toLowerCase();
+  if (t.includes("company")) return "🏢";
+  if (t.includes("address")) return "📍";
+  if (t.includes("tel") || t.includes("fax")) return "☎";
+  if (t.includes("mobile")) return "📱";
+  if (t.includes("whatsapp") || t.includes("wechat")) return "💬";
+  if (t.includes("mail")) return "✉";
+  if (t.includes("skype") || t.includes("qq")) return "🔗";
+  if (t.includes("website") || t.includes("url")) return "🌐";
+  return "•";
+}
+
+export async function ContactInfoList({ column }: { column: ArticleColumn }) {
+  const category = await resolveCategory(column.slug);
+  const result = await listPosts({ categoryId: category?.id, page: 1, perPage: 50 });
+
+  if (result.items.length === 0) {
+    return (
+      <p className="border border-dashed border-[#e0e0e0] bg-[#fafafa] px-6 py-12 text-center text-[13px] text-[#888]">
+        Contact details are not configured yet. Add them from Admin → Content → Contact Us →
+        General Information.
+      </p>
+    );
+  }
+
+  return (
+    <div className="grid gap-x-12 gap-y-0 sm:grid-cols-2">
+      {result.items.map((post) => (
+        <div className="flex items-start gap-3 border-b border-[#eee] py-4 text-[14px]" key={post.id}>
+          <div className="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-full bg-[#f4f4f4] text-[#c8102e]">
+            <span className="text-[18px] leading-none">{iconForTitle(post.title)}</span>
+          </div>
+          <div className="flex-1 pt-[6px]">
+            <p className="font-bold text-[#333]">{post.title}</p>
+            <div
+              className="news-body mt-1 leading-[24px] text-[#555]"
+              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(post.bodyHtml) }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
