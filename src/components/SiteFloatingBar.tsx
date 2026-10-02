@@ -127,20 +127,73 @@ export default function SiteFloatingBar({ lang = "en" }: { lang?: "en" | "zh" })
           </em>
         </BarItem>
 
-        {/* WeChat QR codes */}
+        {/*
+          WeChat —— 两个微信号分开列出，号码可点击复制，配二维码扫码添加。
+
+          ⚠️ 为什么不能像 WhatsApp 那样"点一下直接开聊"
+          ────────────────────────────────────────────────────────────
+          WhatsApp 有官方网页短链 https://wa.me/<号码>，点击即可拉起客户端。
+          **微信没有等价的网页链接** —— 腾讯从未开放「用 URL 打开与某人聊天」
+          的能力。所谓 weixin:// 协议只在微信内置浏览器里有效，普通浏览器
+          点了没反应，所以不能用来做客服入口。
+
+          业界对微信客服的标准做法就是**二维码**：访客扫码 → 微信自动弹出
+          「添加好友」→ 加完即可聊天。这才是真正可用的"实时对话"路径。
+
+          因此这里做三件事：
+            ① 明确列出 Wechat1 / Wechat2 与完整号码
+            ② 号码可点击 → 一键复制（方便访客去微信里搜索添加）
+            ③ 下方给出二维码，扫码即加好友
+        */}
         <BarItem label={t("WeChat", "微信")} position="0 -295px">
-          <div className="flex max-w-[calc(100vw-90px)] flex-wrap gap-[20px] bg-white p-[10px]">
-            {["/images/qr/qr1.jpg", "/images/qr/qr2.jpg", "/images/qr/qr3.jpg", "/images/qr/qr4.jpg"].map(
-              (src) => (
+          <div className="max-w-[calc(100vw-90px)] bg-white p-[10px]">
+            <p className="mb-2 text-[12px] font-bold text-[#333]">WeChat / 微信</p>
+
+            {[
+              { label: "Wechat1", num: "0086-18919654871" },
+              { label: "Wechat2", num: "0086-18919659471" },
+            ].map(({ label, num }) => (
+              <button
+                className="mb-1 block w-full cursor-pointer whitespace-nowrap text-left text-[12px] leading-[20px] text-[#000] hover:text-[#07c160]"
+                key={num}
+                onClick={() => {
+                  // 复制纯号码，方便直接粘进微信「添加朋友」
+                  void navigator.clipboard?.writeText(num).then(
+                    () => window.alert(`${label} ${num}\n\n已复制，可粘贴到微信「添加朋友」里搜索。`),
+                    () => window.alert(`${label}：${num}`),
+                  );
+                }}
+                title="Click to copy — paste into WeChat → Add Contacts"
+                type="button"
+              >
+                <span className="font-bold">{label}:</span> {num}
+                <span className="ml-1 text-[11px] text-[#07c160]">复制</span>
+              </button>
+            ))}
+
+            <p className="my-2 text-[11px] leading-[16px] text-[#888]">
+              {t(
+                "Scan the QR code below to add us on WeChat, or copy the number above.",
+                "扫下方二维码添加好友，或复制上方号码到微信搜索。",
+              )}
+            </p>
+
+            <div className="flex flex-wrap gap-[12px]">
+              {[
+                "/images/qr/qr1.jpg",
+                "/images/qr/qr2.jpg",
+                "/images/qr/qr3.jpg",
+                "/images/qr/qr4.jpg",
+              ].map((src) => (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   alt="WeChat QR code"
-                  className="h-[130px] w-[130px] object-cover"
+                  className="h-[130px] w-[130px] border border-[#eee] object-cover"
                   key={src}
                   src={src}
                 />
-              ),
-            )}
+              ))}
+            </div>
           </div>
         </BarItem>
 
