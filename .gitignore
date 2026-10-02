@@ -82,3 +82,5 @@ src/**/*.bak-*
 # 云端数据导出（backup-cloud-data.mjs 输出）
 # ⚠️ 含 admin_users 密码哈希与 inquiries 客户邮箱电话，绝不能进公开仓库
 /.data-backups/
+# 补传旧站图片到 R2 时的临时下载目录（图片已进 R2，不必留在仓库）
+/.old-images-fetch/
