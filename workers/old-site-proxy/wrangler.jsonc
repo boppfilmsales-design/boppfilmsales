@@ -1,0 +1,18 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "boppfilmsales-old-site-proxy",
+  "main": "src/index.js",
+  "compatibility_date": "2026-09-01",
+  "workers_dev": false,
+  // 路由 old.boppfilmsales.com/* 已用 Workers 令牌手工创建。
+  // 不写在这里：部署用的主令牌没有「Workers 路由」权限，写了每次都会报错。
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "boppfilmsales-website-assets"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}
