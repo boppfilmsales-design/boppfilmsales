@@ -7,14 +7,17 @@ import { getCategories, getSub, subProducts } from "@/lib/site";
 import { getCategoryForSite } from "@/lib/catalogue-db";
 
 /**
- * Rendered once and then served from the incremental cache.
+ * 实时渲染：后台改完内容，前台立刻生效。
  *
- * `force-dynamic` made every visit re-render the whole tree and re-scan D1;
- * on Workers that pushed isolates to ~124 MB against the 128 MB ceiling and
- * Cloudflare killed the request with Error 1102. 60 s keeps admin edits
- * visible almost immediately while removing almost all of that work.
+ * 2026-10-02 之前这里是 `revalidate = 60`（增量缓存 60 秒）。当时的理由是免费版
+ * Workers 只有 10 毫秒 CPU 预算，而 `force-dynamic` 会让每次访问都重建整棵页面树
+ * 并重扫 D1，进而触发 Error 1102（Worker exceeded resource limits）。
+ *
+ * 现已升级 Workers Paid（30 秒 CPU / 请求，额度是免费版的 3000 倍），所以改回
+ * 实时渲染。代价是每次访问都会读一次 D1 —— 首页那种一次读上百行的页面如果流量
+ * 很大，要留意 D1 的每日读取额度。
  */
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
   return getCategories().flatMap((family) =>
