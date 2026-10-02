@@ -135,7 +135,7 @@ export function getAdminSections(): AdminSection[] {
       name: "联系我们",
       nameEn: "Contact Us",
       columns: [
-        { sourceId: 32, name: "General Information", displayType: "news-list", dataSource: "static", parentId: 29, itemCount: 0 },
+        { sourceId: 32, name: "General Information", displayType: "news-list", dataSource: "news-db", parentId: 29, itemCount: 0 },
         { sourceId: 155, name: "Get Contacts", displayType: "single", dataSource: "static", parentId: 29, itemCount: 0 },
         { sourceId: 156, name: "Send Inquiry", displayType: "single", dataSource: "static", parentId: 29, itemCount: 0 },
         { sourceId: 162, name: "Give Advice To Seller", displayType: "single", dataSource: "static", parentId: 29, itemCount: 0 },

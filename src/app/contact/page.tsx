@@ -3,6 +3,21 @@ import Link from "next/link";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import InquiryForm from "@/components/InquiryForm";
+import { ArticleColumnList } from "@/components/pages/ArticleColumn";
+import { getArticleColumn } from "@/lib/article-columns";
+
+/**
+ * 实时渲染：后台改完内容，前台立刻生效。
+ *
+ * 2026-10-02 之前这里是 `revalidate = 60`（增量缓存 60 秒）。当时的理由是免费版
+ * Workers 只有 10 毫秒 CPU 预算，而 `force-dynamic` 会让每次访问都重建整棵页面树
+ * 并重扫 D1，进而触发 Error 1102（Worker exceeded resource limits）。
+ *
+ * 现已升级 Workers Paid（30 秒 CPU / 请求，额度是免费版的 3000 倍），所以改回
+ * 实时渲染。代价是每次访问都会读一次 D1 —— 首页那种一次读上百行的页面如果流量
+ * 很大，要留意 D1 的每日读取额度。
+ */
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Contact - Asia Pacific Industry Group Co., Limited",
@@ -10,24 +25,22 @@ export const metadata: Metadata = {
     "Contact Asia Pacific Industry Group Co., Limited — BOPP / BOPET film, tape and thermal laminating film manufacturer in Hefei, China.",
 };
 
-const CONTACT = {
-  company: "ASIA PACIFIC INDUSTRY GROUP CO., LIMITED",
-  address: "NO.3399 LUZHOU AVE., BAOHE DIST., 230051, HEFEI, ANHUI, CHINA",
-  tel: "86-551-64687285",
-  fax: "86-551-64683490",
-  mobiles: ["86-86-18919654871", "86-86-18919659471"],
-  urls: [
-    { label: "http://www.boppfilmsales.com", href: "http://www.boppfilmsales.com" },
-    { label: "http://www.boppfilmsale.com", href: "http://www.boppfilmsale.com" },
-  ],
-  emails: ["sales@boppfilmsales.com", "info@boppfilmsales.com"],
-  skype: ["asiapacificsale", "boppfilmsales", "boppfilmsale"],
-  qq: ["840715367", "2538474128", "156641365", "2500526557"],
-  whatsapp: ["86-86-18919654871", "86-86-18919659471"],
-  wechat: ["18919654871", "18919659471", "18955113807"],
-  publicEmails: ["sales@boppfilmsales.com", "admin@apigcl.com"],
-};
-
+/**
+ * 2026-10-02 重构说明
+ * =====================================================================
+ * 改造前：这一页的联系方式（公司名、地址、Tel、Fax、Mobile、Url、Email、
+ *         Skype、QQ、WeChat、WhatsApp、Our Official Address）**全部硬编码**
+ *         在本文件里，而后台「内容管理 → 联系我们 → General Information」
+ *         另有 8 条数据 —— 两边互不相干。于是运营在后台改了联系方式，
+ *         前台没有任何变化，后台列表还只显示「10 - TEXT」这种占位符。
+ *
+ * 改造后：这一页的联系方式由后台文章驱动（news_posts，栏目 sourceId = 32），
+ *         渲染方式与 新闻中心 → Employees Literary 完全一致 —— 左侧列表，
+ *         点进去看详情页 /news/general-information/<id>。
+ *
+ * 保留：面包屑、页面标题、地图、二维码、世界地图宣传语、留言表单。
+ *       地图/二维码/表单属于功能性内容，不适合做成文章。
+ */
 const QR_IMAGES = [
   "/images/qr/qr1.jpg",
   "/images/qr/qr2.jpg",
@@ -35,53 +48,13 @@ const QR_IMAGES = [
   "/images/qr/qr4.jpg",
 ];
 
-/** Source-style info row (Tel / Fax / Mobile / Url / Email). */
-function InfoRow({
-  icon,
-  label,
-  children,
-}: {
-  icon: string;
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-start gap-3 border-b border-[#eee] py-4 text-[14px]">
-      <div className="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-full bg-[#f4f4f4] text-[#c8102e]">
-        <span className="text-[18px] leading-none">{icon}</span>
-      </div>
-      <div className="flex-1 pt-[6px]">
-        <p className="font-bold text-[#333]">{label}</p>
-        <div className="mt-1 leading-[24px] text-[#555]">{children}</div>
-      </div>
-    </div>
-  );
-}
+const MAP_SRC =
+  "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3654.0!2d117.302891!3d31.806389!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzHCsDQ4JzIzLjAiTiAxMTfCsDE4JzEwLjQiRQ!5e0!3m2!1sen!2sus!4v1600000000000!5m2!1sen!2sus";
 
-/** Bottom contact icon list item. */
-function ContactIconItem({
-  icon,
-  label,
-  children,
-}: {
-  icon: string;
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <li className="flex items-start gap-3 border-r border-[#eee] px-4 py-4 last:border-r-0">
-      <div className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full bg-[#f4f4f4] text-[#c8102e]">
-        <span className="text-[20px] leading-none">{icon}</span>
-      </div>
-      <div className="min-w-[140px]">
-        <p className="text-[13px] font-bold text-[#333]">{label}</p>
-        <div className="mt-1 text-[13px] leading-[22px] text-[#555]">{children}</div>
-      </div>
-    </li>
-  );
-}
+export default async function ContactPage() {
+  /** 后台「联系我们 → General Information」栏目（sourceId 32）。 */
+  const column = getArticleColumn(32);
 
-export default function ContactPage() {
   return (
     <div className="min-h-screen bg-white">
       <SiteHeader active="Contact" />
@@ -106,62 +79,31 @@ export default function ContactPage() {
           <i className="mx-auto mt-3 block h-[3px] w-[70px] bg-[#c8102e]" />
         </div>
 
-        {/* Company name + address */}
-        <div className="mt-10 text-center">
-          <h2 className="text-[18px] font-bold text-[#c8102e]">{CONTACT.company}</h2>
-          <i className="mx-auto mt-3 block h-[3px] w-[50px] bg-[#c8102e]" />
-          <p className="mx-auto mt-4 max-w-[700px] text-[14px] font-medium leading-[24px] text-[#555]">
-            {CONTACT.address}
-          </p>
+        {/*
+          联系方式 —— 由后台文章驱动。
+          与 /honor、/downloads、/cases 等栏目用的是同一个列表组件，
+          所以样式与「新闻中心 → Employees Literary」完全一致。
+        */}
+        <div className="mt-10">
+          {column ? (
+            <ArticleColumnList column={column} lang="en" />
+          ) : (
+            <p className="border border-dashed border-[#e0e0e0] bg-[#fafafa] px-6 py-12 text-center text-[13px] text-[#888]">
+              Contact details are not configured yet. Add them from Admin → Content → Contact Us →
+              General Information.
+            </p>
+          )}
         </div>
 
-        {/* Info + Map */}
-        <div className="mt-10 grid gap-8 lg:grid-cols-2">
-          <div className="space-y-0">
-            <InfoRow icon="☎" label="Tel:">
-              <span>{CONTACT.tel}</span>
-            </InfoRow>
-            <InfoRow icon="📠" label="Fax:">
-              <span>{CONTACT.fax}</span>
-            </InfoRow>
-            <InfoRow icon="📱" label="Mobile phone:">
-              {CONTACT.mobiles.map((m) => (
-                <span className="block" key={m}>
-                  {m}
-                </span>
-              ))}
-            </InfoRow>
-            <InfoRow icon="🔗" label="Url:">
-              {CONTACT.urls.map((u) => (
-                <a
-                  className="block text-[#1c6dd0] hover:underline"
-                  href={u.href}
-                  key={u.href}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {u.label}
-                </a>
-              ))}
-            </InfoRow>
-            <InfoRow icon="✉" label="Emaile adress:">
-              {CONTACT.emails.map((e) => (
-                <a className="block text-[#1c6dd0] hover:underline" href={`mailto:${e}`} key={e}>
-                  {e}
-                </a>
-              ))}
-            </InfoRow>
-          </div>
-
-          <div className="min-h-[400px] border border-[#eee] bg-[#f9f9f9]">
-            <iframe
-              allowFullScreen
-              className="h-full min-h-[400px] w-full border-0"
-              loading="lazy"
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3654.0!2d117.302891!3d31.806389!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzHCsDQ4JzIzLjAiTiAxMTfCsDE4JzEwLjQiRQ!5e0!3m2!1sen!2sus!4v1600000000000!5m2!1sen!2sus"
-              title="Company location"
-            />
-          </div>
+        {/* Map */}
+        <div className="mt-10 min-h-[400px] border border-[#eee] bg-[#f9f9f9]">
+          <iframe
+            allowFullScreen
+            className="h-full min-h-[400px] w-full border-0"
+            loading="lazy"
+            src={MAP_SRC}
+            title="Company location"
+          />
         </div>
 
         {/* QR codes */}
@@ -179,89 +121,6 @@ export default function ContactPage() {
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Contact icon list */}
-        <div className="mt-10 border border-[#eee]">
-          <ul className="grid grid-cols-1 divide-y divide-[#eee] sm:grid-cols-2 sm:divide-y-0 md:grid-cols-5">
-            <ContactIconItem icon="💬" label="Skype">
-              {CONTACT.skype.map((s) => (
-                <a
-                  className="block text-[#1c6dd0] hover:underline"
-                  href={`skype:${s}?chat`}
-                  key={s}
-                >
-                  {s}
-                </a>
-              ))}
-            </ContactIconItem>
-            <ContactIconItem icon="🐧" label="QQ">
-              {CONTACT.qq.map((q) => (
-                <a
-                  className="block text-[#1c6dd0] hover:underline"
-                  href={`http://wpa.qq.com/msgrd?v=3&uin=${q}&site=qq&menu=yes`}
-                  key={q}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {q}
-                </a>
-              ))}
-            </ContactIconItem>
-            <ContactIconItem icon="📱" label="Mobile">
-              {CONTACT.wechat.map((m) => (
-                <span className="block" key={m}>
-                  {m}
-                </span>
-              ))}
-            </ContactIconItem>
-            <ContactIconItem icon="💬" label="WhatsApp">
-              {CONTACT.whatsapp.map((w) => (
-                <span className="block" key={w}>
-                  {w}
-                </span>
-              ))}
-            </ContactIconItem>
-            <ContactIconItem icon="✉" label="Email">
-              {CONTACT.publicEmails.map((e) => (
-                <a className="block text-[#1c6dd0] hover:underline" href={`mailto:${e}`} key={e}>
-                  {e}
-                </a>
-              ))}
-            </ContactIconItem>
-          </ul>
-        </div>
-
-        {/* Official address */}
-        <div className="mt-10 border-t border-[#eee] pt-8 text-[13px] leading-[26px] text-[#555]">
-          <h3 className="mb-4 text-[16px] font-bold text-[#333]">Our Official Address</h3>
-          <p>In English: Asia Pacific Industry Group Co., Limited</p>
-          <p>No.3399 Luzhou Ave., Baohe Industrial District, 230051, Hefei city, Anhui Province, P.R.China</p>
-          <p>Tel: 86-551-64687285 Mobile phone: 86-18919654871 Attn. Sunny Jiang</p>
-          <p>In Chinese (中文): 亚太工业集团有限公司 安徽省合肥市包河区庐州大道3399号</p>
-          <p>联系人：蒋先生 电话 0551-64687285 手机：18919654871</p>
-          <p className="mt-2">
-            <a className="text-[#1c6dd0] hover:underline" href="http://www.boppfilmsales.com" target="_blank" rel="noreferrer">
-              http://www.boppfilmsales.com
-            </a>
-            <span className="mx-2"> </span>
-            <a className="text-[#1c6dd0] hover:underline" href="http://www.apigcl.com" target="_blank" rel="noreferrer">
-              http://www.apigcl.com
-            </a>
-          </p>
-          <p className="mt-2">
-            Email:{" "}
-            <a className="text-[#1c6dd0] hover:underline" href="mailto:sales@boppfilmsales.com">
-              sales@boppfilmsales.com
-            </a>
-            <span className="mx-1"> </span>
-            <a className="text-[#1c6dd0] hover:underline" href="mailto:admin@apigcl.com">
-              admin@apigcl.com
-            </a>
-          </p>
-          <p className="mt-2">
-            On-line contact information: teams: asiapacificsale QQ: 840715367
-          </p>
         </div>
 
         {/* World map */}

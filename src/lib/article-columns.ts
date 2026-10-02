@@ -23,7 +23,7 @@
 export type ArticleColumn = {
   sourceId: number;
   /** Which public section the column lives in (drives breadcrumb + tab strip). */
-  kind: "about" | "honor" | "cases" | "service" | "down";
+  kind: "about" | "honor" | "cases" | "service" | "down" | "contact";
   /** news_categories.slug — also the detail URL: /news/<slug>/<id>. */
   slug: string;
   nameEn: string;
@@ -35,6 +35,20 @@ export type ArticleColumn = {
 };
 
 export const ARTICLE_COLUMNS: Record<number, ArticleColumn> = {
+  // ── 联系我们 / Contact Us ───────────────────────────────────────────────
+  // 2026-10-02: 原先这一栏是 static 的键值列表，前台 /contact 却是**硬编码**的
+  // CONTACT 对象，后台改了前台不变。改成文章模式后，8 个条目变成 8 篇文章，
+  // 前台用与新闻中心一致的列表 + 详情页展示，后台也能正常编辑。
+  32: {
+    sourceId: 32,
+    kind: "contact",
+    slug: "general-information",
+    nameEn: "General Information",
+    nameZh: "联系方式",
+    sectionEn: "Contact Us",
+    sectionZh: "联系我们",
+    href: "/contact",
+  },
   // ── 关于我们 / About Us ─────────────────────────────────────────────────
   13: {
     sourceId: 13,
@@ -255,6 +269,7 @@ export const DEFAULT_ARTICLE_SOURCE_ID: Record<ArticleColumn["kind"], number> = 
   cases: 54,
   service: 79,
   down: 43,
+  contact: 32,
 };
 
 export function getArticleColumn(sourceId: number | undefined): ArticleColumn | null {

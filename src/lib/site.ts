@@ -88,7 +88,11 @@ export type ContentEntry = {
 };
 
 export type SiteContent = {
-  kind: 'about' | 'down' | 'lines' | 'honor' | 'service' | 'cases';
+  /**
+   * 2026-10-02: 加入 'contact' —— 联系我们 → General Information 已改为
+   * 富文本文章模式，字段口径与其它栏目一致。
+   */
+  kind: 'about' | 'down' | 'lines' | 'honor' | 'service' | 'cases' | 'contact';
   sourceId: number;
   name: string;
   nameZh: string;

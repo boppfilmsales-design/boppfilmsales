@@ -17,7 +17,7 @@ import { contentNameZh } from "@/lib/site-helpers";
 
 export type Lang = "en" | "zh";
 /** 2026-10-01: 加入 "down" —— 下载中心四栏已改为富文本文章模式。 */
-export type ContentKind = "about" | "lines" | "honor" | "service" | "cases" | "down";
+export type ContentKind = "about" | "lines" | "honor" | "service" | "cases" | "down" | "contact";
 
 export const baseOf = (lang: Lang) => (lang === "zh" ? "/zh" : "");
 export const pick = (lang: Lang, en: string, zh: string) => (lang === "zh" ? zh : en);
@@ -29,6 +29,7 @@ export const COLUMN_HREF: Record<string, string> = {
   service: "/service",
   cases: "/cases",
   down: "/downloads",
+  contact: "/contact",
 };
 
 export function PageHero({

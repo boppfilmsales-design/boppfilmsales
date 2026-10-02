@@ -92,6 +92,8 @@ export const CATEGORY_DEFS = [
   { slug: "certificate", name: "Certificate", sourceId: 17, sortOrder: 107 },
   { slug: "to-customer", name: "To Customer", sourceId: 50, sortOrder: 108 },
   { slug: "certification-report", name: "Certification Report", sourceId: 51, sortOrder: 109 },
+  // 2026-10-02: 联系我们 → General Information 也改为富文本文章模式
+  { slug: "general-information", name: "General Information", sourceId: 32, sortOrder: 110 },
 ];
 
 /**
