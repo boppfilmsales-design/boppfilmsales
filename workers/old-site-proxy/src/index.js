@@ -135,6 +135,30 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    /*
+      ① 明文 HTTP → 301 跳到 HTTPS
+      ────────────────────────────────────────────────────────────────
+      运营反馈：`http://old.boppfilmsales.com/` 打不开。
+
+      原因是主站有 `src/proxy.ts` 在应用层补跳转，而 old 子域走的是**这个
+      独立 Worker**，之前没有做同样的事 —— 于是明文请求被原样回源，
+      某些链路上会被判成「明文发到 HTTPS 端口」而返回 400。
+
+      在这里补一个 301，让四个地址都可用：
+          http://old.boppfilmsales.com/   → 301 → https://…  ✅
+          https://old.boppfilmsales.com/  → 200               ✅
+          http://boppfilmsales.com        → 308 → https://…  ✅（主站点 proxy.ts）
+          https://boppfilmsales.com       → 200               ✅
+
+      用 301（永久）而不是 302：站点以后只会有 https，浏览器可以长期记住。
+      保留路径与查询串，深链接（/product.php?c_id=86…）也能正确跳过去。
+    */
+    if (url.protocol === "http:") {
+      const httpsUrl = new URL(request.url);
+      httpsUrl.protocol = "https:";
+      return Response.redirect(httpsUrl.toString(), 301);
+    }
+
     // ② 图片：直接读 R2
     if (url.pathname.startsWith("/_media/")) {
       return serveMedia(env, request, url.pathname.slice("/_media/".length));

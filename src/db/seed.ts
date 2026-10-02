@@ -264,7 +264,7 @@ const SETTING_DEFS = [
   // 年份由 SiteFooter 在渲染时按系统时间替换（见 withCurrentYear），这里写当年即可。
   { key: "footer_copyright", value: "© 2026 Asia Pacific Industry Group All rights reserved.", label: "页脚版权", groupName: "footer" },
   { key: "footer_beian", value: "皖ICP备07010519号", label: "备案号", groupName: "footer" },
-  { key: "header_old_site_url", value: "http://old.boppfilmsales.com/", label: "头部「网站旧版」链接（留空则不显示）", groupName: "footer" },
+  { key: "header_old_site_url", value: "https://old.boppfilmsales.com/", label: "头部「网站旧版」链接（留空则不显示）", groupName: "footer" },
   { key: "products_per_page", value: "9", label: "前台产品分页条数", groupName: "display" },
   { key: "news_per_page", value: "10", label: "前台新闻分页条数", groupName: "display" },
   { key: "site_status", value: "online", label: "站点状态（online / maintenance）", groupName: "display" },

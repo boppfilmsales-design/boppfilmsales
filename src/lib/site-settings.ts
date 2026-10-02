@@ -34,7 +34,7 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
    * 旧服务器 2026 年底到期，这个入口是临时的：到期后到
    * 「高级管理 → 站点设置」把本项清空，链接就会从头部消失（无需改代码）。
    */
-  header_old_site_url: "http://old.boppfilmsales.com/",
+  header_old_site_url: "https://old.boppfilmsales.com/",
   products_per_page: "9",
   news_per_page: "10",
   site_status: "online",
