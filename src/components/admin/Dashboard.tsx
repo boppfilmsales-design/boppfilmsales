@@ -198,6 +198,15 @@ export default function Dashboard({ username }: { username: string }) {
   const [newsCatId, setNewsCatId] = useState("all");
   /** DB id of the news column currently open (sourceId is resolved to this). */
   const [newsColumnId, setNewsColumnId] = useState(0);
+  /**
+   * 当前栏目的 legacy sourceId —— 所有栏目内容请求都用它。
+   *
+   * ⚠️ 不要改用 `newsColumnId`（数据库 id）去请求：`news_categories.id` 与
+   * `source_id` 的取值空间重叠，数字会撞车（13 = Certificate Download 的 id =
+   * About Us 的 source_id；16 = Main Products 的 id = Honor 的 source_id），
+   * 用数据库 id 请求会命中另一个栏目。API 侧同样以 sourceId 优先解析。
+   */
+  const [newsSourceId, setNewsSourceId] = useState(0);
   const [keyword, setKeyword] = useState("");
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<AdminPostDetail | null>(null);
@@ -250,6 +259,9 @@ export default function Dashboard({ username }: { username: string }) {
       setNewsPage(1);
       setNewsCatId(String(data.resolvedCategoryId ?? data.categories?.[0]?.id ?? col.sourceId));
       setNewsColumnId(data.resolvedCategoryId ?? data.categories?.[0]?.id ?? 0);
+      // 记住 legacy sourceId：分页、搜索、保存后刷新都用它发请求，
+      // 这样后台永远按 sourceId 寻址，不会因为 id 撞车找错栏目。
+      setNewsSourceId(col.sourceId);
       // A DB outage (e.g. Neon quota exceeded) must not silently look empty.
       if (!res.ok || data.ok === false) {
         setNotice(
@@ -353,8 +365,14 @@ export default function Dashboard({ username }: { username: string }) {
     if (activeColumn) await loadColumnContent(activeColumn);
   }
 
-  async function loadNews(page: number, catId: string, q: string) {
-    const params = new URLSearchParams({ page: String(page), perPage: "20", categoryId: catId });
+  /**
+   * 分页 / 搜索时重新拉取当前栏目的文章。
+   *
+   * 一律用 `newsSourceId`（legacy sourceId）寻址 —— 不要用 `newsCatId`
+   * （那是数据库 id），否则 id 撞车时会翻到别的栏目去。
+   */
+  async function loadNews(page: number, q: string) {
+    const params = new URLSearchParams({ page: String(page), perPage: "20", categoryId: String(newsSourceId) });
     if (q) params.set("q", q);
     const res = await fetch(`/api/admin/posts?${params}`, { cache: "no-store" });
     const data = (await res.json()) as ListResponse;
@@ -367,7 +385,7 @@ export default function Dashboard({ username }: { username: string }) {
   /** Client-side keyword filter over the column currently open. */
   async function runNewsSearch(term: string) {
     setQuery(term);
-    await loadNews(1, newsCatId, term);
+    await loadNews(1, term);
   }
 
   async function updateInquiry(id: number, status: string) {
@@ -804,11 +822,11 @@ export default function Dashboard({ username }: { username: string }) {
               {/* Pagination */}
               {newsPages > 1 && (
                 <div className="mt-4 flex flex-wrap items-center gap-2 text-[12px]">
-                  <button className="border border-[#ddd] bg-white px-3 py-[7px] disabled:opacity-40" disabled={newsPage <= 1} onClick={() => void loadNews(newsPage - 1, newsCatId, query)} type="button">← 上一页</button>
+                  <button className="border border-[#ddd] bg-white px-3 py-[7px] disabled:opacity-40" disabled={newsPage <= 1} onClick={() => void loadNews(newsPage - 1, query)} type="button">← 上一页</button>
                   {Array.from({ length: newsPages }, (_, i) => i + 1).filter((v) => Math.abs(v - newsPage) <= 2 || v === 1 || v === newsPages).map((v) => (
-                    <button key={v} className={`border px-3 py-[7px] ${v === newsPage ? "border-[#e61d39] bg-[#e61d39] text-white" : "border-[#ddd] bg-white"}`} onClick={() => void loadNews(v, newsCatId, query)} type="button">{v}</button>
+                    <button key={v} className={`border px-3 py-[7px] ${v === newsPage ? "border-[#e61d39] bg-[#e61d39] text-white" : "border-[#ddd] bg-white"}`} onClick={() => void loadNews(v, query)} type="button">{v}</button>
                   ))}
-                  <button className="border border-[#ddd] bg-white px-3 py-[7px] disabled:opacity-40" disabled={newsPage >= newsPages} onClick={() => void loadNews(newsPage + 1, newsCatId, query)} type="button">下一页 →</button>
+                  <button className="border border-[#ddd] bg-white px-3 py-[7px] disabled:opacity-40" disabled={newsPage >= newsPages} onClick={() => void loadNews(newsPage + 1, query)} type="button">下一页 →</button>
                 </div>
               )}
             </div>
