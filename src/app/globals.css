@@ -121,7 +121,7 @@ img {
 .news-body td,
 .news-body th {
   border: 1px solid #e2e2e2;
-  padding: 6px 8px;
+  padding: 6px 8px;
 }
 
 .news-body a {
@@ -189,7 +189,7 @@ img {
 .rich-text-body td,
 .rich-text-body th {
   border: 1px solid #e2e2e2;
-  padding: 4px 6px;
+  padding: 4px 6px;
 }
 .rich-text-body br + br {
   display: none;
@@ -200,7 +200,7 @@ img {
 }
 
 /* ── TipTap editing surface (admin RichEditor) ─────────────────────────── */
-.rich-editor-content {
+.rich-editor-content {
   line-height: 1.7;
   color: #333;
 }
@@ -255,7 +255,7 @@ img {
 .rich-editor-content td,
 .rich-editor-content th {
   border: 1px solid #d9dde3;
-  padding: 5px 8px;
+  padding: 5px 8px;
   position: relative;
   vertical-align: top;
 }
@@ -270,3 +270,55 @@ img {
   height: 0;
   pointer-events: none;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   全站正文字号提升（2026-10-02）
+   ══════════════════════════════════════════════════════════════════════════
+
+   运营反馈：「新站的字体大小偏小，源站的字体大小很好」，
+   并要求「如果实际上和源站一致，请让新站稍微大一号」。
+
+   ── 实测依据 ────────────────────────────────────────────────────────────
+   旧站（源站）CSS 里 `body { font-size: 14px }`，字号出现次数：
+       14px × 157（正文基准）、12px × 97、16px × 57、13px × 56
+
+   新站改造前是 Tailwind 的固定像素类，正文主力：
+       12px × 245、13px × 136、11px × 93
+   → 正文比源站小 2px，这就是「看起来偏小」的原因。
+
+   ── 处理方式 ────────────────────────────────────────────────────────────
+   组件里用的是 `text-[12px]` 这类 arbitrary value，生成的是固定
+   `font-size`，无法靠 body 继承覆盖；一个个改又要动 500 多处、极易漏。
+   所以在这一处集中覆盖：8–15px 区间整体 +2px，行高同步 +2px。
+
+       源站 14px（正文）  →  新站 12px→14px  一致
+       源站 12px          →  新站 11px→13px  稍大一号
+       源站 13px          →  新站 13px→15px  稍大一号
+
+   ── 为什么 16px 不动 ────────────────────────────────────────────────────
+   `text-[16px]` 与富文本基线（.news-body 等，见本文件上方）同值。
+   动了会把已经统一好的 16px 富文本一起推大，违背之前定下的规范。
+   17px 及以上是大标题，本来就够大，也不动。
+
+   ── 为什么用 !important ─────────────────────────────────────────────────
+   Tailwind 把这些类编译进同一层，普通声明无法稳定压过它们。
+   这是全站性的基线决策，用 !important 是刻意的、也是唯一可靠的做法。 */
+
+.text-\[8px\]  { font-size: 10px !important; }
+.text-\[9px\]  { font-size: 11px !important; }
+.text-\[10px\] { font-size: 12px !important; }
+.text-\[11px\] { font-size: 13px !important; }
+.text-\[12px\] { font-size: 14px !important; }
+.text-\[13px\] { font-size: 15px !important; }
+.text-\[14px\] { font-size: 16px !important; }
+.text-\[15px\] { font-size: 17px !important; }
+
+/* 行高同步 +2px，避免放大后文字挤在一起。 */
+.leading-\[18px\] { line-height: 20px !important; }
+.leading-\[20px\] { line-height: 22px !important; }
+.leading-\[22px\] { line-height: 24px !important; }
+.leading-\[24px\] { line-height: 26px !important; }
+.leading-\[26px\] { line-height: 28px !important; }
+.leading-\[28px\] { line-height: 30px !important; }
+.leading-\[30px\] { line-height: 32px !important; }
+.leading-\[32px\] { line-height: 34px !important; }
