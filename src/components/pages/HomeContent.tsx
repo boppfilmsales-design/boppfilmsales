@@ -495,8 +495,8 @@ export default function HomeContent({
               <div className="flex items-start gap-3">
                 <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-[#25d366] text-[12px] font-bold text-white shadow ring-1 ring-[#f2d66c]/40">📞</span>
                 <div className="flex flex-col leading-[24px]">
-                  <span>86-86-18919654871</span>
-                  <span>86-86-18919659471</span>
+                  <span>0086-18919654871</span>
+                  <span>0086-18919659471</span>
                 </div>
               </div>
 

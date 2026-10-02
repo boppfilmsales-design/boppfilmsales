@@ -193,27 +193,43 @@ export default async function SiteFooter() {
           </ul>
           <div className="flex flex-wrap items-center gap-3">
             {/*
-              Web Analytics —— 运营自己要用的访客统计入口。
-              放在页面最底部，方便随时点开看访客留痕。
+              两个访客统计入口 —— 运营自己用，放在页面最底部方便随时点开。
 
-              指向百度统计的「页面分析（Top Page）」报表：
-                https://tongji.baidu.com/main/overview/10000738265/visit/toppage?siteId=23575971
-              其中 10000738265 是账号 ID、23575971 是 boppfilmsales 这个站点的 ID。
+              ① 百度统计（📊）：中文访客的细节报表（页面分析 / 实时访客 /
+                 地域 / 来源）。10000738265 是账号 ID，23575971 是站点 ID。
+              ② Cloudflare Web Analytics（☁️）：免 cookie、无限量、数据在
+                 边缘采集。boppfilmsales.com 已在 Cloudflare 开启自动注入，
+                 所以站点无需任何额外代码就能收到数据。
 
-              安全说明：这只是个外链，点开后仍需登录百度统计才能看到数据，
-              所以放在公开页脚不会泄露任何访客信息。
+              安全说明：两者都是普通外链，点开后仍需登录各自后台才能看到
+              数据，因此放在公开页脚不会泄露任何访客信息。
             */}
             <a
               className="flex items-center gap-2 transition-colors hover:text-[#f2d66c]"
-              href="https://tongji.baidu.com/main/overview/10000738265/visit/toppage?siteId=23575971"
+              href="https://tongji.baidu.com/main/overview/10000738265/overview/index"
               rel="noreferrer noopener"
               target="_blank"
-              title="访客统计分析（需登录百度统计）"
+              title="百度统计 · 访客分析（需登录）"
             >
               <span className="flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-full bg-[#2b6cf6] text-[11px] leading-none text-white shadow">
                 📊
               </span>
-              <span className="underline-offset-2 hover:underline">Web Analytics</span>
+              <span className="underline-offset-2 hover:underline">Baidu Analytics</span>
+            </a>
+
+            <span className="text-[#f2d66c]/40">|</span>
+
+            <a
+              className="flex items-center gap-2 transition-colors hover:text-[#f2d66c]"
+              href="https://dash.cloudflare.com/1558b11cf56bf7597de219af04f1834b/web-analytics/sites"
+              rel="noreferrer noopener"
+              target="_blank"
+              title="Cloudflare Web Analytics · 真实用户度量（需登录）"
+            >
+              <span className="flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-full bg-[#f6821f] text-[11px] leading-none text-white shadow">
+                ☁️
+              </span>
+              <span className="underline-offset-2 hover:underline">Cloudflare Analytics</span>
             </a>
 
             <span className="text-[#f2d66c]/40">|</span>

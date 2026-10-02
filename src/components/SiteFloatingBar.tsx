@@ -88,12 +88,42 @@ export default function SiteFloatingBar({ lang = "en" }: { lang?: "en" | "zh" })
           </em>
         </BarItem>
 
-        {/* WhatsApp */}
+        {/*
+          WhatsApp —— 两个号码分开显示，各自可点击直接发起对话。
+
+          改造前是两个纯文本 <span>，而且号码写成「86-86-18919654871」
+          （前缀重复了一遍），访客既看不明白也点不了。
+
+          现在：
+            · 编号 WhatsApp1 / WhatsApp2，一眼能分清是两个人
+            · 号码按国际习惯写成 0086-xxx
+            · 每条都是 https://wa.me/<国际区号+号码> 链接，点一下直接开聊
+              （wa.me 是 WhatsApp 官方短链，桌面端会拉起客户端、手机端
+                会拉起 App，没装则引导下载）
+
+          ⚠️ wa.me 只认纯数字：国家码 86 + 手机号，去掉 +、-、空格。
+        */}
         <BarItem divide label="WhatsApp" position="-80px -60px">
           <PanelTitle>WhatsApp</PanelTitle>
-          <em className="block text-[13px] not-italic leading-[18px] text-[#000]">
-            <span className="block">86-86-18919654871</span>
-            <span className="block">86-86-18919659471</span>
+          <em className="block text-[13px] not-italic leading-[20px] text-[#000]">
+            <a
+              className="block whitespace-nowrap hover:text-[#c8102e] hover:underline"
+              href="https://wa.me/8618919654871"
+              rel="noreferrer noopener"
+              target="_blank"
+              title="Click to chat on WhatsApp"
+            >
+              WhatsApp1: 0086-18919654871
+            </a>
+            <a
+              className="block whitespace-nowrap hover:text-[#c8102e] hover:underline"
+              href="https://wa.me/8618919659471"
+              rel="noreferrer noopener"
+              target="_blank"
+              title="Click to chat on WhatsApp"
+            >
+              WhatsApp2: 0086-18919659471
+            </a>
           </em>
         </BarItem>
 
