@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import RichEditor from "./RichEditor";
+import { sanitizeRichHtml } from "@/lib/rich-text";
 
 /* ============================================================
  * 留言板 — customer message inbox
@@ -12,7 +14,38 @@ import { useCallback, useEffect, useMemo, useState } from "react";
  *
  * The legacy operator-to-operator note board is preserved as the
  * 「内部留言」tab so no existing data or workflow is lost.
+ *
+ * 2026-10-02: 两个 tab 的编辑框都从纯文本升级为富文本（与
+ * 「新闻中心 → Employees Literary」同一套 TipTap 编辑器），
+ * 所以正文里可以排版、加粗、插图、做表格。
  * ============================================================ */
+
+/**
+ * 判断一段内容是不是 HTML。
+ *
+ * 升级前 `inquiries.reply` / `admin_messages.body` 存的是纯文本，
+ * 升级后存 HTML —— 老数据必须继续正常显示，所以渲染前先判断：
+ * 含标签就当 HTML 处理，否则按纯文本渲染（保留换行）。
+ */
+function looksLikeHtml(value: string): boolean {
+  return /<(p|div|br|span|strong|em|u|ul|ol|li|h[1-6]|table|img|a|blockquote)\b/i.test(value);
+}
+
+/** 把留言正文渲染成与新闻详情页一致的富文本块。 */
+function RichBody({ text, className = "" }: { text: string; className?: string }) {
+  if (!text) return null;
+  if (!looksLikeHtml(text)) {
+    // 老数据：纯文本，保留换行
+    return <p className={`whitespace-pre-wrap ${className}`}>{text}</p>;
+  }
+  return (
+    <div
+      className={`news-body ${className}`}
+      dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(text) }}
+    />
+  );
+}
+
 
 type InquiryRow = {
   id: number;
@@ -156,7 +189,8 @@ export default function MessageBoard({ username }: { username: string }) {
   }
 
   async function submitNote() {
-    if (!noteBody.trim()) {
+    // 富文本编辑器没输入时也会给出 "<p></p>"，要去掉标签再判空
+    if (!noteBody.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim()) {
       setNotice("留言内容不能为空。");
       return;
     }
@@ -343,33 +377,35 @@ export default function MessageBoard({ username }: { username: string }) {
                           回复 · {row.repliedBy || "system"}
                           {row.repliedAt ? ` · ${fmt(row.repliedAt)}` : ""}
                         </p>
-                        <p className="mt-1 whitespace-pre-wrap text-[12px] text-[#444]">{row.reply}</p>
+                        <RichBody className="mt-1 text-[14px] leading-[26px] text-[#444]" text={row.reply} />
                       </div>
                     ) : null}
 
                     {/* actions */}
-                    <div className="flex flex-wrap items-center gap-2 border-t border-[#f0f0f0] px-4 py-3">
-                      <input
-                        className="min-w-[260px] flex-1 border border-[#ddd] px-3 py-[7px] text-[12px] outline-none focus:border-[#e61d39]"
-                        onChange={(e) => setReplyDrafts((d) => ({ ...d, [row.id]: e.target.value }))}
-                        placeholder="输入回复内容…"
+                    <div className="border-t border-[#f0f0f0] px-4 py-3">
+                      <RichEditor
+                        height={150}
+                        onChange={(html) => setReplyDrafts((d) => ({ ...d, [row.id]: html }))}
+                        placeholder="输入回复内容…（支持加粗、列表、链接、图片、表格）"
                         value={replyDrafts[row.id] ?? ""}
                       />
-                      <button
-                        className="border border-[#1c7c39] px-3 py-[7px] text-[12px] text-[#1c7c39] hover:bg-[#1c7c39] hover:text-white"
-                        onClick={() => {
-                          const reply = (replyDrafts[row.id] ?? "").trim();
-                          if (!reply) {
-                            setNotice("回复内容不能为空。");
-                            return;
-                          }
-                          void patchInquiry(row.id, { reply }, "回复已保存，状态已更新为「已回复」。");
-                          setReplyDrafts((d) => ({ ...d, [row.id]: "" }));
-                        }}
-                        type="button"
-                      >
-                        回复
-                      </button>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <button
+                          className="border border-[#1c7c39] bg-[#1c7c39] px-4 py-[7px] text-[12px] font-bold text-white hover:bg-[#16612d]"
+                          onClick={() => {
+                            const reply = (replyDrafts[row.id] ?? "").trim();
+                            // 富文本编辑器在没输入时也会给出 "<p></p>"，要当空处理
+                            if (!reply || !reply.replace(/<[^>]*>/g, "").trim()) {
+                              setNotice("回复内容不能为空。");
+                              return;
+                            }
+                            void patchInquiry(row.id, { reply }, "回复已保存，状态已更新为「已回复」。");
+                            setReplyDrafts((d) => ({ ...d, [row.id]: "" }));
+                          }}
+                          type="button"
+                        >
+                          回复
+                        </button>
 
                       <select
                         className="border border-[#ddd] px-2 py-[7px] text-[12px]"
@@ -414,6 +450,7 @@ export default function MessageBoard({ username }: { username: string }) {
                       >
                         删除
                       </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -435,13 +472,14 @@ export default function MessageBoard({ username }: { username: string }) {
               placeholder="留言标题（可留空）"
               value={noteTitle}
             />
-            <textarea
-              className="mt-2 w-full border border-[#ddd] px-3 py-[8px] text-[13px] outline-none focus:border-[#e61d39]"
-              onChange={(e) => setNoteBody(e.target.value)}
-              placeholder="留言内容，支持多行"
-              rows={4}
-              value={noteBody}
-            />
+            <div className="mt-2">
+              <RichEditor
+                height={220}
+                onChange={setNoteBody}
+                placeholder="留言内容…（支持加粗、列表、链接、图片、表格）"
+                value={noteBody}
+              />
+            </div>
             <div className="mt-2">
               <button
                 className="bg-[#e61d39] px-4 py-[8px] text-[12px] font-bold text-white"
@@ -473,14 +511,14 @@ export default function MessageBoard({ username }: { username: string }) {
                         {row.author} · {fmt(row.createdAt)}
                       </span>
                     </div>
-                    <p className="mt-2 whitespace-pre-wrap text-[13px] leading-[22px] text-[#555]">{row.body}</p>
+                    <RichBody className="mt-2 text-[14px] leading-[26px] text-[#555]" text={row.body} />
                     {row.reply ? (
                       <div className="mt-3 border-l-[3px] border-[#1c7c39] bg-[#f6fbf7] px-3 py-2">
                         <p className="text-[11px] text-[#1c7c39]">
                           回复 · {row.repliedBy || "system"}
                           {row.repliedAt ? ` · ${fmt(row.repliedAt)}` : ""}
                         </p>
-                        <p className="mt-1 whitespace-pre-wrap text-[12px] text-[#444]">{row.reply}</p>
+                        <RichBody className="mt-1 text-[14px] leading-[26px] text-[#444]" text={row.reply} />
                       </div>
                     ) : null}
                   </div>

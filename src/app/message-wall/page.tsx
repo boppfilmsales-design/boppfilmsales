@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { and, desc, eq } from "drizzle-orm";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
-import { db } from "@/db";
-import { inquiries } from "@/db/schema";
-import { logDbFallback } from "@/lib/db-log";
+import { PageHero } from "@/components/pages/ArticleChrome";
+import {
+  displayName,
+  fmtMessageDate,
+  getPublicMessages,
+} from "@/lib/message-wall";
 
 /**
  * 实时渲染：后台改完内容，前台立刻生效。
@@ -15,8 +17,7 @@ import { logDbFallback } from "@/lib/db-log";
  * 并重扫 D1，进而触发 Error 1102（Worker exceeded resource limits）。
  *
  * 现已升级 Workers Paid（30 秒 CPU / 请求，额度是免费版的 3000 倍），所以改回
- * 实时渲染。代价是每次访问都会读一次 D1 —— 首页那种一次读上百行的页面如果流量
- * 很大，要留意 D1 的每日读取额度。
+ * 实时渲染。代价是每次访问都会读一次 D1。
  */
 export const dynamic = "force-dynamic";
 
@@ -27,45 +28,15 @@ export const metadata: Metadata = {
 };
 
 /**
- * Public message wall.
+ * 客户留言墙 —— 列表页。
  *
- * Only rows an operator has explicitly approved (is_public = true) are ever
- * rendered. E-mail addresses and phone numbers are never selected from the
- * database in the first place, so they cannot leak into the HTML.
+ * 2026-10-02 改版：样式与「新闻中心 → Employees Literary」完全一致
+ * （左侧图片/头像位 + 右侧内容块，点 MORE 进详情页）。
+ * 每条留言的详情在 /message-wall/<id>。
+ *
+ * 隐私：邮箱与电话从不参与查询（见 @/lib/message-wall），
+ * 且只有 is_public 且 status='replied' 的留言才会出现。
  */
-async function getPublicMessages() {
-  try {
-    return await db
-      .select({
-        id: inquiries.id,
-        contact: inquiries.contact,
-        company: inquiries.company,
-        message: inquiries.message,
-        reply: inquiries.reply,
-        language: inquiries.language,
-        createdAt: inquiries.createdAt,
-      })
-      .from(inquiries)
-      .where(and(eq(inquiries.isPublic, true), eq(inquiries.status, "replied")))
-      .orderBy(desc(inquiries.createdAt))
-      .limit(60);
-  } catch (error) {
-    logDbFallback("message wall: failed to load messages", error);
-    return [];
-  }
-}
-
-function fmtDate(value: Date | string): string {
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("en-GB", { year: "numeric", month: "short", day: "2-digit" });
-}
-
-/** Show "Acme Corp" rather than a personal name when both are filled in. */
-function displayName(company: string, contact: string): string {
-  return (company && company !== contact ? company : contact) || "Customer";
-}
-
 export default async function MessageWallPage() {
   const messages = await getPublicMessages();
 
@@ -73,61 +44,60 @@ export default async function MessageWallPage() {
     <div className="min-h-screen bg-white">
       <SiteHeader active="Contact" />
 
-      <section className="border-b border-[#f0f0f0] bg-[#fafafa]">
-        <div className="mx-auto w-full max-w-[1200px] px-3">
-          <p className="text-[14px] leading-[55px] text-[#666]">
-            <span className="mr-2 inline-block h-[14px] w-[3px] bg-[#e61d39] align-middle" />
-            <span className="font-bold text-[#e61d39]">Home</span> / Message Wall
-          </p>
-        </div>
-      </section>
+      <PageHero breadcrumb={["Message Wall"]} title="Message Wall" />
 
-      <section className="py-12">
-        <div className="mx-auto w-full max-w-[1200px] px-3">
-          <h1 className="text-center text-[30px] font-bold uppercase text-[#e61d39]">Message Wall</h1>
-          <i className="mx-auto mt-[15px] block h-[5px] w-[92px] bg-[#e61d39]" />
-          <p className="mx-auto mt-5 max-w-[720px] text-center text-[14px] leading-[26px] text-[#777]">
+      <section className="py-10">
+        <div className="mx-auto w-full max-w-[1560px] px-4">
+          <p className="mx-auto mb-8 max-w-[820px] text-center text-[16px] leading-[30px] text-[#777]">
             Enquiries we have received and answered. Contact details are kept private.
           </p>
 
           {messages.length === 0 ? (
-            <div className="mx-auto mt-10 max-w-[720px] border border-[#eee] bg-[#fafafa] py-14 text-center text-[14px] text-[#888]">
+            <p className="border border-dashed border-[#e0e0e0] bg-[#fafafa] px-6 py-12 text-center text-[16px] text-[#888]">
               No messages have been published yet.
-            </div>
+            </p>
           ) : (
-            <ul className="mx-auto mt-10 max-w-[900px] space-y-5">
-              {messages.map((row) => (
-                <li className="border border-[#eee] bg-white p-5" key={row.id}>
-                  <div className="flex flex-wrap items-center gap-3 border-b border-[#f4f4f4] pb-3">
-                    <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-[#c8102e] text-[13px] font-bold text-white">
-                      {displayName(row.company, row.contact).slice(0, 1).toUpperCase()}
-                    </span>
-                    <span className="text-[14px] font-bold text-[#333]">
-                      {displayName(row.company, row.contact)}
-                    </span>
-                    <span className="ml-auto text-[12px] text-[#999]">{fmtDate(row.createdAt)}</span>
-                  </div>
+            <ul className="space-y-[30px]">
+              {messages.map((row) => {
+                const name = displayName(row.company, row.contact);
+                const href = `/message-wall/${row.id}`;
+                return (
+                  <li className="group" key={row.id}>
+                    <div className="flex flex-col gap-0 md:flex-row">
+                      {/* 头像位 —— 与新闻列表的图片位同尺寸，保证两处排版完全一致 */}
+                      <div className="flex h-[220px] w-[260px] max-w-full shrink-0 items-center justify-center bg-[linear-gradient(135deg,#c8102e,#8d0b20)]">
+                        <span className="text-[64px] font-black leading-none text-white/90">
+                          {name.slice(0, 1).toUpperCase()}
+                        </span>
+                      </div>
 
-                  <p className="mt-3 whitespace-pre-wrap text-[13px] leading-[26px] text-[#555]">
-                    {row.message}
-                  </p>
-
-                  {row.reply ? (
-                    <div className="mt-3 border-l-[3px] border-[#c8102e] bg-[#fdf6f7] px-4 py-3">
-                      <p className="text-[11px] font-bold text-[#c8102e]">Reply from Asia Pacific</p>
-                      <p className="mt-1 whitespace-pre-wrap text-[13px] leading-[24px] text-[#555]">
-                        {row.reply}
-                      </p>
+                      <div className="box-border min-h-[220px] flex-1 bg-[#f8f8f8] p-[28px]">
+                        <h2 className="mb-[8px] truncate text-[16px] font-bold text-[#333] group-hover:text-[#c8102e]">
+                          <Link href={href}>{name}</Link>
+                        </h2>
+                        <span className="text-[16px] text-[#666]">
+                          Time: {fmtMessageDate(row.createdAt)}
+                        </span>
+                        <p className="mt-[15px] border-t border-[#dfdfdf] pt-[15px] text-[16px] leading-[26px] text-[#666] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
+                          {row.message}
+                        </p>
+                        <Link
+                          className="float-right text-[16px] font-bold uppercase text-[#666] transition-all duration-500 group-hover:mr-[10px] group-hover:text-[#c8102e]"
+                          href={href}
+                        >
+                          MORE
+                        </Link>
+                      </div>
                     </div>
-                  ) : null}
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
 
           <div className="mt-10 text-center">
             <Link
-              className="inline-block border border-[#c8102e] bg-white px-7 py-2.5 text-[14px] font-medium text-[#c8102e] transition hover:bg-[#c8102e] hover:text-white"
+              className="inline-block border border-[#c8102e] bg-white px-7 py-2.5 text-[16px] font-medium text-[#c8102e] transition hover:bg-[#c8102e] hover:text-white"
               href="/contact"
             >
               Send us your message
